@@ -48,7 +48,7 @@ const testimonials = [
 
 export const Testimonials: React.FC = () => {
   return (
-    <section id="depoimentos" className="py-32 relative overflow-hidden bg-transparent">
+    <section id="depoimentos" className="py-16 relative overflow-hidden bg-transparent">
       {/* Content */}
       <div className="relative z-10 mb-16 text-center px-4">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 mb-6 backdrop-blur-md">
