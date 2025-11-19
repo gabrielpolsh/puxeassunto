@@ -3,7 +3,7 @@ import { Upload, ScanLine, MessageCircle, Check, ArrowUp } from 'lucide-react';
 
 export const HowItWorks: React.FC = () => {
   return (
-    <section id="como-funciona" className="py-32 relative">
+    <section id="como-funciona" className="pb-32 relative">
       {/* Connecting Line Background */}
       <div className="absolute top-40 bottom-40 left-1/2 w-px bg-gradient-to-b from-transparent via-purple-500/20 to-transparent -translate-x-1/2 hidden lg:block"></div>
 

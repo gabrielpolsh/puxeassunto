@@ -66,7 +66,7 @@ export const Hero: React.FC<HeroProps> = ({ onAction, user }) => {
   const currentScenario = SCENARIOS[scenarioIndex];
 
   return (
-    <section className="relative pt-32 pb-20 md:pt-48 md:pb-32">
+    <section className="relative pt-16 pb-20 md:pt-48 md:pb-32">
       
       {/* Grid Container */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-y-12 lg:gap-y-0 lg:gap-x-20 items-center">

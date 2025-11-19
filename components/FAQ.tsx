@@ -60,7 +60,7 @@ export const FAQ: React.FC = () => {
                   openIndex === index ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0'
                 }`}
               >
-                <div className="p-6 pt-0 text-gray-400 leading-relaxed border-t border-white/5 mt-2">
+                <div className="p-6 pt-5 text-gray-400 leading-relaxed border-t border-white/5 mt-2">
                   {faq.answer}
                 </div>
               </div>
