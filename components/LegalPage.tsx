@@ -13,12 +13,12 @@ export const LegalPage: React.FC<LegalPageProps> = ({ type, onBack }) => {
   const lastUpdated = '20 de Novembro de 2025';
 
   const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
-    <div className="mb-16 last:mb-0">
-      <h3 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
-        <span className="w-1.5 h-8 bg-gradient-to-b from-purple-500 to-pink-500 rounded-full inline-block shadow-[0_0_10px_rgba(168,85,247,0.5)]"></span>
+    <div className="mb-12 last:mb-0">
+      <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+        <span className="w-1.5 h-6 bg-purple-500 rounded-full inline-block"></span>
         {title}
       </h3>
-      <div className="text-gray-300 leading-loose space-y-6 pl-6 border-l border-white/5 ml-[3px] text-lg">
+      <div className="text-gray-400 leading-relaxed space-y-4 pl-4 border-l border-white/5 ml-[3px]">
         {children}
       </div>
     </div>

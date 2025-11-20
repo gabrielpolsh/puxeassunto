@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, ScanLine, MessageCircle, Check, ArrowUp, Image as ImageIcon, Heart } from 'lucide-react';
+import { Upload, ScanLine, MessageCircle, Check, ArrowUp, Image as ImageIcon, Heart, Wifi, Battery } from 'lucide-react';
 
 const SUGGESTIONS_DEMO = [
   { 
@@ -71,33 +71,75 @@ export const HowItWorks: React.FC = () => {
                 
                 {/* Card */}
                 <div className="w-full h-full bg-[#0a0a0a] border border-white/10 rounded-3xl p-1 overflow-hidden relative shadow-2xl transition-transform duration-500 group-hover:scale-[1.02] group-hover:border-purple-500/30">
-                    <div className="w-full h-full bg-[#111] rounded-[20px] border border-white/5 flex flex-col items-center justify-center relative overflow-hidden">
+                    <div className="w-full h-full bg-[#111] rounded-[20px] border border-white/5 relative overflow-hidden">
                         
-                        {/* Phone Frame Mockup */}
-                        <div className="w-48 h-80 bg-gray-900 border-4 border-gray-800 rounded-3xl relative overflow-hidden shadow-2xl transform rotate-[-5deg] group-hover:rotate-0 transition-transform duration-500">
-                          {/* Screen Header */}
-                          <div className="h-6 bg-black w-full flex justify-center items-center z-20 relative">
-                            <div className="w-16 h-3 bg-gray-800 rounded-full"></div>
-                          </div>
+                        {/* iPhone Mockup - Positioned to be cut off */}
+                        <div className="absolute left-1/2 -translate-x-1/2 top-6 w-[260px] h-[500px] bg-black rounded-[45px] border-[6px] border-[#333] shadow-2xl transform rotate-[-5deg] group-hover:rotate-0 transition-transform duration-500 box-border ring-1 ring-white/10 overflow-hidden">
                           
-                          {/* Gallery Grid */}
-                          <div className="p-3 grid grid-cols-2 gap-2 opacity-50 group-hover:opacity-30 transition-opacity duration-500">
-                             {[1, 2, 3, 4].map(i => (
-                               <div key={i} className="aspect-[9/16] rounded-lg bg-gray-800/50 border border-white/5 relative overflow-hidden">
-                                  <div className="w-full h-full bg-gradient-to-br from-gray-700 to-gray-800"></div>
-                               </div>
-                             ))}
+                          {/* Dynamic Island / Notch Area */}
+                          <div className="absolute top-0 left-0 right-0 h-8 z-30 flex justify-center items-start pt-2">
+                             <div className="w-24 h-7 bg-black rounded-full flex items-center justify-center gap-2 px-2 border border-[#222]">
+                                <div className="w-1.5 h-1.5 rounded-full bg-[#1a1a1a]"></div>
+                             </div>
                           </div>
 
-                          {/* Upload Overlay */}
-                          <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
-                            <div className="w-16 h-16 bg-purple-600 rounded-full flex items-center justify-center shadow-lg shadow-purple-500/30 animate-bounce-slow">
-                                <Upload className="w-8 h-8 text-white" />
+                          {/* Screen Content */}
+                          <div className="w-full h-full bg-[#0f0f0f] relative flex flex-col">
+                            
+                            {/* Status Bar */}
+                            <div className="h-10 w-full flex justify-between items-center px-6 pt-2 z-20">
+                                <div className="text-[10px] text-white font-medium">9:41</div>
+                                <div className="flex gap-2 items-center">
+                                    <Wifi size={14} className="text-white" />
+                                    <Battery size={14} className="text-white" />
+                                </div>
                             </div>
-                            <div className="mt-3 px-3 py-1 bg-black/50 backdrop-blur-md rounded-full border border-white/10">
-                                <span className="text-[10px] font-bold text-white uppercase tracking-wider">Enviar Print</span>
+
+                            {/* Chat Header */}
+                            <div className="h-12 border-b border-white/5 flex items-center px-4 gap-3 bg-[#1a1a1a]/50 backdrop-blur-md">
+                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500"></div>
+                                <div className="flex flex-col">
+                                    <div className="w-20 h-2 bg-white/20 rounded-full mb-1"></div>
+                                    <div className="w-12 h-1.5 bg-white/10 rounded-full"></div>
+                                </div>
+                            </div>
+
+                            {/* Chat Messages */}
+                            <div className="flex-1 p-4 space-y-4 overflow-hidden relative">
+                                {/* Received */}
+                                <div className="flex items-end gap-2">
+                                    <div className="w-6 h-6 rounded-full bg-gray-700 shrink-0"></div>
+                                    <div className="bg-[#262626] rounded-2xl rounded-bl-none px-4 py-2.5 max-w-[85%]">
+                                        <div className="h-2 w-32 bg-white/20 rounded-full mb-2"></div>
+                                        <div className="h-2 w-24 bg-white/10 rounded-full"></div>
+                                    </div>
+                                </div>
+
+                                {/* Sent */}
+                                <div className="flex items-end gap-2 flex-row-reverse">
+                                    <div className="bg-purple-600 rounded-2xl rounded-br-none px-4 py-2.5 max-w-[85%]">
+                                        <div className="h-2 w-28 bg-white/50 rounded-full mb-2"></div>
+                                        <div className="h-2 w-16 bg-white/30 rounded-full"></div>
+                                    </div>
+                                </div>
+
+                                 {/* Received */}
+                                <div className="flex items-end gap-2">
+                                    <div className="w-6 h-6 rounded-full bg-gray-700 shrink-0"></div>
+                                    <div className="bg-[#262626] rounded-2xl rounded-bl-none px-4 py-2.5 max-w-[85%]">
+                                        <div className="h-2 w-40 bg-white/20 rounded-full mb-2"></div>
+                                        <div className="h-2 w-20 bg-white/10 rounded-full"></div>
+                                    </div>
+                                </div>
                             </div>
                           </div>
+                        </div>
+
+                        {/* Upload Icon - Floating in center */}
+                        <div className="absolute inset-0 flex items-center justify-center z-30 pointer-events-none">
+                            <div className="w-20 h-20 bg-purple-600 rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(147,51,234,0.5)] animate-bounce-slow border-4 border-[#111]">
+                                <Upload className="w-10 h-10 text-white" strokeWidth={2.5} />
+                            </div>
                         </div>
 
                         {/* Floating Badge */}

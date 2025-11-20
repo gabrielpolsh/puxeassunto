@@ -39,6 +39,7 @@ export const Header: React.FC<HeaderProps> = ({ onAction, user }) => {
         <nav className="hidden md:flex items-center gap-8">
           <a href="#como-funciona" className="text-sm font-medium text-gray-400 hover:text-white transition-colors">Como Funciona</a>
           <a href="#depoimentos" className="text-sm font-medium text-gray-400 hover:text-white transition-colors">Depoimentos</a>
+          <a href="#faq" className="text-sm font-medium text-gray-400 hover:text-white transition-colors">Dúvidas Frequentes</a>
         </nav>
 
         <button 
