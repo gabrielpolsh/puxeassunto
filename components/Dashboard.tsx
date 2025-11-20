@@ -117,34 +117,53 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
   const checkUserStatus = async () => {
     if (!user?.id) return;
 
-    // 1. Check PRO status & Subscription
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('is_pro, next_payment_date')
-      .eq('id', user.id)
-      .single();
+    try {
+      // 1. Check PRO status & Subscription
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('is_pro, next_payment_date')
+        .eq('id', user.id)
+        .single();
 
-    if (profile) {
-      setIsPro(profile.is_pro || false);
-      if (profile.next_payment_date) {
-        setNextPayment(new Date(profile.next_payment_date).toLocaleDateString('pt-BR'));
+      if (profileError) {
+        console.error('Profile error:', profileError);
+        // If session is invalid, sign out
+        if (profileError.message?.includes('JWT') || profileError.code === 'PGRST301') {
+          await supabase.auth.signOut();
+          return;
+        }
       }
-    }
-    setIsLoadingProfile(false);
 
-    // 2. Count daily messages (Free Plan Limit)
-    // Use UTC midnight as the cutoff since database stores in UTC
-    const today = new Date();
-    today.setUTCHours(0, 0, 0, 0);
+      if (profile) {
+        setIsPro(profile.is_pro || false);
+        if (profile.next_payment_date) {
+          setNextPayment(new Date(profile.next_payment_date).toLocaleDateString('pt-BR'));
+        }
+      }
+      setIsLoadingProfile(false);
 
-    const { count, error } = await supabase
-      .from('messages')
-      .select('*', { count: 'exact', head: true })
-      .eq('role', 'user') // Count only user inputs/analyses
-      .gte('created_at', today.toISOString());
+      // 2. Count daily messages (Free Plan Limit)
+      // Use UTC midnight as the cutoff since database stores in UTC
+      const today = new Date();
+      today.setUTCHours(0, 0, 0, 0);
 
-    if (!error && count !== null) {
-      setDailyCount(count);
+      const { count, error } = await supabase
+        .from('messages')
+        .select('*', { count: 'exact', head: true })
+        .eq('role', 'user') // Count only user inputs/analyses
+        .gte('created_at', today.toISOString());
+
+      if (error) {
+        console.error('Messages count error:', error);
+        if (error.message?.includes('JWT')) {
+          await supabase.auth.signOut();
+          return;
+        }
+      } else if (count !== null) {
+        setDailyCount(count);
+      }
+    } catch (error) {
+      console.error('Error checking user status:', error);
     }
   };
 
