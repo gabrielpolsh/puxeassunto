@@ -7,11 +7,12 @@ import { FAQ } from './components/FAQ';
 import { Footer } from './components/Footer';
 import { AuthPage } from './components/AuthPage';
 import { Dashboard } from './components/Dashboard';
+import { UpgradePage } from './components/UpgradePage';
 import { supabase } from './lib/supabase';
 
 const App: React.FC = () => {
-  // Views: 'landing' | 'auth' | 'dashboard' (implicit via user)
-  const [currentView, setCurrentView] = useState<'landing' | 'auth'>('landing');
+  // Views: 'landing' | 'auth' | 'dashboard' | 'upgrade'
+  const [currentView, setCurrentView] = useState<'landing' | 'auth' | 'upgrade'>('landing');
   const [user, setUser] = useState<any>(null);
   const [loadingSession, setLoadingSession] = useState(true);
 
@@ -48,20 +49,23 @@ const App: React.FC = () => {
   const handleLoginSuccess = () => {
     // Auth state listener will catch the user update and re-render showing Dashboard
     // We just ensure view state is clean
-    setCurrentView('landing'); 
+    setCurrentView('landing');
   };
 
   if (loadingSession) {
-     return (
-       <div className="min-h-screen bg-[#050505] flex items-center justify-center">
-         <div className="w-8 h-8 border-2 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
-       </div>
-     );
+    return (
+      <div className="min-h-screen bg-[#050505] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
   }
 
-  // 1. Authenticated User -> Dashboard
+  // 1. Authenticated User -> Dashboard or Upgrade Page
   if (user) {
-    return <Dashboard user={user} />;
+    if (currentView === 'upgrade') {
+      return <UpgradePage onBack={() => setCurrentView('landing')} />;
+    }
+    return <Dashboard user={user} onUpgradeClick={() => setCurrentView('upgrade')} />;
   }
 
   // 2. Authentication Page
@@ -79,7 +83,7 @@ const App: React.FC = () => {
 
       <div className="relative z-10">
         <Header onAction={handleMainAction} user={user} />
-        
+
         <main className="container mx-auto px-4 md:px-8 max-w-7xl">
           <Hero onAction={handleMainAction} user={user} />
           <HowItWorks />

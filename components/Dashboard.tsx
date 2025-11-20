@@ -17,13 +17,17 @@ import {
   MessageCircleHeart,
   MessageCircle,
   Send,
-  Heart
+  Heart,
+  Calendar,
+  Settings
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { analyzeChatScreenshot, Suggestion } from '../services/geminiService';
+import { SettingsModal } from './SettingsModal';
 
 interface DashboardProps {
   user: any;
+  onUpgradeClick: () => void;
 }
 
 interface AnalysisSession {
@@ -34,11 +38,12 @@ interface AnalysisSession {
   results?: Suggestion[];
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) => {
   // --- State ---
   const [sessions, setSessions] = useState<AnalysisSession[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [showMobileSidebar, setShowMobileSidebar] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
 
   // Studio State
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -47,6 +52,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
 
+  // PRO / Limits State
+  const [isPro, setIsPro] = useState(false);
+  const [dailyCount, setDailyCount] = useState(0);
+  const [nextPayment, setNextPayment] = useState<string | null>(null);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+
   // Refs
   const fileInputRef = useRef<HTMLInputElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
@@ -54,7 +65,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
   // --- Effects ---
   useEffect(() => {
     fetchSessions();
-  }, []);
+    checkUserStatus();
+  }, [user.id]); // Add user.id dependency
 
   useEffect(() => {
     if (currentSessionId) {
@@ -76,6 +88,39 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
   }, [results]);
 
   // --- Supabase Logic ---
+
+  const checkUserStatus = async () => {
+    if (!user?.id) return;
+
+    // 1. Check PRO status & Subscription
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('is_pro, next_payment_date')
+      .eq('id', user.id)
+      .single();
+
+    if (profile) {
+      setIsPro(profile.is_pro || false);
+      if (profile.next_payment_date) {
+        setNextPayment(new Date(profile.next_payment_date).toLocaleDateString('pt-BR'));
+      }
+    }
+    setIsLoadingProfile(false);
+
+    // 2. Count daily messages (Free Plan Limit)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const { count, error } = await supabase
+      .from('messages')
+      .select('*', { count: 'exact', head: true })
+      .eq('role', 'user') // Count only user inputs/analyses
+      .gte('created_at', today.toISOString());
+
+    if (!error && count !== null) {
+      setDailyCount(count);
+    }
+  };
 
   const fetchSessions = async () => {
     const { data, error } = await supabase
@@ -144,6 +189,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
       role: 'ai',
       suggestions: suggestions
     });
+
+    // Increment local count for immediate feedback
+    setDailyCount(prev => prev + 1);
   };
 
   const deleteSession = async (e: React.MouseEvent, id: string) => {
@@ -201,6 +249,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
   const runAnalysis = async () => {
     if (!selectedImage || isAnalyzing) return;
 
+    // CHECK LIMITS
+    if (!isPro && dailyCount >= 2) {
+      onUpgradeClick();
+      return;
+    }
+
     setIsAnalyzing(true);
 
     try {
@@ -231,6 +285,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen md:h-screen bg-[#050505] text-white font-sans md:overflow-hidden selection:bg-pink-500/30 relative">
+
+      <SettingsModal
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
+        user={user}
+        isPro={isPro}
+        nextPayment={nextPayment}
+        isLoadingProfile={isLoadingProfile}
+      />
 
       {/* Hidden Input */}
       <input
@@ -321,12 +384,36 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
               {user.email?.charAt(0).toUpperCase()}
             </div>
             <div className="flex-1 overflow-hidden">
-              <p className="text-xs font-medium truncate text-gray-300">{user.email}</p>
-              <button onClick={handleLogout} className="flex items-center gap-1 text-[10px] text-gray-500 hover:text-gray-300 mt-0.5">
-                <LogOut size={10} /> Sair
-              </button>
+              <div className="flex items-center gap-2">
+                <p className="text-xs font-medium truncate text-gray-300">{user.email}</p>
+                {isPro && <span className="text-[9px] bg-gradient-to-r from-purple-500 to-pink-500 text-white px-1.5 py-0.5 rounded font-bold">PRO</span>}
+              </div>
+
+              <div className="flex items-center gap-2 mt-1">
+                <button
+                  onClick={() => setShowSettings(true)}
+                  className="flex items-center gap-1 text-[10px] text-gray-500 hover:text-white transition-colors"
+                  title="Configurações"
+                >
+                  <Settings size={10} /> Conta
+                </button>
+                <div className="w-px h-3 bg-white/10"></div>
+                <button onClick={handleLogout} className="flex items-center gap-1 text-[10px] text-gray-500 hover:text-red-400 transition-colors">
+                  <LogOut size={10} /> Sair
+                </button>
+              </div>
+
             </div>
           </div>
+          {!isPro && (
+            <button
+              onClick={onUpgradeClick}
+              className="w-full mt-3 py-2 bg-gradient-to-r from-purple-900/50 to-pink-900/50 border border-purple-500/30 hover:border-purple-500/50 rounded-lg text-xs font-bold text-purple-200 transition-all flex items-center justify-center gap-1"
+            >
+              <Zap size={12} />
+              Seja PRO
+            </button>
+          )}
         </div>
       </div>
 
@@ -364,15 +451,24 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
               </h2>
             </div>
 
-            {selectedImage && (
-              <button
-                onClick={() => setSelectedImage(null)}
-                className="text-xs text-red-400 hover:text-red-300 flex items-center gap-1 px-3 py-1.5 rounded-full bg-red-500/10 border border-red-500/20 backdrop-blur-md transition-colors"
-              >
-                <span className="hidden sm:inline">Remover Print</span>
-                <Trash2 size={14} className="sm:hidden" />
-              </button>
-            )}
+            <div className="flex items-center gap-3">
+              {!isPro && (
+                <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-full border border-white/5">
+                  <span className="text-xs text-gray-400">Restam: <span className="text-white font-bold">{Math.max(0, 2 - dailyCount)}</span></span>
+                  <button onClick={onUpgradeClick} className="text-xs font-bold text-purple-400 hover:text-purple-300">UPGRADE</button>
+                </div>
+              )}
+
+              {selectedImage && (
+                <button
+                  onClick={() => setSelectedImage(null)}
+                  className="text-xs text-red-400 hover:text-red-300 flex items-center gap-1 px-3 py-1.5 rounded-full bg-red-500/10 border border-red-500/20 backdrop-blur-md transition-colors"
+                >
+                  <span className="hidden sm:inline">Remover Print</span>
+                  <Trash2 size={14} className="sm:hidden" />
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Main Area */}
