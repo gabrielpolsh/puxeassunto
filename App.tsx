@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { Header } from './components/Header';
 import { Hero } from './components/Hero';
 import { HowItWorks } from './components/HowItWorks';
@@ -11,11 +12,44 @@ import { UpgradePage } from './components/UpgradePage';
 import { ThankYouPage } from './components/ThankYouPage';
 import { supabase } from './lib/supabase';
 
-const App: React.FC = () => {
-  // Views: 'landing' | 'auth' | 'dashboard' | 'upgrade' | 'thankyou'
-  const [currentView, setCurrentView] = useState<'landing' | 'auth' | 'upgrade' | 'thankyou'>('landing');
+// Protected Route Component
+const ProtectedRoute: React.FC<{ children: React.ReactElement; user: any }> = ({ children, user }) => {
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+  return children;
+};
+
+// Landing Page Component
+const LandingPage: React.FC<{ onAction: () => void; user: any }> = ({ onAction, user }) => {
+  return (
+    <div className="min-h-screen bg-[#050505] text-white selection:bg-purple-500/30 selection:text-purple-200 font-sans overflow-x-hidden relative">
+      {/* Global Background Effects */}
+      <div className="fixed top-[-10%] left-[-10%] w-[50%] h-[50%] bg-purple-600/10 rounded-full blur-[150px] pointer-events-none z-0" />
+      <div className="fixed bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-pink-600/10 rounded-full blur-[150px] pointer-events-none z-0" />
+      <div className="fixed top-[20%] right-[10%] w-[30%] h-[30%] bg-blue-600/5 rounded-full blur-[120px] pointer-events-none z-0" />
+
+      <div className="relative z-10">
+        <Header onAction={onAction} user={user} />
+
+        <main className="container mx-auto px-4 md:px-8 max-w-7xl">
+          <Hero onAction={onAction} user={user} />
+          <HowItWorks />
+          <Testimonials />
+          <FAQ />
+        </main>
+
+        <Footer />
+      </div>
+    </div>
+  );
+};
+
+// Main App Router Component
+const AppRouter: React.FC = () => {
   const [user, setUser] = useState<any>(null);
   const [loadingSession, setLoadingSession] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Check active session
@@ -31,36 +65,34 @@ const App: React.FC = () => {
       setUser(session?.user ?? null);
       // If user logs out, ensure we go back to landing
       if (!session?.user) {
-        setCurrentView('landing');
+        navigate('/');
       }
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [navigate]);
 
   useEffect(() => {
     // Check URL parameters for payment success
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('payment') === 'success') {
-      setCurrentView('thankyou');
+      navigate('/thankyou');
       // Clean URL without reloading
-      window.history.replaceState({}, '', window.location.pathname);
+      window.history.replaceState({}, '', '/thankyou');
     }
-  }, []);
+  }, [navigate]);
 
   const handleMainAction = () => {
-    // If user is logged in, they are already on dashboard (handled by render logic below)
-    // If not logged in, go to auth page
-    if (!user) {
-      setCurrentView('auth');
-      window.scrollTo(0, 0);
+    if (user) {
+      navigate('/dashboard');
+    } else {
+      navigate('/login');
     }
+    window.scrollTo(0, 0);
   };
 
   const handleLoginSuccess = () => {
-    // Auth state listener will catch the user update and re-render showing Dashboard
-    // We just ensure view state is clean
-    setCurrentView('landing');
+    navigate('/dashboard');
   };
 
   if (loadingSession) {
@@ -71,45 +103,59 @@ const App: React.FC = () => {
     );
   }
 
-  // 1. Thank You Page (can be shown to anyone)
-  if (currentView === 'thankyou') {
-    return <ThankYouPage onGoToDashboard={() => setCurrentView('landing')} />;
-  }
-
-  // 2. Authenticated User -> Dashboard or Upgrade Page
-  if (user) {
-    if (currentView === 'upgrade') {
-      return <UpgradePage onBack={() => setCurrentView('landing')} />;
-    }
-    return <Dashboard user={user} onUpgradeClick={() => setCurrentView('upgrade')} />;
-  }
-
-  // 3. Authentication Page
-  if (currentView === 'auth') {
-    return <AuthPage onBack={() => setCurrentView('landing')} onLoginSuccess={handleLoginSuccess} />;
-  }
-
-  // 4. Landing Page (Default)
   return (
-    <div className="min-h-screen bg-[#050505] text-white selection:bg-purple-500/30 selection:text-purple-200 font-sans overflow-x-hidden relative">
-      {/* Global Background Effects */}
-      <div className="fixed top-[-10%] left-[-10%] w-[50%] h-[50%] bg-purple-600/10 rounded-full blur-[150px] pointer-events-none z-0" />
-      <div className="fixed bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-pink-600/10 rounded-full blur-[150px] pointer-events-none z-0" />
-      <div className="fixed top-[20%] right-[10%] w-[30%] h-[30%] bg-blue-600/5 rounded-full blur-[120px] pointer-events-none z-0" />
+    <Routes>
+      {/* Landing Page */}
+      <Route path="/" element={<LandingPage onAction={handleMainAction} user={user} />} />
 
-      <div className="relative z-10">
-        <Header onAction={handleMainAction} user={user} />
+      {/* Auth Page */}
+      <Route
+        path="/login"
+        element={
+          user ? (
+            <Navigate to="/dashboard" replace />
+          ) : (
+            <AuthPage onBack={() => navigate('/')} onLoginSuccess={handleLoginSuccess} />
+          )
+        }
+      />
 
-        <main className="container mx-auto px-4 md:px-8 max-w-7xl">
-          <Hero onAction={handleMainAction} user={user} />
-          <HowItWorks />
-          <Testimonials />
-          <FAQ />
-        </main>
+      {/* Protected Routes */}
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute user={user}>
+            <Dashboard user={user} onUpgradeClick={() => navigate('/upgrade')} />
+          </ProtectedRoute>
+        }
+      />
 
-        <Footer />
-      </div>
-    </div>
+      <Route
+        path="/upgrade"
+        element={
+          <ProtectedRoute user={user}>
+            <UpgradePage onBack={() => navigate('/dashboard')} />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Thank You Page (accessible to anyone) */}
+      <Route
+        path="/thankyou"
+        element={<ThankYouPage onGoToDashboard={() => navigate('/dashboard')} />}
+      />
+
+      {/* Redirect any unknown routes to landing */}
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
+};
+
+const App: React.FC = () => {
+  return (
+    <BrowserRouter>
+      <AppRouter />
+    </BrowserRouter>
   );
 };
 
