@@ -10,6 +10,7 @@ import { AuthPage } from './components/AuthPage';
 import { Dashboard } from './components/Dashboard';
 import { UpgradePage } from './components/UpgradePage';
 import { ThankYouPage } from './components/ThankYouPage';
+import { LegalPage } from './components/LegalPage';
 import { supabase } from './lib/supabase';
 
 // Protected Route Component
@@ -143,6 +144,16 @@ const AppRouter: React.FC = () => {
       <Route
         path="/thankyou"
         element={<ThankYouPage onGoToDashboard={() => navigate('/dashboard')} />}
+      />
+
+      {/* Legal Pages */}
+      <Route
+        path="/privacy"
+        element={<LegalPage type="privacy" onBack={() => navigate('/')} />}
+      />
+      <Route
+        path="/terms"
+        element={<LegalPage type="terms" onBack={() => navigate('/')} />}
       />
 
       {/* Redirect any unknown routes to landing */}

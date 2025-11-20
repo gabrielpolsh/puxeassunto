@@ -91,7 +91,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess, onBack }) =>
 
         {/* Footer Info */}
         <div className="relative z-10 text-sm text-gray-500">
-            © 2024 Puxe Assunto Inc.
+            © 2025 Puxe Assunto Inc.
         </div>
       </div>
 

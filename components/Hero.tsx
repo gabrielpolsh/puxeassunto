@@ -22,6 +22,7 @@ const SCENARIOS = [
     name: "Match Tinder 🔥",
     avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&crop=faces",
     messages: [
+      { text: "Deu match! 😉", isMe: false },
       { text: "Adorei suas fotos!", isMe: false }
     ],
     suggestion: "Obrigado! 😉 O sorriso é de fábrica, mas o fotógrafo ajudou. E você, o que faz por aqui?",
@@ -31,6 +32,7 @@ const SCENARIOS = [
     name: "Ex 😬",
     avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&h=150&fit=crop&crop=faces",
     messages: [
+      { text: "Vi seu story...", isMe: false },
       { text: "E aí, sumido...", isMe: false }
     ],
     suggestion: "Oi! Tudo correndo bem por aqui. Espero que esteja tudo bem contigo também.",
@@ -75,14 +77,14 @@ export const Hero: React.FC<HeroProps> = ({ onAction, user }) => {
         <div className="lg:col-span-7 text-center lg:text-left z-10 lg:self-end">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 mb-6">
             <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-            <span className="text-xs font-medium text-gray-300">Disponível agora para todos</span>
+            <span className="text-xs font-medium text-gray-300">Nunca mais fique sem assunto</span>
           </div>
 
           <div className="min-h-[120px] md:min-h-[160px] lg:min-h-[180px] flex flex-col justify-center lg:block">
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-extrabold text-white leading-[1.1] mb-6">
+            <h1 className="text-[2.3rem] md:text-6xl lg:text-7xl font-extrabold text-white leading-[1.1] mb-6">
               Não sabe o que
-              <br className="hidden lg:block" />{" "}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-500 to-purple-500">
+              <br />
+              <span className="text-5xl md:text-6xl lg:text-7xl text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-500 to-purple-500">
                 responder?
               </span>
             </h1>
@@ -90,7 +92,7 @@ export const Hero: React.FC<HeroProps> = ({ onAction, user }) => {
         </div>
 
         {/* 2. Chat Visualization */}
-        <div className="w-full lg:col-span-5 flex justify-center relative lg:translate-x-0 perspective-1000 lg:row-span-2 z-20">
+        <div className="w-full mt-5 lg:col-span-5 flex justify-center relative lg:translate-x-0 perspective-1000 lg:row-span-2 z-20">
 
           {/* Floating Container */}
           <div className="relative w-full max-w-[400px] animate-float">
@@ -110,7 +112,7 @@ export const Hero: React.FC<HeroProps> = ({ onAction, user }) => {
             </div>
 
             {/* Messages Area - Minimal & Glass */}
-            <div className="flex flex-col gap-6 mt-6 perspective-1000 min-h-[320px] justify-center">
+            <div className="flex flex-col gap-2 mt-2 perspective-1000 min-h-[320px] justify-center">
 
               {/* Context Messages */}
               <div className="flex flex-col gap-3 transition-all duration-500">
@@ -153,7 +155,7 @@ export const Hero: React.FC<HeroProps> = ({ onAction, user }) => {
                       <div className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-full p-1">
                         <Sparkles size={10} className="text-white" />
                       </div>
-                      <span className="text-xs font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400 uppercase tracking-widest">Sugestão IA</span>
+                      <span className="text-xs font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400 uppercase tracking-widest">Sugestão Puxe Assunto</span>
                     </div>
 
                     {/* Bubble */}
@@ -182,7 +184,7 @@ export const Hero: React.FC<HeroProps> = ({ onAction, user }) => {
         {/* 3. Content Block (Description, Buttons, Social Proof) */}
         <div className="lg:col-span-7 text-center lg:text-left z-10 lg:self-start">
           <p className="text-lg md:text-xl text-gray-400 mb-10 max-w-2xl mx-auto lg:mx-0 leading-relaxed">
-            Chega de vácuo. Envie o print da conversa e deixe nossa Inteligência Artificial analisar o contexto para criar respostas irresistíveis em segundos. Acabe com o silêncio constrangedor.
+            Chega de vácuo. Envie o print da conversa e deixe nossa Inteligência analisar o contexto para criar respostas irresistíveis em segundos. Acabe com o silêncio constrangedor.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center gap-4 justify-center lg:justify-start">

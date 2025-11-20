@@ -1,7 +1,40 @@
-import React from 'react';
-import { Upload, ScanLine, MessageCircle, Check, ArrowUp } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Upload, ScanLine, MessageCircle, Check, ArrowUp, Image as ImageIcon, Heart } from 'lucide-react';
+
+const SUGGESTIONS_DEMO = [
+  { 
+    tone: "Romântico", 
+    text: "Adorei a sugestão! Vamos marcar algo para testar essa teoria pessoalmente? 😉", 
+    color: "text-pink-400",
+    bg: "bg-pink-500/10",
+    border: "border-pink-500/20"
+  },
+  { 
+    tone: "Engraçado", 
+    text: "Se eu ganhasse um real cada vez que ouço isso, já estaria rico! 😂", 
+    color: "text-yellow-400",
+    bg: "bg-yellow-500/10",
+    border: "border-yellow-500/20"
+  },
+  { 
+    tone: "Misterioso", 
+    text: "Interessante... mas isso é segredo de estado. 🤫", 
+    color: "text-purple-400",
+    bg: "bg-purple-500/10",
+    border: "border-purple-500/20"
+  }
+];
 
 export const HowItWorks: React.FC = () => {
+  const [suggestionIndex, setSuggestionIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setSuggestionIndex((prev) => (prev + 1) % SUGGESTIONS_DEMO.length);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <section id="como-funciona" className="pb-32 relative">
       {/* Connecting Line Background */}
@@ -32,31 +65,46 @@ export const HowItWorks: React.FC = () => {
 
           {/* Visual */}
           <div className="flex-1 w-full flex justify-center lg:justify-start">
-            <div className="relative w-full max-w-md aspect-square lg:aspect-[4/3]">
+            <div className="relative w-full max-w-sm aspect-square lg:aspect-[4/3]">
                 {/* Background Glow */}
                 <div className="absolute inset-0 bg-purple-500/20 blur-[60px] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
                 
                 {/* Card */}
                 <div className="w-full h-full bg-[#0a0a0a] border border-white/10 rounded-3xl p-1 overflow-hidden relative shadow-2xl transition-transform duration-500 group-hover:scale-[1.02] group-hover:border-purple-500/30">
                     <div className="w-full h-full bg-[#111] rounded-[20px] border border-white/5 flex flex-col items-center justify-center relative overflow-hidden">
-                        {/* Grid Pattern */}
-                        <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(#444 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
                         
-                        {/* Floating Upload Icon */}
-                        <div className="w-24 h-24 bg-gradient-to-tr from-purple-600 to-pink-600 rounded-2xl flex items-center justify-center shadow-lg shadow-purple-500/20 animate-float relative z-10">
-                            <Upload className="w-10 h-10 text-white" />
-                            {/* Upload Progress Ring (Fake) */}
-                            <svg className="absolute -inset-4 w-[128px] h-[128px] rotate-[-90deg]">
-                                <circle cx="64" cy="64" r="62" stroke="currentColor" strokeWidth="2" fill="none" className="text-white/10" />
-                                <circle cx="64" cy="64" r="62" stroke="currentColor" strokeWidth="2" fill="none" className="text-purple-500 stroke-dasharray-390 stroke-dashoffset-100 animate-pulse-slow" strokeLinecap="round" />
-                            </svg>
+                        {/* Phone Frame Mockup */}
+                        <div className="w-48 h-80 bg-gray-900 border-4 border-gray-800 rounded-3xl relative overflow-hidden shadow-2xl transform rotate-[-5deg] group-hover:rotate-0 transition-transform duration-500">
+                          {/* Screen Header */}
+                          <div className="h-6 bg-black w-full flex justify-center items-center z-20 relative">
+                            <div className="w-16 h-3 bg-gray-800 rounded-full"></div>
+                          </div>
+                          
+                          {/* Gallery Grid */}
+                          <div className="p-3 grid grid-cols-2 gap-2 opacity-50 group-hover:opacity-30 transition-opacity duration-500">
+                             {[1, 2, 3, 4].map(i => (
+                               <div key={i} className="aspect-[9/16] rounded-lg bg-gray-800/50 border border-white/5 relative overflow-hidden">
+                                  <div className="w-full h-full bg-gradient-to-br from-gray-700 to-gray-800"></div>
+                               </div>
+                             ))}
+                          </div>
+
+                          {/* Upload Overlay */}
+                          <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
+                            <div className="w-16 h-16 bg-purple-600 rounded-full flex items-center justify-center shadow-lg shadow-purple-500/30 animate-bounce-slow">
+                                <Upload className="w-8 h-8 text-white" />
+                            </div>
+                            <div className="mt-3 px-3 py-1 bg-black/50 backdrop-blur-md rounded-full border border-white/10">
+                                <span className="text-[10px] font-bold text-white uppercase tracking-wider">Enviar Print</span>
+                            </div>
+                          </div>
                         </div>
-                        
-                        {/* Floating Elements */}
-                        <div className="absolute top-10 left-10 w-12 h-16 bg-white/5 border border-white/10 rounded-lg animate-float" style={{ animationDelay: '1s' }}></div>
-                        <div className="absolute bottom-12 right-12 w-16 h-12 bg-white/5 border border-white/10 rounded-lg animate-float" style={{ animationDelay: '2s' }}></div>
-                        
-                        <div className="mt-12 text-sm font-medium text-gray-500 animate-pulse">Aguardando arquivo...</div>
+
+                        {/* Floating Badge */}
+                        <div className="absolute top-10 right-10 bg-white/10 backdrop-blur-md border border-white/20 p-2 rounded-xl animate-float" style={{ animationDelay: '1s' }}>
+                           <ImageIcon className="text-purple-400 w-6 h-6" />
+                        </div>
+
                     </div>
                 </div>
             </div>
@@ -67,7 +115,7 @@ export const HowItWorks: React.FC = () => {
         <div className="flex flex-col lg:flex-row items-center justify-between gap-12 lg:gap-20 group">
           {/* Visual - Left on Desktop */}
           <div className="flex-1 w-full flex justify-center lg:justify-end order-2 lg:order-1">
-             <div className="relative w-full max-w-md aspect-square lg:aspect-[4/3]">
+             <div className="relative w-full max-w-sm aspect-square lg:aspect-[4/3]">
                 <div className="absolute inset-0 bg-blue-500/20 blur-[60px] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
                 
                 <div className="w-full h-full bg-[#0a0a0a] border border-white/10 rounded-3xl p-1 overflow-hidden relative shadow-2xl transition-transform duration-500 group-hover:scale-[1.02] group-hover:border-blue-500/30">
@@ -126,23 +174,23 @@ export const HowItWorks: React.FC = () => {
 
           {/* Visual */}
           <div className="flex-1 w-full flex justify-center lg:justify-start">
-            <div className="relative w-full max-w-md aspect-square lg:aspect-[4/3]">
+            <div className="relative w-full max-w-sm aspect-square">
                 <div className="absolute inset-0 bg-pink-500/20 blur-[60px] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
                 
                 <div className="w-full h-full bg-[#0a0a0a] border border-white/10 rounded-3xl p-1 overflow-hidden relative shadow-2xl transition-transform duration-500 group-hover:scale-[1.02] group-hover:border-pink-500/30">
-                     <div className="w-full h-full bg-[#111] rounded-[20px] border border-white/5 flex flex-col items-center justify-center p-6 relative">
+                     <div className="w-full h-full bg-[#111] rounded-[20px] flex flex-col items-center justify-center p-8 relative">
                         
                         {/* Message Bubble */}
-                        <div className="bg-[#1a1a1a] border border-white/10 rounded-2xl p-6 w-full max-w-xs relative group-hover:-translate-y-2 transition-transform duration-500">
+                        <div key={suggestionIndex} className="bg-[#1a1a1a] border border-white/5 rounded-2xl p-6 w-full relative animate-fade-in shadow-xl">
                             <div className="flex items-center justify-between mb-4 border-b border-white/5 pb-3">
                                 <div className="flex items-center gap-2">
-                                    <span className="w-2 h-2 rounded-full bg-pink-500"></span>
+                                    <span className={`w-2 h-2 rounded-full ${SUGGESTIONS_DEMO[suggestionIndex].color.replace('text-', 'bg-').replace('-400', '-500')}`}></span>
                                     <span className="text-xs font-semibold text-gray-300 uppercase">Sugestão IA</span>
                                 </div>
                                 <Check size={14} className="text-green-500 opacity-0 group-hover:opacity-100 transition-opacity" />
                             </div>
-                            <p className="text-white font-medium leading-relaxed">
-                                "Adorei a sugestão! Vamos marcar algo para testar essa teoria pessoalmente? 😉"
+                            <p className="text-white font-medium leading-relaxed min-h-[80px]">
+                                "{SUGGESTIONS_DEMO[suggestionIndex].text}"
                             </p>
                             
                             {/* Copy Button Fake */}
@@ -154,10 +202,30 @@ export const HowItWorks: React.FC = () => {
                         </div>
 
                         {/* Tone Badges */}
-                        <div className="flex gap-2 mt-6">
-                            <span className="px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400 text-xs opacity-50 scale-90">Romântico</span>
-                            <span className="px-3 py-1 rounded-full bg-pink-500/20 border border-pink-500/40 text-pink-400 text-xs font-bold shadow-[0_0_10px_rgba(236,72,153,0.3)] scale-110">Ousado</span>
-                            <span className="px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs opacity-50 scale-90">Engraçado</span>
+                        <div className="flex gap-2 mt-8">
+                            {SUGGESTIONS_DEMO.map((s, i) => (
+                                <span 
+                                    key={i}
+                                    className={`px-3 py-1 rounded-full text-xs transition-all duration-500 border ${
+                                        i === suggestionIndex 
+                                        ? `${s.bg} ${s.border} ${s.color} font-bold scale-110 shadow-[0_0_10px_rgba(255,255,255,0.1)]` 
+                                        : 'bg-white/5 border-white/10 text-gray-500 opacity-50 scale-90'
+                                    }`}
+                                >
+                                    {s.tone}
+                                </span>
+                            ))}
+                        </div>
+
+                        {/* Floating Mini Heart Cards */}
+                        <div className="absolute top-6 right-6 bg-[#1a1a1a] border border-pink-500/30 p-2.5 rounded-xl shadow-lg animate-float" style={{ animationDelay: '0s' }}>
+                            <Heart className="w-5 h-5 text-pink-500 fill-pink-500/20" />
+                        </div>
+                        <div className="absolute bottom-24 left-6 bg-[#1a1a1a] border border-purple-500/30 p-2 rounded-lg shadow-lg animate-float" style={{ animationDelay: '1.5s' }}>
+                            <Heart className="w-4 h-4 text-purple-500 fill-purple-500/20" />
+                        </div>
+                        <div className="absolute -bottom-2 right-12 bg-[#1a1a1a] border border-red-500/30 p-2 rounded-lg shadow-lg animate-float" style={{ animationDelay: '2.5s' }}>
+                            <Heart className="w-3 h-3 text-red-500 fill-red-500/20" />
                         </div>
                      </div>
                 </div>
