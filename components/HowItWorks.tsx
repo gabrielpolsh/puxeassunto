@@ -88,6 +88,7 @@ export const HowItWorks: React.FC = () => {
                           </div>
                       </div>
 
+
                       {/* Scanning Overlay */}
                       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-blue-500/10 to-transparent h-1/3 w-full animate-scan pointer-events-none border-t border-b border-blue-400/30 shadow-[0_0_20px_rgba(59,130,246,0.2)]"></div>
 
