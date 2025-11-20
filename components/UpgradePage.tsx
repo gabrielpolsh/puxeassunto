@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check, Zap, ArrowLeft, Sparkles } from 'lucide-react';
+import { Check, ArrowLeft, Sparkles, MessageCircleHeart } from 'lucide-react';
 
 interface UpgradePageProps {
     onBack: () => void;
@@ -38,7 +38,7 @@ export const UpgradePage: React.FC<UpgradePageProps> = ({ onBack }) => {
                     
                     <h1 className="text-4xl md:text-6xl font-extrabold mb-6 tracking-tight leading-tight">
                         Não deixe a conversa <br className="hidden md:block" />
-                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-500 to-purple-400 animate-gradient-x">
+                        <span className="text-purple-400">
                             morrer no "oi tudo bem"
                         </span>
                     </h1>
@@ -136,7 +136,7 @@ export const UpgradePage: React.FC<UpgradePageProps> = ({ onBack }) => {
                             onClick={handleUpgrade}
                             className="relative w-full py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold rounded-xl shadow-lg shadow-purple-900/40 transition-all transform hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2 group-hover:shadow-purple-500/25"
                         >
-                            <Zap size={20} className="fill-white" />
+                            <MessageCircleHeart size={20} className="fill-white/20" />
                             Quero Ser PRO Agora
                         </button>
                         
@@ -177,15 +177,6 @@ export const UpgradePage: React.FC<UpgradePageProps> = ({ onBack }) => {
                 }
                 .animate-fade-in {
                     animation: fadeIn 0.8s ease-out forwards;
-                }
-                @keyframes gradientX {
-                    0% { background-position: 0% 50%; }
-                    50% { background-position: 100% 50%; }
-                    100% { background-position: 0% 50%; }
-                }
-                .animate-gradient-x {
-                    background-size: 200% 200%;
-                    animation: gradientX 3s ease infinite;
                 }
             `}</style>
         </div>

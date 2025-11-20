@@ -489,15 +489,23 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
 
             <div className="flex items-center gap-3">
               {!isPro && (
-                <div className="hidden md:flex flex-col items-end gap-1">
-                  <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-full border border-white/5">
-                    <span className="text-xs text-gray-400">Restam: <span className="text-white font-bold">{Math.max(0, 2 - dailyCount)}</span></span>
-                    <button onClick={onUpgradeClick} className="text-xs font-bold text-purple-400 hover:text-purple-300 ml-1">UPGRADE</button>
+                <>
+                  {/* Mobile Version */}
+                  <div className="flex md:hidden items-center gap-2 px-2.5 py-1 bg-white/5 rounded-full border border-white/5">
+                    <span className="text-[10px] text-gray-400">Restam: <span className="text-white font-bold">{Math.max(0, 2 - dailyCount)}</span></span>
                   </div>
-                  {dailyCount >= 2 && (
-                    <span className="text-[10px] text-gray-500 pr-2">Reseta em {timeUntilReset}</span>
-                  )}
-                </div>
+                  
+                  {/* Desktop Version */}
+                  <div className="hidden md:flex flex-col items-end gap-1">
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-full border border-white/5">
+                      <span className="text-xs text-gray-400">Restam: <span className="text-white font-bold">{Math.max(0, 2 - dailyCount)}</span></span>
+                      <button onClick={onUpgradeClick} className="text-xs font-bold text-purple-400 hover:text-purple-300 ml-1">UPGRADE</button>
+                    </div>
+                    {dailyCount >= 2 && (
+                      <span className="text-[10px] text-gray-500 pr-2">Reseta em {timeUntilReset}</span>
+                    )}
+                  </div>
+                </>
               )}
 
               {selectedImage && (
