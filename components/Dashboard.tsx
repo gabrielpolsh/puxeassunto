@@ -752,9 +752,9 @@ const ResultCard: React.FC<{ suggestion: Suggestion, index: number }> = ({ sugge
 
       {/* Footer Actions */}
       <div className="flex items-center justify-between border-t border-white/5 pt-3 mt-1">
-        <div className="flex items-center gap-1.5 max-w-[70%]">
-          <Zap size={12} className="text-purple-400 flex-shrink-0" />
-          <span className="text-[10px] text-gray-500 truncate">{suggestion.explanation}</span>
+        <div className="flex items-start gap-1.5 flex-1 mr-2">
+          <Zap size={12} className="text-purple-400 flex-shrink-0 mt-[2px]" />
+          <span className="text-[10px] text-gray-500 leading-tight">{suggestion.explanation}</span>
         </div>
 
         <button
