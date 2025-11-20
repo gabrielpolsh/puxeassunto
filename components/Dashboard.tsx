@@ -305,7 +305,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
     if (!selectedImage || isAnalyzing) return;
 
     // CHECK LIMITS
-    if (!isPro && dailyCount >= 2) {
+    if (!isPro && dailyCount >= 5) {
       onUpgradeClick();
       return;
     }
@@ -511,16 +511,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
                 <>
                   {/* Mobile Version */}
                   <div className="flex md:hidden items-center gap-2 px-2.5 py-1 bg-white/5 rounded-full border border-white/5">
-                    <span className="text-[10px] text-gray-400">Restam: <span className="text-white font-bold">{Math.max(0, 2 - dailyCount)}</span></span>
+                    <span className="text-[10px] text-gray-400">Restam: <span className="text-white font-bold">{Math.max(0, 5 - dailyCount)}</span></span>
                   </div>
                   
                   {/* Desktop Version */}
                   <div className="hidden md:flex flex-col items-end gap-1">
                     <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-full border border-white/5">
-                      <span className="text-xs text-gray-400">Restam: <span className="text-white font-bold">{Math.max(0, 2 - dailyCount)}</span></span>
+                      <span className="text-xs text-gray-400">Restam: <span className="text-white font-bold">{Math.max(0, 5 - dailyCount)}</span></span>
                       <button onClick={onUpgradeClick} className="text-xs font-bold text-purple-400 hover:text-purple-300 ml-1">UPGRADE</button>
                     </div>
-                    {dailyCount >= 2 && (
+                    {dailyCount >= 5 && (
                       <span className="text-[10px] text-gray-500 pr-2">Reseta em {timeUntilReset}</span>
                     )}
                   </div>
@@ -656,7 +656,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
                 {/* 2. Suggestions List - Increased Spacing */}
                 <div className="space-y-10 mb-8">
                   {results.map((res, idx) => (
-                    <ResultCard key={idx} suggestion={res} index={idx} />
+                    <ResultCard 
+                      key={idx} 
+                      suggestion={res} 
+                      index={idx} 
+                      isLocked={!isPro && idx > 0}
+                      onUnlock={onUpgradeClick}
+                    />
                   ))}
                 </div>
 
@@ -717,10 +723,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
   );
 };
 
-const ResultCard: React.FC<{ suggestion: Suggestion, index: number }> = ({ suggestion, index }) => {
+const ResultCard: React.FC<{ suggestion: Suggestion, index: number, isLocked?: boolean, onUnlock?: () => void }> = ({ suggestion, index, isLocked, onUnlock }) => {
   const [copied, setCopied] = useState(false);
 
   const copyToClipboard = () => {
+    if (isLocked) return;
     navigator.clipboard.writeText(suggestion.message);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -737,18 +744,26 @@ const ResultCard: React.FC<{ suggestion: Suggestion, index: number }> = ({ sugge
 
   return (
     <div
-      className={`bg-[#111] border rounded-xl p-4 md:p-5 relative group transition-all duration-300 hover:bg-[#161616] active:bg-[#161616] ${getToneStyle(suggestion.tone)}`}
+      className={`bg-[#111] border rounded-xl p-4 md:p-5 relative group transition-all duration-300 ${isLocked ? 'border-white/5' : `${getToneStyle(suggestion.tone)} hover:bg-[#161616] active:bg-[#161616]`}`}
       style={{ animationDelay: `${index * 100}ms` }}
     >
       {/* Tone Badge */}
-      <div className="absolute -top-2.5 left-4 px-2.5 py-0.5 bg-[#0a0a0a] border border-white/10 rounded-full text-[9px] md:text-[10px] font-bold text-gray-300 uppercase tracking-wider shadow-sm z-10">
+      <div className={`absolute -top-2.5 left-4 px-2.5 py-0.5 bg-[#0a0a0a] border border-white/10 rounded-full text-[9px] md:text-[10px] font-bold text-gray-300 uppercase tracking-wider shadow-sm z-10 ${isLocked ? 'opacity-70' : ''}`}>
         {suggestion.tone}
       </div>
 
       {/* Content */}
-      <p className="text-sm text-white leading-relaxed mt-2 mb-3 font-medium selection:bg-purple-500/40">
-        "{suggestion.message}"
-      </p>
+      <div className="mt-2 mb-3 relative min-h-[3rem]">
+        {isLocked ? (
+          <p className="text-sm text-white leading-relaxed font-medium">
+            "{suggestion.message.split(' ').slice(0, 6).join(' ')} <span className="blur-sm select-none opacity-50">{suggestion.message.split(' ').slice(6).join(' ')}</span>
+          </p>
+        ) : (
+          <p className="text-sm text-white leading-relaxed font-medium selection:bg-purple-500/40">
+            "{suggestion.message}"
+          </p>
+        )}
+      </div>
 
       {/* Footer Actions */}
       <div className="flex items-center justify-between border-t border-white/5 pt-3 mt-1">
@@ -757,16 +772,26 @@ const ResultCard: React.FC<{ suggestion: Suggestion, index: number }> = ({ sugge
           <span className="text-[10px] text-gray-500 leading-tight">{suggestion.explanation}</span>
         </div>
 
-        <button
-          onClick={copyToClipboard}
-          className={`
-                        flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium transition-all
-                        ${copied ? 'bg-green-500/20 text-green-400' : 'bg-white/5 text-gray-400 active:bg-white/10 md:hover:bg-white/10 md:hover:text-white'}
-                    `}
-        >
-          {copied ? <Check size={12} /> : <Copy size={12} />}
-          {copied ? 'Copiado' : 'Copiar'}
-        </button>
+        {isLocked ? (
+          <button
+            onClick={onUnlock}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-white text-black rounded-full text-xs font-bold hover:bg-gray-200 transition-all shadow-lg"
+          >
+            <Zap size={10} className="text-yellow-600 fill-yellow-600" />
+            Ver Resposta
+          </button>
+        ) : (
+          <button
+            onClick={copyToClipboard}
+            className={`
+              flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium transition-all
+              ${copied ? 'bg-green-500/20 text-green-400' : 'bg-white/5 text-gray-400 active:bg-white/10 md:hover:bg-white/10 md:hover:text-white'}
+            `}
+          >
+            {copied ? <Check size={12} /> : <Copy size={12} />}
+            {copied ? 'Copiado' : 'Copiar'}
+          </button>
+        )}
       </div>
     </div>
   );
