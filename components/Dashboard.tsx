@@ -57,6 +57,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
   const [dailyCount, setDailyCount] = useState(0);
   const [nextPayment, setNextPayment] = useState<string | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+  const [timeUntilReset, setTimeUntilReset] = useState<string>('');
 
   // Refs
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -91,6 +92,26 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
     }
   }, [results]);
 
+  // Timer for daily reset
+  useEffect(() => {
+    const updateTimer = () => {
+      const now = new Date();
+      const tomorrow = new Date();
+      tomorrow.setUTCHours(24, 0, 0, 0); // UTC midnight
+      
+      const diff = tomorrow.getTime() - now.getTime();
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      
+      setTimeUntilReset(`${hours}h ${minutes}m`);
+    };
+
+    updateTimer();
+    const interval = setInterval(updateTimer, 60000); // Update every minute
+
+    return () => clearInterval(interval);
+  }, []);
+
   // --- Supabase Logic ---
 
   const checkUserStatus = async () => {
@@ -112,8 +133,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
     setIsLoadingProfile(false);
 
     // 2. Count daily messages (Free Plan Limit)
+    // Use UTC midnight as the cutoff since database stores in UTC
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    today.setUTCHours(0, 0, 0, 0);
 
     const { count, error } = await supabase
       .from('messages')
@@ -213,12 +235,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
 
   const handleLogout = async () => {
     try {
-      await supabase.auth.signOut();
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('Error signing out:', error);
+        alert('Erro ao sair. Tente novamente.');
+      }
+      // The onAuthStateChange listener in App.tsx will handle the redirect
     } catch (error) {
       console.error('Error signing out:', error);
-    } finally {
-      // Force redirect to home page to ensure clean state
-      window.location.href = '/';
+      alert('Erro ao sair. Tente novamente.');
     }
   };
 
@@ -464,9 +489,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
 
             <div className="flex items-center gap-3">
               {!isPro && (
-                <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-full border border-white/5">
-                  <span className="text-xs text-gray-400">Restam: <span className="text-white font-bold">{Math.max(0, 2 - dailyCount)}</span></span>
-                  <button onClick={onUpgradeClick} className="text-xs font-bold text-purple-400 hover:text-purple-300">UPGRADE</button>
+                <div className="hidden md:flex flex-col items-end gap-1">
+                  <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-full border border-white/5">
+                    <span className="text-xs text-gray-400">Restam: <span className="text-white font-bold">{Math.max(0, 2 - dailyCount)}</span></span>
+                    <button onClick={onUpgradeClick} className="text-xs font-bold text-purple-400 hover:text-purple-300 ml-1">UPGRADE</button>
+                  </div>
+                  {dailyCount >= 2 && (
+                    <span className="text-[10px] text-gray-500 pr-2">Reseta em {timeUntilReset}</span>
+                  )}
                 </div>
               )}
 

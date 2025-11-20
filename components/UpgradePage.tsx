@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check, Zap, Star, Shield, ArrowLeft, Crown, Infinity, Sparkles } from 'lucide-react';
+import { Check, Zap, ArrowLeft, Sparkles } from 'lucide-react';
 
 interface UpgradePageProps {
     onBack: () => void;
@@ -17,9 +17,9 @@ export const UpgradePage: React.FC<UpgradePageProps> = ({ onBack }) => {
             <div className="fixed bottom-0 left-0 w-[500px] h-[500px] bg-pink-600/10 rounded-full blur-[120px] pointer-events-none z-0" />
             <div className="fixed top-1/4 right-[-10%] w-[400px] h-[400px] bg-purple-600/10 rounded-full blur-[100px] pointer-events-none z-0" />
 
-            <div className="relative z-10 max-w-5xl mx-auto px-4 py-6 md:py-12">
+            <div className="relative z-10 max-w-5xl mx-auto px-4 py-6 md:py-8">
                 {/* Header */}
-                <header className="flex items-center justify-between mb-12 md:mb-20">
+                <header className="flex items-center justify-between mb-8 md:mb-12">
                     <button
                         onClick={onBack}
                         className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors group px-4 py-2 rounded-full hover:bg-white/5"
@@ -27,16 +27,10 @@ export const UpgradePage: React.FC<UpgradePageProps> = ({ onBack }) => {
                         <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
                         <span className="font-medium">Voltar</span>
                     </button>
-                    <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-gradient-to-br from-purple-600 to-pink-500 rounded-lg flex items-center justify-center shadow-lg shadow-purple-500/20">
-                            <Crown size={16} className="text-white fill-white" />
-                        </div>
-                        <span className="font-bold text-lg tracking-tight">Premium</span>
-                    </div>
                 </header>
 
                 {/* Hero Copy */}
-                <div className="text-center max-w-3xl mx-auto mb-16">
+                <div className="text-center max-w-3xl mx-auto mb-12">
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 mb-6 animate-fade-in">
                         <Sparkles size={12} className="text-purple-400" />
                         <span className="text-xs font-bold text-purple-300 uppercase tracking-wider">Oferta Limitada</span>
@@ -49,41 +43,41 @@ export const UpgradePage: React.FC<UpgradePageProps> = ({ onBack }) => {
                         </span>
                     </h1>
                     <p className="text-lg text-gray-400 leading-relaxed max-w-2xl mx-auto">
-                        Desbloqueie o poder total da IA para criar respostas irresistíveis, ter assuntos infinitos e conquistar quem você quiser.
+                        Desbloqueie o poder total do Puxe Assunto para criar respostas irresistíveis, ter assuntos infinitos e conquistar quem você quiser.
                     </p>
                 </div>
 
                 {/* Pricing Cards Container */}
-                <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto items-stretch mb-20">
+                <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto items-start mb-20">
 
                     {/* Free Plan */}
-                    <div className="order-2 md:order-1 bg-white/[0.02] border border-white/5 rounded-3xl p-8 flex flex-col hover:bg-white/[0.04] transition-all duration-300">
-                        <div className="mb-8">
-                            <h3 className="text-xl font-bold text-gray-300 mb-2">Iniciante</h3>
+                    <div className="order-2 md:order-1 bg-white/[0.02] border border-white/5 rounded-2xl p-6 flex flex-col hover:bg-white/[0.04] transition-all duration-300 md:mt-8">
+                        <div className="mb-6">
+                            <h3 className="text-lg font-bold text-gray-300 mb-2">Iniciante</h3>
                             <div className="flex items-baseline gap-1">
-                                <span className="text-4xl font-bold text-white">R$ 0</span>
+                                <span className="text-3xl font-bold text-white">R$ 0</span>
                             </div>
-                            <p className="text-sm text-gray-500 mt-2">Para quem está só olhando.</p>
+                            <p className="text-xs text-gray-500 mt-1">Para quem está só olhando.</p>
                         </div>
 
-                        <ul className="space-y-4 mb-8 flex-1">
+                        <ul className="space-y-3 mb-6 flex-1">
                             <li className="flex items-start gap-3 text-gray-400">
-                                <Check size={18} className="text-gray-600 mt-0.5 shrink-0" />
-                                <span className="text-sm">2 análises por dia</span>
+                                <Check size={16} className="text-gray-600 mt-0.5 shrink-0" />
+                                <span className="text-xs">2 análises por dia</span>
                             </li>
                             <li className="flex items-start gap-3 text-gray-400">
-                                <Check size={18} className="text-gray-600 mt-0.5 shrink-0" />
-                                <span className="text-sm">Respostas padrão</span>
+                                <Check size={16} className="text-gray-600 mt-0.5 shrink-0" />
+                                <span className="text-xs">Respostas padrão</span>
                             </li>
                             <li className="flex items-start gap-3 text-gray-400">
-                                <Check size={18} className="text-gray-600 mt-0.5 shrink-0" />
-                                <span className="text-sm">Acesso básico ao app</span>
+                                <Check size={16} className="text-gray-600 mt-0.5 shrink-0" />
+                                <span className="text-xs">Acesso básico ao app</span>
                             </li>
                         </ul>
 
                         <button
                             onClick={onBack}
-                            className="w-full py-4 bg-white/5 hover:bg-white/10 text-gray-300 font-bold rounded-xl transition-all text-sm"
+                            className="w-full py-3 bg-white/5 hover:bg-white/10 text-gray-300 font-bold rounded-xl transition-all text-xs"
                         >
                             Continuar Grátis
                         </button>
@@ -92,42 +86,48 @@ export const UpgradePage: React.FC<UpgradePageProps> = ({ onBack }) => {
                     {/* PRO Plan */}
                     <div className="order-1 md:order-2 relative bg-[#0f0f0f] border border-purple-500/30 rounded-3xl p-8 flex flex-col shadow-2xl shadow-purple-900/20 transform md:-translate-y-4 z-10 overflow-hidden group">
                         {/* Gradient Glow */}
-                        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500"></div>
                         <div className="absolute -top-[100px] -right-[100px] w-[200px] h-[200px] bg-purple-600/20 blur-[80px] group-hover:bg-purple-600/30 transition-all"></div>
 
-                        <div className="absolute top-4 right-4">
+                        <div className="absolute top-6 right-6">
                             <span className="bg-gradient-to-r from-purple-600 to-pink-600 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-lg">
                                 Recomendado
                             </span>
                         </div>
 
                         <div className="mb-8 relative">
-                            <h3 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
-                                <Crown size={20} className="text-yellow-400 fill-yellow-400" />
-                                PuxeAssunto PRO
+                            <h3 className="text-2xl font-bold mb-4 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                                PRO
                             </h3>
-                            <div className="flex items-baseline gap-1">
+                            <div className="flex items-baseline gap-2 mb-2">
                                 <span className="text-5xl font-bold text-white tracking-tight">R$ 29,90</span>
-                                <span className="text-sm text-gray-500 font-medium">/mês</span>
+                                <span className="text-base text-gray-400">/mês</span>
                             </div>
-                            <p className="text-sm text-purple-300 mt-2 font-medium">Menos de R$ 1,00 por dia.</p>
+                            <p className="text-sm text-gray-400">Menos de R$ 1,00 por dia.</p>
                         </div>
 
-                        <ul className="space-y-4 mb-8 flex-1 relative">
-                            <li className="flex items-start gap-3 text-white">
-                                <div className="p-1 bg-green-500/20 rounded-full shrink-0"><Infinity size={14} className="text-green-400" /></div>
-                                <span className="text-sm font-medium">Análises e Respostas Ilimitadas</span>
+                        <ul className="space-y-3 mb-8 flex-1 relative">
+                            <li className="flex items-start gap-3 text-gray-200">
+                                <Check size={20} className="text-purple-400 mt-0.5 shrink-0" />
+                                <span className="text-sm">Análises e respostas ilimitadas</span>
                             </li>
-                            <li className="flex items-start gap-3 text-white">
-                                <div className="p-1 bg-purple-500/20 rounded-full shrink-0"><Zap size={14} className="text-purple-400" /></div>
-                                <span className="text-sm">IA mais inteligente e criativa (Modelo Pro)</span>
+                            <li className="flex items-start gap-3 text-gray-200">
+                                <Check size={20} className="text-purple-400 mt-0.5 shrink-0" />
+                                <span className="text-sm">Puxe Assunto mais inteligente e criativo</span>
                             </li>
-                            <li className="flex items-start gap-3 text-white">
-                                <div className="p-1 bg-pink-500/20 rounded-full shrink-0"><Star size={14} className="text-pink-400" /></div>
-                                <span className="text-sm">Tons de resposta exclusivos (Sedutor, Engraçado)</span>
+                            <li className="flex items-start gap-3 text-gray-200">
+                                <Check size={20} className="text-purple-400 mt-0.5 shrink-0" />
+                                <span className="text-sm">Tons de resposta exclusivos</span>
                             </li>
-                            <li className="flex items-start gap-3 text-white">
-                                <div className="p-1 bg-blue-500/20 rounded-full shrink-0"><Shield size={14} className="text-blue-400" /></div>
+                            <li className="flex items-start gap-3 text-gray-200">
+                                <Check size={20} className="text-purple-400 mt-0.5 shrink-0" />
+                                <span className="text-sm">Histórico completo de conversas</span>
+                            </li>
+                            <li className="flex items-start gap-3 text-gray-200">
+                                <Check size={20} className="text-purple-400 mt-0.5 shrink-0" />
+                                <span className="text-sm">Suporte prioritário exclusivo</span>
+                            </li>
+                            <li className="flex items-start gap-3 text-gray-200">
+                                <Check size={20} className="text-purple-400 mt-0.5 shrink-0" />
                                 <span className="text-sm">Acesso antecipado a novas funções</span>
                             </li>
                         </ul>
@@ -140,10 +140,9 @@ export const UpgradePage: React.FC<UpgradePageProps> = ({ onBack }) => {
                             Quero Ser PRO Agora
                         </button>
                         
-                        <div className="mt-4 flex items-center justify-center gap-2 text-[10px] text-gray-500">
-                            <Shield size={12} />
+                        <p className="mt-4 text-center text-xs text-gray-500">
                             Compra segura • Cancelamento fácil
-                        </div>
+                        </p>
                     </div>
                 </div>
 
