@@ -11,6 +11,7 @@ import { Dashboard } from './components/Dashboard';
 import { UpgradePage } from './components/UpgradePage';
 import { ThankYouPage } from './components/ThankYouPage';
 import { LegalPage } from './components/LegalPage';
+import { LogoPage } from './components/LogoPage';
 import { supabase } from './lib/supabase';
 
 // Protected Route Component
@@ -155,6 +156,9 @@ const AppRouter: React.FC = () => {
         path="/terms"
         element={<LegalPage type="terms" onBack={() => navigate('/')} />}
       />
+
+      {/* Logo Page for Screenshots */}
+      <Route path="/logo" element={<LogoPage />} />
 
       {/* Redirect any unknown routes to landing */}
       <Route path="*" element={<Navigate to="/" replace />} />
