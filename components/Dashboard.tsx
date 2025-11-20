@@ -208,7 +208,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
   // --- Handlers ---
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error('Error signing out:', error);
+    } finally {
+      // Force redirect to home page to ensure clean state
+      window.location.href = '/';
+    }
   };
 
   const resetStudio = () => {
