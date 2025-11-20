@@ -61,10 +61,10 @@ const AppRouter: React.FC = () => {
     // Listen for changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null);
       // If user logs out, ensure we go back to landing
-      if (!session?.user) {
+      if (event === 'SIGNED_OUT') {
         navigate('/');
       }
     });
