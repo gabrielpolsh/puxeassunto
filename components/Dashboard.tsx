@@ -64,6 +64,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
 
   // --- Effects ---
   useEffect(() => {
+    if (window.location.hash) {
+      window.history.replaceState(null, '', window.location.pathname);
+    }
+
     fetchSessions();
     checkUserStatus();
   }, [user.id]); // Add user.id dependency

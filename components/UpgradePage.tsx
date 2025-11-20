@@ -7,7 +7,7 @@ interface UpgradePageProps {
 
 export const UpgradePage: React.FC<UpgradePageProps> = ({ onBack }) => {
     const handleUpgrade = () => {
-        window.open('https://pay.cakto.com.br/6e82enr', '_blank');
+        window.open('https://pay.cakto.com.br/3f6ox25_658781', '_blank');
     };
 
     return (
