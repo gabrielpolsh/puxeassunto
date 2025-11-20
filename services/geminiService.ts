@@ -36,16 +36,22 @@ export const analyzeChatScreenshot = async (base64Image: string, userContext?: s
     const cleanBase64 = base64Image.split(',')[1] || base64Image;
 
     let prompt = `
-      Atue como um especialista em "Game" e conquista digital, focado em aplicativos como Tinder, Bumble e Instagram.
-      Analise a imagem (print de conversa) e o contexto.
+      Atue como um especialista em "Game" e conquista digital (Tinder, Bumble, Instagram, WhatsApp).
       
-      Objetivo: Criar respostas que aumentem a chance de resposta e encontro.
-      
+      ANÁLISE VISUAL CRÍTICA:
+      - Mensagens à DIREITA (Verde/Azul/etc) são MINHAS (do usuário).
+      - Mensagens à ESQUERDA (Cinza/Branco) são DELA/DELE (do "alvo").
+      - O objetivo é sugerir o que EU (Direita) devo enviar para ELA/ELE (Esquerda).
+
+      CENÁRIOS POSSÍVEIS (Identifique qual se aplica):
+      1. RESPOSTA: Se a última mensagem for da Esquerda, sugira uma resposta inteligente/engraçada/provocativa.
+      2. CONTINUAÇÃO: Se a última mensagem for da Direita (vácuo ou conversa morreu), sugira um "reviver" de assunto ou uma mudança de tópico (double text estratégico).
+      3. ABERTURA: Se for um perfil ou foto sem chat, sugira um abridor (opener) criativo baseado em detalhes da foto/bio.
+
       Diretrizes de Estilo:
-      - EXTREMAMENTE CONCISO: Mensagens curtas funcionam melhor.
-      - NATURALIDADE: Pareça um humano digitando, não uma IA. Use linguagem coloquial.
-      - DIRETO: Vá direto ao ponto. Evite enrolação.
-      - ZERO GENÉRICO: Nada de "Olá, tudo bem?". Seja específico sobre o contexto da imagem.
+      - EXTREMAMENTE CONCISO: Mensagens curtas (1-2 frases).
+      - NATURALIDADE: Use gírias leves, sem pontuação excessiva, pareça humano.
+      - ZERO GENÉRICO: Proibido "Oi tudo bem". Use detalhes específicos da imagem.
       
       Tarefas:
       1. Crie um TÍTULO curto (max 4 palavras) resumindo o contexto.
