@@ -526,16 +526,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
                   </div>
                 </>
               )}
-
-              {selectedImage && (
-                <button
-                  onClick={() => setSelectedImage(null)}
-                  className="text-xs text-red-400 hover:text-red-300 flex items-center gap-1 px-3 py-1.5 rounded-full bg-red-500/10 border border-red-500/20 backdrop-blur-md transition-colors"
-                >
-                  <span className="hidden sm:inline">Remover Print</span>
-                  <Trash2 size={14} className="sm:hidden" />
-                </button>
-              )}
             </div>
           </div>
 

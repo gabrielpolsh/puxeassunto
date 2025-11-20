@@ -22,6 +22,20 @@ const SUGGESTIONS_DEMO = [
     color: "text-purple-400",
     bg: "bg-purple-500/10",
     border: "border-purple-500/20"
+  },
+  { 
+    tone: "Ousado", 
+    text: "Você sempre tem respostas tão boas ou hoje é um dia especial?", 
+    color: "text-red-400",
+    bg: "bg-red-500/10",
+    border: "border-red-500/20"
+  },
+  { 
+    tone: "Descontraído", 
+    text: "Hahaha, justo! Mas agora fiquei curioso com o resto da história.", 
+    color: "text-blue-400",
+    bg: "bg-blue-500/10",
+    border: "border-blue-500/20"
   }
 ];
 
@@ -226,7 +240,7 @@ export const HowItWorks: React.FC = () => {
             <div className="absolute -top-16 -left-10 lg:left-auto lg:-right-10 text-9xl font-black text-white/5 select-none -z-10 transition-colors group-hover:text-white/[0.07]">03</div>
             <h3 className="text-3xl font-bold text-white mb-4 group-hover:text-pink-400 transition-colors">Receba a Resposta</h3>
             <p className="text-gray-400 leading-relaxed text-lg lg:pl-12">
-              Receba 3 opções de resposta com tons diferentes (engraçado, direto, misterioso). Escolha a perfeita, copie e envie.
+              Receba 5 opções de resposta com tons diferentes (engraçado, direto, misterioso). Escolha a perfeita, copie e envie.
             </p>
           </div>
 

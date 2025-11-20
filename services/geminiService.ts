@@ -22,7 +22,9 @@ export const analyzeChatScreenshot = async (base64Image: string, userContext?: s
       suggestions: [
         { tone: "Engraçado", message: "Essa é a hora que eu finjo que não vi e a gente recomeça? 😂", explanation: "Quebra o gelo com humor." },
         { tone: "Curioso", message: "Tô curioso... o que aconteceu depois disso?", explanation: "Mostra interesse na história." },
-        { tone: "Direto", message: "Topa continuar esse papo pessoalmente?", explanation: "Para quem quer agilizar o encontro." }
+        { tone: "Direto", message: "Topa continuar esse papo pessoalmente?", explanation: "Para quem quer agilizar o encontro." },
+        { tone: "Ousado", message: "Se você for tão interessante ao vivo quanto por msg, tô com problemas.", explanation: "Elogio com desafio." },
+        { tone: "Descontraído", message: "Nota 10 pra essa história, mas quero saber a versão sem cortes.", explanation: "Mantém a leveza e curiosidade." }
       ]
     }), 2000));
   }
@@ -34,18 +36,26 @@ export const analyzeChatScreenshot = async (base64Image: string, userContext?: s
     const cleanBase64 = base64Image.split(',')[1] || base64Image;
 
     let prompt = `
-      Você é um especialista em namoro e comunicação social ("Puxe Assunto").
-      Analise a imagem fornecida, que é um print de uma conversa (provavelmente WhatsApp, Instagram ou Tinder).
+      Atue como um especialista em "Game" e conquista digital, focado em aplicativos como Tinder, Bumble e Instagram.
+      Analise a imagem (print de conversa) e o contexto.
+      
+      Objetivo: Criar respostas que aumentem a chance de resposta e encontro.
+      
+      Diretrizes de Estilo:
+      - EXTREMAMENTE CONCISO: Mensagens curtas funcionam melhor.
+      - NATURALIDADE: Pareça um humano digitando, não uma IA. Use linguagem coloquial.
+      - DIRETO: Vá direto ao ponto. Evite enrolação.
+      - ZERO GENÉRICO: Nada de "Olá, tudo bem?". Seja específico sobre o contexto da imagem.
       
       Tarefas:
-      1. Identifique o assunto principal ou contexto e crie um TÍTULO curto e atrativo para essa conversa (Máximo 4 palavras).
-      2. Sugira 3 opções de resposta criativas e distintas em Português do Brasil.
+      1. Crie um TÍTULO curto (max 4 palavras) resumindo o contexto.
+      2. Gere 5 sugestões de resposta com tons variados (ex: Engraçado, Ousado, Casual, Provocativo, Curioso).
       
       Retorne APENAS um JSON válido com o seguinte formato (sem markdown):
       {
-        "title": "Título curto do assunto (ex: Flerte na Academia, Discussão sobre Filmes)",
+        "title": "Título do Contexto",
         "suggestions": [
-          { "tone": "Nome do Tom", "message": "A sugestão de texto", "explanation": "Breve explicação" }
+          { "tone": "Tom (ex: Ousado)", "message": "Texto da mensagem", "explanation": "Por que funciona" }
         ]
       }
     `;
