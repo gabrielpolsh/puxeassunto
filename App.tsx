@@ -8,11 +8,12 @@ import { Footer } from './components/Footer';
 import { AuthPage } from './components/AuthPage';
 import { Dashboard } from './components/Dashboard';
 import { UpgradePage } from './components/UpgradePage';
+import { ThankYouPage } from './components/ThankYouPage';
 import { supabase } from './lib/supabase';
 
 const App: React.FC = () => {
-  // Views: 'landing' | 'auth' | 'dashboard' | 'upgrade'
-  const [currentView, setCurrentView] = useState<'landing' | 'auth' | 'upgrade'>('landing');
+  // Views: 'landing' | 'auth' | 'dashboard' | 'upgrade' | 'thankyou'
+  const [currentView, setCurrentView] = useState<'landing' | 'auth' | 'upgrade' | 'thankyou'>('landing');
   const [user, setUser] = useState<any>(null);
   const [loadingSession, setLoadingSession] = useState(true);
 
@@ -35,6 +36,16 @@ const App: React.FC = () => {
     });
 
     return () => subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    // Check URL parameters for payment success
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('payment') === 'success') {
+      setCurrentView('thankyou');
+      // Clean URL without reloading
+      window.history.replaceState({}, '', window.location.pathname);
+    }
   }, []);
 
   const handleMainAction = () => {
@@ -60,7 +71,12 @@ const App: React.FC = () => {
     );
   }
 
-  // 1. Authenticated User -> Dashboard or Upgrade Page
+  // 1. Thank You Page (can be shown to anyone)
+  if (currentView === 'thankyou') {
+    return <ThankYouPage onGoToDashboard={() => setCurrentView('landing')} />;
+  }
+
+  // 2. Authenticated User -> Dashboard or Upgrade Page
   if (user) {
     if (currentView === 'upgrade') {
       return <UpgradePage onBack={() => setCurrentView('landing')} />;
@@ -68,12 +84,12 @@ const App: React.FC = () => {
     return <Dashboard user={user} onUpgradeClick={() => setCurrentView('upgrade')} />;
   }
 
-  // 2. Authentication Page
+  // 3. Authentication Page
   if (currentView === 'auth') {
     return <AuthPage onBack={() => setCurrentView('landing')} onLoginSuccess={handleLoginSuccess} />;
   }
 
-  // 3. Landing Page (Default)
+  // 4. Landing Page (Default)
   return (
     <div className="min-h-screen bg-[#050505] text-white selection:bg-purple-500/30 selection:text-purple-200 font-sans overflow-x-hidden relative">
       {/* Global Background Effects */}
