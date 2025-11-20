@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronDown, Plus, Minus } from 'lucide-react';
+import { ChevronDown, Plus, Minus, BadgeCheck } from 'lucide-react';
 
 const faqs = [
   {
@@ -24,11 +24,12 @@ export const FAQ: React.FC = () => {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
 
   return (
-    <section id="faq" className="py-24 relative z-10">
+    <section id="faq" className="py-24 relative z-10 scroll-mt-32">
       <div className="container mx-auto px-6 max-w-3xl">
         <div className="text-center mb-16">
-            <div className="inline-block px-4 py-1.5 mb-4 rounded-full border border-white/10 bg-white/5 backdrop-blur-sm">
-                <span className="text-sm font-medium text-gray-300">Tire suas dúvidas</span>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 mb-6 backdrop-blur-md">
+                <BadgeCheck size={14} className="text-green-400" />
+                <span className="text-xs font-medium text-gray-300 uppercase tracking-wide">Tire suas dúvidas</span>
             </div>
             <h2 className="text-3xl md:text-5xl font-bold text-white">
             Dúvidas Frequentes

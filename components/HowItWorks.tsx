@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, ScanLine, MessageCircle, Check, ArrowUp, Image as ImageIcon, Heart, Wifi, Battery } from 'lucide-react';
+import { Upload, ScanLine, MessageCircle, Check, ArrowUp, Image as ImageIcon, Heart, Wifi, BatteryFull, BadgeCheck } from 'lucide-react';
 
 const SUGGESTIONS_DEMO = [
   { 
@@ -27,22 +27,34 @@ const SUGGESTIONS_DEMO = [
 
 export const HowItWorks: React.FC = () => {
   const [suggestionIndex, setSuggestionIndex] = useState(0);
+  const [currentTime, setCurrentTime] = useState('');
 
   useEffect(() => {
+    const updateTime = () => {
+        const now = new Date();
+        setCurrentTime(now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }));
+    };
+    updateTime();
+    const timeInterval = setInterval(updateTime, 60000);
+
     const interval = setInterval(() => {
       setSuggestionIndex((prev) => (prev + 1) % SUGGESTIONS_DEMO.length);
     }, 3000);
-    return () => clearInterval(interval);
+    return () => {
+        clearInterval(interval);
+        clearInterval(timeInterval);
+    };
   }, []);
 
   return (
-    <section id="como-funciona" className="pb-32 relative">
+    <section id="como-funciona" className="pb-32 relative scroll-mt-32">
       {/* Connecting Line Background */}
       <div className="absolute top-40 bottom-40 left-1/2 w-px bg-gradient-to-b from-transparent via-purple-500/20 to-transparent -translate-x-1/2 hidden lg:block"></div>
 
       <div className="text-center mb-24 relative z-10">
-        <div className="inline-block px-4 py-1.5 mb-4 rounded-full border border-white/10 bg-white/5 backdrop-blur-sm">
-           <span className="text-sm font-medium text-purple-400">Simples e Rápido</span>
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 mb-6 backdrop-blur-md">
+           <BadgeCheck size={14} className="text-green-400" />
+           <span className="text-xs font-medium text-gray-300 uppercase tracking-wide">Simples e Rápido</span>
         </div>
         <h2 className="text-4xl md:text-6xl font-bold text-white tracking-tight">
           Do print à resposta <br />
@@ -79,7 +91,7 @@ export const HowItWorks: React.FC = () => {
                           {/* Dynamic Island / Notch Area */}
                           <div className="absolute top-0 left-0 right-0 h-8 z-30 flex justify-center items-start pt-2">
                              <div className="w-24 h-7 bg-black rounded-full flex items-center justify-center gap-2 px-2 border border-[#222]">
-                                <div className="w-1.5 h-1.5 rounded-full bg-[#1a1a1a]"></div>
+                                {/* Removed dot */}
                              </div>
                           </div>
 
@@ -88,10 +100,14 @@ export const HowItWorks: React.FC = () => {
                             
                             {/* Status Bar */}
                             <div className="h-10 w-full flex justify-between items-center px-6 pt-2 z-20">
-                                <div className="text-[10px] text-white font-medium">9:41</div>
-                                <div className="flex gap-2 items-center">
-                                    <Wifi size={14} className="text-white" />
-                                    <Battery size={14} className="text-white" />
+                                <div className="text-[10px] text-white font-medium">{currentTime || '9:41'}</div>
+                                <div className="flex gap-1.5 items-center">
+                                    <Wifi size={15} className="text-white -translate-y-[1px]" />
+                                    {/* Custom Battery Icon - Full Filled */}
+                                    <div className="w-[16px] h-[11px] border-[1.5px] border-white/40 rounded-[3px] p-[1.5px] relative flex items-center">
+                                        <div className="w-full h-full bg-white rounded-[1px]"></div>
+                                        <div className="absolute -right-[3px] top-1/2 -translate-y-1/2 w-[2px] h-[4px] bg-white/40 rounded-r-[1px]"></div>
+                                    </div>
                                 </div>
                             </div>
 
@@ -244,7 +260,7 @@ export const HowItWorks: React.FC = () => {
                         </div>
 
                         {/* Tone Badges */}
-                        <div className="flex gap-2 mt-8">
+                        <div className="flex gap-2 mt-6">
                             {SUGGESTIONS_DEMO.map((s, i) => (
                                 <span 
                                     key={i}
@@ -260,14 +276,8 @@ export const HowItWorks: React.FC = () => {
                         </div>
 
                         {/* Floating Mini Heart Cards */}
-                        <div className="absolute top-6 right-6 bg-[#1a1a1a] border border-pink-500/30 p-2.5 rounded-xl shadow-lg animate-float" style={{ animationDelay: '0s' }}>
-                            <Heart className="w-5 h-5 text-pink-500 fill-pink-500/20" />
-                        </div>
                         <div className="absolute bottom-24 left-6 bg-[#1a1a1a] border border-purple-500/30 p-2 rounded-lg shadow-lg animate-float" style={{ animationDelay: '1.5s' }}>
                             <Heart className="w-4 h-4 text-purple-500 fill-purple-500/20" />
-                        </div>
-                        <div className="absolute -bottom-2 right-12 bg-[#1a1a1a] border border-red-500/30 p-2 rounded-lg shadow-lg animate-float" style={{ animationDelay: '2.5s' }}>
-                            <Heart className="w-3 h-3 text-red-500 fill-red-500/20" />
                         </div>
                      </div>
                 </div>

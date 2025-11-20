@@ -64,9 +64,11 @@ const AppRouter: React.FC = () => {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null);
-      // If user logs out, ensure we go back to landing
+      
+      // Only redirect to landing if explicitly signed out and not already there
+      // We rely on ProtectedRoute to handle redirect to login if session expires
       if (event === 'SIGNED_OUT') {
-        navigate('/');
+        // Optional: clear any local state if needed
       }
     });
 

@@ -48,12 +48,12 @@ const testimonials = [
 
 export const Testimonials: React.FC = () => {
   return (
-    <section id="depoimentos" className="py-16 relative overflow-hidden bg-transparent">
+    <section id="depoimentos" className="py-16 relative overflow-hidden bg-transparent scroll-mt-32">
       {/* Content */}
       <div className="relative z-10 mb-16 text-center px-4">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 mb-6 backdrop-blur-md">
            <BadgeCheck size={14} className="text-green-400" />
-           <span className="text-xs font-medium text-gray-300 uppercase tracking-wide">Social Proof</span>
+           <span className="text-xs font-medium text-gray-300 uppercase tracking-wide">Depoimentos</span>
         </div>
         <h2 className="text-4xl md:text-6xl font-bold text-white mb-6">
           Quem usou, <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">aprovou.</span>

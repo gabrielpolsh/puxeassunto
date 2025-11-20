@@ -192,7 +192,7 @@ export const Hero: React.FC<HeroProps> = ({ onAction, user }) => {
               onClick={onAction}
               className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full text-white font-bold shadow-lg shadow-pink-500/25 hover:shadow-pink-500/40 hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-2"
             >
-              {user ? "Abrir Puxe Assunto" : "Começar Agora - Grátis"} <ArrowRight className="w-5 h-5" />
+              {user ? "Abrir Puxe Assunto" : "Testar Agora"} <ArrowRight className="w-5 h-5" />
             </button>
           </div>
 
