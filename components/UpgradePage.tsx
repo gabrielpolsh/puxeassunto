@@ -63,7 +63,7 @@ export const UpgradePage: React.FC<UpgradePageProps> = ({ onBack }) => {
                         <ul className="space-y-3 mb-6 flex-1">
                             <li className="flex items-start gap-3 text-gray-400">
                                 <Check size={16} className="text-gray-600 mt-0.5 shrink-0" />
-                                <span className="text-xs">2 análises por dia</span>
+                                <span className="text-xs">5 análises por dia</span>
                             </li>
                             <li className="flex items-start gap-3 text-gray-400">
                                 <Check size={16} className="text-gray-600 mt-0.5 shrink-0" />

@@ -529,12 +529,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
                   {new Date(session.created_at).toLocaleString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
                 </span>
               </div>
-              <button
-                onClick={(e) => deleteSession(e, session.id)}
-                className="opacity-0 group-hover:opacity-100 p-1.5 text-gray-500 hover:text-red-400 transition-all md:block hidden"
-              >
-                <Trash2 size={12} />
-              </button>
             </div>
           ))}
         </div>
@@ -881,7 +875,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
 
           {/* Panel Header */}
           <div className="h-14 md:h-16 border-b border-white/5 hidden md:flex items-center px-6 bg-[#0a0a0a] shrink-0">
-            <Sparkles size={16} className={mode === 'pickup' ? 'text-pink-400 mr-2' : 'text-purple-400 mr-2'} />
+            {mode === 'pickup' ? (
+              <Heart size={16} className="text-pink-400 mr-2" />
+            ) : (
+              <MessageCircleHeart size={16} className="text-purple-400 mr-2" />
+            )}
             <h3 className="font-bold text-sm">{mode === 'pickup' ? 'Gerador de Cantadas' : 'Gerador de Respostas'}</h3>
           </div>
 
@@ -946,7 +944,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
                 ) : (
                   <div className="bg-[#111] border border-white/10 rounded-xl p-4 mb-6">
                     <label className="flex items-center gap-2 text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
-                      <Sparkles size={12} className="text-yellow-400" />
+                      <MessageCircleHeart size={12} className="text-purple-400" />
                       Refinar Resposta (Opcional)
                     </label>
                     <textarea
