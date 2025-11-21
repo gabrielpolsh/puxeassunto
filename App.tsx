@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { Header } from './components/Header';
 import { Hero } from './components/Hero';
 import { HowItWorks } from './components/HowItWorks';
@@ -12,6 +12,17 @@ import { UpgradePage } from './components/UpgradePage';
 import { ThankYouPage } from './components/ThankYouPage';
 import { LegalPage } from './components/LegalPage';
 import { supabase } from './lib/supabase';
+
+// Scroll to Top Component
+const ScrollToTop: React.FC = () => {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
+  return null;
+};
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactElement; user: any }> = ({ children, user }) => {
@@ -119,60 +130,63 @@ const AppRouter: React.FC = () => {
   }
 
   return (
-    <Routes>
-      {/* Landing Page */}
-      <Route path="/" element={<LandingPage onAction={handleMainAction} user={user} />} />
+    <>
+      <ScrollToTop />
+      <Routes>
+        {/* Landing Page */}
+        <Route path="/" element={<LandingPage onAction={handleMainAction} user={user} />} />
 
-      {/* Auth Page */}
-      <Route
-        path="/login"
-        element={
-          user ? (
-            <Navigate to="/dashboard" replace />
-          ) : (
-            <AuthPage onBack={() => navigate('/')} onLoginSuccess={handleLoginSuccess} />
-          )
-        }
-      />
+        {/* Auth Page */}
+        <Route
+          path="/login"
+          element={
+            user ? (
+              <Navigate to="/dashboard" replace />
+            ) : (
+              <AuthPage onBack={() => navigate('/')} onLoginSuccess={handleLoginSuccess} />
+            )
+          }
+        />
 
-      {/* Protected Routes */}
-      <Route
-        path="/dashboard"
-        element={
-          <ProtectedRoute user={user}>
-            <Dashboard user={user} onUpgradeClick={() => navigate('/upgrade')} />
-          </ProtectedRoute>
-        }
-      />
+        {/* Protected Routes */}
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute user={user}>
+              <Dashboard user={user} onUpgradeClick={() => navigate('/upgrade')} />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route
-        path="/upgrade"
-        element={
-          <ProtectedRoute user={user}>
-            <UpgradePage onBack={() => navigate('/dashboard')} />
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path="/upgrade"
+          element={
+            <ProtectedRoute user={user}>
+              <UpgradePage onBack={() => navigate('/dashboard')} />
+            </ProtectedRoute>
+          }
+        />
 
-      {/* Thank You Page (accessible to anyone) */}
-      <Route
-        path="/thankyou"
-        element={<ThankYouPage onGoToDashboard={() => navigate('/dashboard')} />}
-      />
+        {/* Thank You Page (accessible to anyone) */}
+        <Route
+          path="/thankyou"
+          element={<ThankYouPage onGoToDashboard={() => navigate('/dashboard')} />}
+        />
 
-      {/* Legal Pages */}
-      <Route
-        path="/privacy"
-        element={<LegalPage type="privacy" onBack={() => navigate('/')} />}
-      />
-      <Route
-        path="/terms"
-        element={<LegalPage type="terms" onBack={() => navigate('/')} />}
-      />
+        {/* Legal Pages */}
+        <Route
+          path="/privacy"
+          element={<LegalPage type="privacy" onBack={() => navigate('/')} />}
+        />
+        <Route
+          path="/terms"
+          element={<LegalPage type="terms" onBack={() => navigate('/')} />}
+        />
 
-      {/* Redirect any unknown routes to landing */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+        {/* Redirect any unknown routes to landing */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </>
   );
 };
 

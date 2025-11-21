@@ -257,7 +257,7 @@ export const HowItWorks: React.FC = () => {
                             <div className="flex items-center justify-between mb-4 border-b border-white/5 pb-3">
                                 <div className="flex items-center gap-2">
                                     <span className={`w-2 h-2 rounded-full ${SUGGESTIONS_DEMO[suggestionIndex].color.replace('text-', 'bg-').replace('-400', '-500')}`}></span>
-                                    <span className="text-xs font-semibold text-gray-300 uppercase">Sugestão IA</span>
+                                    <span className="text-xs font-semibold text-gray-300 uppercase">Sugestão do Puxe Assunto</span>
                                 </div>
                                 <Check size={14} className="text-green-500 opacity-0 group-hover:opacity-100 transition-opacity" />
                             </div>

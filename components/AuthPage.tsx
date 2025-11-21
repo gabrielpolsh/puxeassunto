@@ -11,6 +11,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess, onBack }) =>
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,6 +29,13 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess, onBack }) =>
         if (error) throw error;
         onLoginSuccess();
       } else {
+        // Validação de confirmação de senha no cadastro
+        if (password !== confirmPassword) {
+          throw new Error('As senhas não coincidem.');
+        }
+        if (password.length < 6) {
+          throw new Error('A senha deve ter no mínimo 6 caracteres.');
+        }
         const { error } = await supabase.auth.signUp({
           email,
           password,
@@ -216,6 +224,25 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess, onBack }) =>
                     </div>
                 </div>
 
+                {!isLogin && (
+                    <div className="space-y-2">
+                        <label className="text-xs font-medium text-gray-300 uppercase tracking-wide ml-1">Confirmar Senha</label>
+                        <div className="relative group">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <Lock className="h-5 w-5 text-gray-500 group-focus-within:text-purple-400 transition-colors" />
+                            </div>
+                            <input
+                                type="password"
+                                required
+                                value={confirmPassword}
+                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                className="block w-full pl-10 pr-3 py-3 bg-[#111] border border-white/10 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20 transition-all"
+                                placeholder="••••••••"
+                            />
+                        </div>
+                    </div>
+                )}
+
                 <div className="pt-2">
                     <button
                         type="submit"
@@ -238,7 +265,11 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess, onBack }) =>
                 <p className="text-sm text-gray-500">
                     {isLogin ? 'Não tem uma conta?' : 'Já tem uma conta?'}
                     <button
-                        onClick={() => { setIsLogin(!isLogin); setError(null); }}
+                        onClick={() => { 
+                            setIsLogin(!isLogin); 
+                            setError(null); 
+                            setConfirmPassword('');
+                        }}
                         className="ml-2 font-semibold text-white hover:text-purple-400 transition-colors"
                     >
                         {isLogin ? 'Cadastre-se agora' : 'Fazer Login'}
