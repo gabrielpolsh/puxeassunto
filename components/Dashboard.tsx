@@ -447,6 +447,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
         isPro={isPro}
         nextPayment={nextPayment}
         isLoadingProfile={isLoadingProfile}
+        dailyCount={dailyCount}
+        onUpgradeClick={onUpgradeClick}
       />
 
       {/* Hidden Input */}
