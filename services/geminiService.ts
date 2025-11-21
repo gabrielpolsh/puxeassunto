@@ -13,6 +13,56 @@ export interface AnalysisResult {
   suggestions: Suggestion[];
 }
 
+// Helper function to compress base64 image
+const compressBase64Image = async (base64String: string, maxSizeKB: number = 200): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      let width = img.width;
+      let height = img.height;
+      
+      // Calculate new dimensions to reduce file size
+      const maxDimension = 1024;
+      if (width > maxDimension || height > maxDimension) {
+        if (width > height) {
+          height = (height / width) * maxDimension;
+          width = maxDimension;
+        } else {
+          width = (width / height) * maxDimension;
+          height = maxDimension;
+        }
+      }
+      
+      canvas.width = width;
+      canvas.height = height;
+      
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        reject(new Error('Could not get canvas context'));
+        return;
+      }
+      
+      ctx.drawImage(img, 0, 0, width, height);
+      
+      // Try different quality levels to meet size requirement
+      let quality = 0.8;
+      let compressed = canvas.toDataURL('image/jpeg', quality);
+      
+      // Iteratively reduce quality if still too large
+      while (compressed.length > maxSizeKB * 1024 && quality > 0.1) {
+        quality -= 0.1;
+        compressed = canvas.toDataURL('image/jpeg', quality);
+      }
+      
+      resolve(compressed);
+    };
+    
+    img.onerror = () => reject(new Error('Failed to load image'));
+    img.src = base64String;
+  });
+};
+
 export const analyzeChatScreenshot = async (base64Image: string, userContext?: string): Promise<AnalysisResult> => {
   if (!API_KEY) {
     // Fallback for demo purposes if no API key is present in environment
@@ -32,8 +82,11 @@ export const analyzeChatScreenshot = async (base64Image: string, userContext?: s
   try {
     const ai = new GoogleGenAI({ apiKey: API_KEY });
     
+    // Compress image before sending
+    const compressedImage = await compressBase64Image(base64Image);
+    
     // Remove header if present (data:image/png;base64,)
-    const cleanBase64 = base64Image.split(',')[1] || base64Image;
+    const cleanBase64 = compressedImage.split(',')[1] || compressedImage;
 
     let prompt = `
       Atue como um especialista em "Game" e conquista digital (Tinder, Bumble, Instagram, WhatsApp).
@@ -76,7 +129,7 @@ export const analyzeChatScreenshot = async (base64Image: string, userContext?: s
         parts: [
           {
             inlineData: {
-              mimeType: 'image/png', 
+              mimeType: 'image/jpeg', 
               data: cleanBase64
             }
           },
@@ -100,6 +153,111 @@ export const analyzeChatScreenshot = async (base64Image: string, userContext?: s
 
   } catch (error) {
     console.error("Error calling Gemini:", error);
+    throw error;
+  }
+};
+
+export const generatePickupLines = async (context?: string, base64Image?: string): Promise<AnalysisResult> => {
+  if (!API_KEY) {
+    console.warn("No API Key found. Returning mock pickup lines.");
+    return new Promise(resolve => setTimeout(() => resolve({
+      title: context ? context.slice(0, 30) : base64Image ? "Cantadas Personalizadas" : "Cantadas Criativas",
+      suggestions: [
+        { tone: "Engraçado", message: "Se beleza fosse crime, você pegaria prisão perpétua 😏", explanation: "Clássico mas funciona" },
+        { tone: "Ousado", message: "Vou te processar por roubo... você roubou meu coração", explanation: "Direto ao ponto" },
+        { tone: "Inteligente", message: "Você acredita em amor à primeira vista ou devo passar de novo?", explanation: "Confiante e bem-humorado" },
+        { tone: "Criativo", message: "Se você fosse uma transformação matemática, seria uma senóide... porque você tem todas as curvas perfeitas", explanation: "Para nerds" },
+        { tone: "Romântico", message: "Desculpa, mas acho que você deixou cair algo... meu queixo", explanation: "Doce e fofo" }
+      ]
+    }), 1500));
+  }
+
+  try {
+    const ai = new GoogleGenAI({ apiKey: API_KEY });
+
+    let prompt = `
+      Você é um especialista em cantadas criativas, engraçadas e originais para paquera.
+      
+      OBJETIVO: Gerar cantadas que sejam:
+      - ORIGINAIS e CRIATIVAS (evite clichês muito batidos)
+      - ENGRAÇADAS mas não ofensivas
+      - CURTAS (1-2 frases no máximo)
+      - VARIADAS em tom e estilo
+      
+      Tipos de tom para variar:
+      - Engraçado/Divertido
+      - Ousado/Atrevido
+      - Inteligente/Nerd
+      - Romântico/Fofo
+      - Criativo/Diferente
+      
+      ${base64Image ? 'IMPORTANTE: Analise a imagem fornecida e crie cantadas personalizadas baseadas em detalhes específicos da foto (roupas, ambiente, expressão, hobbies visíveis, etc). Use esses detalhes para criar um título descritivo.' : ''}
+      ${context ? `CONTEXTO ESPECIAL: ${context}\nUse esse contexto para personalizar as cantadas e criar um título que reflita o tema.` : ''}
+      
+      Tarefas:
+      1. Crie um TÍTULO descritivo e criativo (2-4 palavras) que resuma o tema/estilo das cantadas.
+      2. Gere 5 cantadas com tons variados.
+      
+      Exemplos de títulos bons:
+      - "Cantadas de Café"
+      - "Estilo Nerd"
+      - "Românticas Clássicas"
+      - "Ousadas e Divertidas"
+      
+      Retorne APENAS um JSON válido (sem markdown) no seguinte formato:
+      {
+        "title": "Título criativo",
+        "suggestions": [
+          { "tone": "Tom da cantada", "message": "Texto da cantada", "explanation": "Por que é boa" }
+        ]
+      }
+    `;
+
+    const parts: any[] = [];
+    
+    if (base64Image) {
+      // Compress image before sending
+      const compressedImage = await compressBase64Image(base64Image);
+      const cleanBase64 = compressedImage.split(',')[1] || compressedImage;
+      parts.push({
+        inlineData: {
+          mimeType: 'image/jpeg',
+          data: cleanBase64
+        }
+      });
+    }
+    
+    parts.push({ text: prompt });
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: {
+        parts
+      }
+    });
+
+    const text = response.text || '{}';
+    const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
+    
+    const parsed = JSON.parse(cleanText);
+    
+    // Ensure compatibility if AI returns array directly (legacy handling)
+    if (Array.isArray(parsed)) {
+      return { 
+        title: context || (base64Image ? "Cantadas Personalizadas" : "Cantadas Criativas"),
+        suggestions: parsed 
+      };
+    }
+    
+    // Ensure title is never empty
+    if (!parsed.title || parsed.title.trim() === '') {
+      parsed.title = context || (base64Image ? "Cantadas Personalizadas" : "Cantadas Criativas");
+    }
+    
+    return parsed as AnalysisResult;
+
+  } catch (error) {
+    console.error("Error generating pickup lines:", error);
     throw error;
   }
 };

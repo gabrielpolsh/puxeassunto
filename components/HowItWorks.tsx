@@ -274,19 +274,12 @@ export const HowItWorks: React.FC = () => {
                         </div>
 
                         {/* Tone Badges */}
-                        <div className="flex gap-2 mt-6">
-                            {SUGGESTIONS_DEMO.map((s, i) => (
-                                <span 
-                                    key={i}
-                                    className={`px-3 py-1 rounded-full text-xs transition-all duration-500 border ${
-                                        i === suggestionIndex 
-                                        ? `${s.bg} ${s.border} ${s.color} font-bold scale-110 shadow-[0_0_10px_rgba(255,255,255,0.1)]` 
-                                        : 'bg-white/5 border-white/10 text-gray-500 opacity-50 scale-90'
-                                    }`}
-                                >
-                                    {s.tone}
-                                </span>
-                            ))}
+                        <div className="flex justify-center mt-6">
+                            <span 
+                                className={`px-3 py-1 rounded-full text-xs transition-all duration-500 border ${SUGGESTIONS_DEMO[suggestionIndex].bg} ${SUGGESTIONS_DEMO[suggestionIndex].border} ${SUGGESTIONS_DEMO[suggestionIndex].color} font-bold shadow-[0_0_10px_rgba(255,255,255,0.1)]`}
+                            >
+                                {SUGGESTIONS_DEMO[suggestionIndex].tone}
+                            </span>
                         </div>
 
                         {/* Floating Mini Heart Cards */}

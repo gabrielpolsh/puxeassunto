@@ -22,7 +22,7 @@ import {
   Settings
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { analyzeChatScreenshot, Suggestion } from '../services/geminiService';
+import { analyzeChatScreenshot, generatePickupLines, Suggestion } from '../services/geminiService';
 import { SettingsModal } from './SettingsModal';
 
 interface DashboardProps {
@@ -40,6 +40,7 @@ interface AnalysisSession {
 
 export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) => {
   // --- State ---
+  const [mode, setMode] = useState<'analysis' | 'pickup'>('analysis');
   const [sessions, setSessions] = useState<AnalysisSession[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [showMobileSidebar, setShowMobileSidebar] = useState(false);
@@ -48,6 +49,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
   // Studio State
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [userContext, setUserContext] = useState('');
+  const [pickupContext, setPickupContext] = useState('');
+  const [usePhotoForPickup, setUsePhotoForPickup] = useState(false);
   const [results, setResults] = useState<Suggestion[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -192,11 +195,34 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
       .order('created_at', { ascending: true });
 
     if (messages && messages.length > 0) {
-      // Find image in user messages
-      const userMsg = messages.find(m => m.role === 'user' && m.image_data);
-      if (userMsg) {
-        setSelectedImage(userMsg.image_data);
-        setUserContext(userMsg.content || '');
+      // Detect if this is a pickup lines session or conversation analysis
+      const firstUserMsg = messages.find(m => m.role === 'user');
+      const isPickupSession = firstUserMsg?.content?.toLowerCase().includes('cantadas') || 
+                             messages[0]?.content?.toLowerCase().includes('gerar cantadas');
+      
+      // Set mode based on session type
+      if (isPickupSession) {
+        setMode('pickup');
+        // Check if it had a photo
+        if (firstUserMsg?.image_data) {
+          setSelectedImage(firstUserMsg.image_data);
+          setUsePhotoForPickup(true);
+        }
+        // Extract context if available
+        if (firstUserMsg?.content && !firstUserMsg.content.toLowerCase().includes('gerar cantadas')) {
+          const contextMatch = firstUserMsg.content.match(/Cantadas: (.+)/);
+          if (contextMatch) {
+            setPickupContext(contextMatch[1].replace('...', ''));
+          }
+        }
+      } else {
+        setMode('analysis');
+        // Find image in user messages
+        const userMsg = messages.find(m => m.role === 'user' && m.image_data);
+        if (userMsg) {
+          setSelectedImage(userMsg.image_data);
+          setUserContext(userMsg.content || '');
+        }
       }
 
       // Find latest results in AI messages
@@ -269,12 +295,21 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
   const resetStudio = () => {
     setSelectedImage(null);
     setUserContext('');
+    setPickupContext('');
+    setUsePhotoForPickup(false);
     setResults([]);
     setShowMobileSidebar(false);
   };
 
   const handleNewAnalysis = () => {
     setCurrentSessionId(null);
+    setMode('analysis');
+    resetStudio();
+  };
+
+  const handleNewPickupLines = () => {
+    setCurrentSessionId(null);
+    setMode('pickup');
     resetStudio();
   };
 
@@ -338,6 +373,69 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
     }
   };
 
+  const runPickupLines = async () => {
+    if (isAnalyzing) return;
+
+    // CHECK LIMITS
+    if (!isPro && dailyCount >= 5) {
+      onUpgradeClick();
+      return;
+    }
+
+    setIsAnalyzing(true);
+
+    try {
+      const image = usePhotoForPickup && selectedImage ? selectedImage : undefined;
+      const { title: aiTitle, suggestions } = await generatePickupLines(pickupContext, image);
+      setResults(suggestions);
+      
+      // 2. Persist to database
+      let sessionId = currentSessionId;
+      if (!sessionId) {
+        // Use AI-generated title as priority, then fallback
+        sessionId = await createSession(aiTitle);
+        setCurrentSessionId(sessionId);
+      }
+
+      if (sessionId) {
+        // Save the pickup lines interaction
+        if (image) {
+          await supabase.from('messages').insert({
+            chat_id: sessionId,
+            role: 'user',
+            content: pickupContext || 'Gerar cantadas com foto',
+            image_data: image
+          });
+        } else {
+          await supabase.from('messages').insert({
+            chat_id: sessionId,
+            role: 'user',
+            content: pickupContext || 'Gerar cantadas'
+          });
+        }
+
+        // Save AI response
+        await supabase.from('messages').insert({
+          chat_id: sessionId,
+          role: 'ai',
+          suggestions: suggestions
+        });
+      }
+      
+      // Increment local count for immediate feedback
+      setDailyCount(prev => prev + 1);
+      
+      // Refresh sessions list
+      fetchSessions();
+
+    } catch (err) {
+      console.error(err);
+      alert("Erro ao gerar cantadas. Tente novamente.");
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
   return (
     <div className="flex flex-col md:flex-row min-h-screen md:h-screen bg-[#050505] text-white font-sans md:overflow-hidden selection:bg-pink-500/30 relative">
 
@@ -386,13 +484,21 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
         </div>
 
         {/* New Project Button */}
-        <div className="p-4 shrink-0">
+        <div className="p-4 shrink-0 space-y-2">
           <button
             onClick={handleNewAnalysis}
-            className="w-full py-3 px-4 bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2 group"
+            className={`w-full py-3 px-4 ${mode === 'analysis' ? 'bg-purple-900/50 border-purple-500/30' : 'bg-white/5 border-white/10'} border hover:bg-white/10 hover:border-white/20 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2 group`}
           >
-            <Plus size={16} className="text-gray-400 group-hover:text-white" />
-            Nova Análise
+            <MessageCircle size={16} className="text-gray-400 group-hover:text-white" />
+            Analisar Conversa
+          </button>
+          
+          <button
+            onClick={handleNewPickupLines}
+            className={`w-full py-3 px-4 ${mode === 'pickup' ? 'bg-pink-900/50 border-pink-500/30' : 'bg-white/5 border-white/10'} border hover:bg-white/10 hover:border-white/20 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2 group`}
+          >
+            <Heart size={16} className="text-gray-400 group-hover:text-pink-400" />
+            Cantadas
           </button>
         </div>
 
@@ -478,9 +584,20 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
         {/* --- CENTER: CANVAS (IMAGE VIEWER) --- */}
         <div
           className="w-full md:flex-1 bg-[#050505] relative flex flex-col min-h-[65vh] md:h-full shrink-0 md:shrink order-1 md:border-r border-transparent md:border-white/5 transition-all duration-300 overflow-hidden"
-          onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+          onDragOver={(e) => { 
+            if (mode === 'analysis' || (mode === 'pickup' && usePhotoForPickup)) {
+              e.preventDefault(); 
+              setIsDragging(true);
+            }
+          }}
           onDragLeave={() => setIsDragging(false)}
-          onDrop={(e) => { e.preventDefault(); setIsDragging(false); if (e.dataTransfer.files[0]) processFile(e.dataTransfer.files[0]); }}
+          onDrop={(e) => { 
+            e.preventDefault(); 
+            setIsDragging(false); 
+            if ((mode === 'analysis' || (mode === 'pickup' && usePhotoForPickup)) && e.dataTransfer.files[0]) {
+              processFile(e.dataTransfer.files[0]);
+            }
+          }}
         >
           {/* Toolbar / Mobile Header */}
           <div className="h-16 border-b border-white/5 flex items-center justify-between px-4 md:px-6 bg-[#050505]/90 backdrop-blur-md z-30 sticky top-0 md:absolute md:left-0 md:right-0">
@@ -502,7 +619,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
 
               {/* Desktop Title */}
               <h2 className="text-sm font-medium text-gray-400 hidden md:block">
-                {currentSessionId ? 'Modo Visualização' : 'Estúdio de Criação'}
+                {mode === 'pickup' ? 'Gerador de Cantadas' : currentSessionId ? 'Modo Visualização' : 'Estúdio de Criação'}
               </h2>
             </div>
 
@@ -568,7 +685,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
               <Send className="absolute bottom-[15%] left-[15%] md:left-[25%] text-white/5 w-10 h-10 animate-pulse-slow hidden md:block" style={{ animationDelay: '1s' }} />
             </div>
 
-            {!selectedImage ? (
+            {!selectedImage && mode === 'analysis' ? (
               /* --- New Modern Upload State --- */
               <div
                 onClick={triggerFileSelect}
@@ -595,7 +712,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
                     Analise sua conversa
                   </h3>
                   <p className="text-xs md:text-base text-gray-400 max-w-xs mx-auto mb-6 md:mb-8 leading-relaxed">
-                    Arraste o print aqui ou clique para escolher. Nossa IA vai criar a resposta perfeita.
+                    Arraste o print aqui ou clique para escolher. O Puxe Assunto vai criar a resposta perfeita.
                   </p>
 
                   <div className="flex items-center justify-center gap-2 md:gap-3 text-[10px] md:text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -605,11 +722,145 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
                   </div>
                 </div>
               </div>
+            ) : mode === 'pickup' && !selectedImage ? (
+              /* --- Pickup Lines Mode --- */
+              <div className="w-full h-full flex flex-col items-center justify-center relative z-10 mt-8 md:mt-0 p-4">
+                <div className="relative bg-[#0a0a0a]/80 backdrop-blur-xl border border-white/10 rounded-3xl p-6 md:p-12 text-center shadow-2xl z-10 w-[90%] md:w-full md:max-w-2xl mx-auto">
+                  <div className="relative w-16 h-16 md:w-24 md:h-24 mx-auto mb-4 md:mb-6">
+                    <div className="absolute inset-0 bg-gradient-to-tr from-pink-600 to-red-600 rounded-full blur-lg opacity-40 animate-pulse"></div>
+                    <div className="relative w-full h-full bg-[#111] border border-white/10 rounded-full flex items-center justify-center shadow-xl">
+                      <Heart size={24} className="md:w-8 md:h-8 text-pink-400 fill-pink-400/20" />
+                    </div>
+                  </div>
+
+                  <h3 className="text-xl md:text-3xl font-bold text-white mb-2 md:mb-3 tracking-tight">
+                    Gerador de Cantadas
+                  </h3>
+                  <p className="text-xs md:text-base text-gray-400 max-w-md mx-auto mb-6 md:mb-8 leading-relaxed">
+                    Gere cantadas criativas e engraçadas. O Puxe Assunto cria frases originais para você usar.
+                  </p>
+
+                  {/* Photo Context Toggle Switch */}
+                  <div className="mb-6 md:mb-8">
+                    <div className="flex items-center justify-center gap-4">
+                      <span className={`text-sm font-medium transition-colors ${!usePhotoForPickup ? 'text-white' : 'text-gray-500'}`}>
+                        Sem foto
+                      </span>
+                      
+                      {/* Toggle Switch */}
+                      <button
+                        onClick={() => setUsePhotoForPickup(!usePhotoForPickup)}
+                        className={`
+                          relative inline-flex items-center h-8 w-16 rounded-full transition-all duration-300 ease-in-out
+                          ${usePhotoForPickup 
+                            ? 'bg-gradient-to-r from-pink-500 to-red-500 shadow-lg shadow-pink-500/30' 
+                            : 'bg-white/10 border border-white/20'
+                          }
+                        `}
+                        role="switch"
+                        aria-checked={usePhotoForPickup}
+                      >
+                        {/* Switch Circle */}
+                        <span
+                          className={`
+                            inline-block h-6 w-6 transform rounded-full transition-all duration-300 ease-in-out shadow-lg
+                            ${usePhotoForPickup 
+                              ? 'translate-x-9 bg-white' 
+                              : 'translate-x-1 bg-gray-300'
+                            }
+                          `}
+                        >
+                          {/* Icon inside circle */}
+                          <span className="flex items-center justify-center h-full w-full">
+                            {usePhotoForPickup ? (
+                              <ImageIcon size={14} className="text-pink-500" />
+                            ) : (
+                              <X size={14} className="text-gray-500" />
+                            )}
+                          </span>
+                        </span>
+                      </button>
+                      
+                      <span className={`text-sm font-medium transition-colors flex items-center gap-2 ${usePhotoForPickup ? 'text-white' : 'text-gray-500'}`}>
+                        <ImageIcon size={16} className={usePhotoForPickup ? 'text-pink-400' : 'text-gray-600'} />
+                        Com foto
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Upload Area - Appears when toggle is ON */}
+                  {usePhotoForPickup && (
+                    <div 
+                      onClick={triggerFileSelect}
+                      className={`
+                        mb-6 md:mb-8 p-6 border-2 border-dashed rounded-2xl cursor-pointer transition-all duration-300 animate-slide-down
+                        ${isDragging 
+                          ? 'border-pink-500 bg-pink-500/10 scale-[1.02]' 
+                          : 'border-white/20 bg-white/5 hover:border-pink-400/50 hover:bg-white/10'
+                        }
+                      `}
+                      onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragging(true); }}
+                      onDragLeave={(e) => { e.stopPropagation(); setIsDragging(false); }}
+                      onDrop={(e) => { 
+                        e.preventDefault(); 
+                        e.stopPropagation(); 
+                        setIsDragging(false); 
+                        if (e.dataTransfer.files[0]) processFile(e.dataTransfer.files[0]);
+                      }}
+                    >
+                      <div className="flex flex-col items-center gap-3">
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-pink-500 to-red-500 flex items-center justify-center">
+                          <Upload size={20} className="text-white" />
+                        </div>
+                        <div className="text-center">
+                          <p className="text-sm font-medium text-white mb-1">
+                            Arraste uma foto ou clique aqui
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            Perfil, foto da pessoa, bio, etc.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-center gap-2 md:gap-3 text-[10px] md:text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <span className="bg-white/5 px-2 md:px-3 py-1 rounded-full border border-white/5">Criativas</span>
+                    <span className="bg-white/5 px-2 md:px-3 py-1 rounded-full border border-white/5">Engraçadas</span>
+                    <span className="bg-white/5 px-2 md:px-3 py-1 rounded-full border border-white/5">Originais</span>
+                  </div>
+                </div>
+              </div>
+            ) : mode === 'pickup' && selectedImage ? (
+              /* Image Preview State for Pickup */
+              <div className="relative w-full h-full flex items-center justify-center z-10 animate-fade-in p-2">
+                <div className="relative max-w-full max-h-full shadow-2xl shadow-black rounded-lg overflow-hidden border border-white/10 group">
+                  <img src={selectedImage} className="max-w-full max-h-[60vh] md:max-h-[80vh] object-contain" alt="Contexto" />
+                  
+                  {/* Remove Image Button */}
+                  <button
+                    onClick={() => setSelectedImage(null)}
+                    className="absolute top-4 right-4 p-2 bg-red-500/90 hover:bg-red-600 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-lg"
+                    title="Remover foto"
+                  >
+                    <X size={20} className="text-white" />
+                  </button>
+                </div>
+              </div>
             ) : (
               /* Image Preview State */
               <div className="relative w-full h-full flex items-center justify-center z-10 animate-fade-in p-2">
                 <div className="relative max-w-full max-h-full shadow-2xl shadow-black rounded-lg overflow-hidden border border-white/10 group">
                   <img src={selectedImage} className="max-w-full max-h-[60vh] md:max-h-[80vh] object-contain" alt="Print" />
+                  
+                  {/* Remove Image Button */}
+                  <button
+                    onClick={() => setSelectedImage(null)}
+                    className="absolute top-4 right-4 p-2 bg-red-500/90 hover:bg-red-600 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-lg"
+                    title="Remover foto"
+                  >
+                    <X size={20} className="text-white" />
+                  </button>
                 </div>
               </div>
             )}
@@ -621,8 +872,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
 
           {/* Panel Header */}
           <div className="h-14 md:h-16 border-b border-white/5 hidden md:flex items-center px-6 bg-[#0a0a0a] shrink-0">
-            <Sparkles size={16} className="text-purple-400 mr-2" />
-            <h3 className="font-bold text-sm">Gerador de Respostas</h3>
+            <Sparkles size={16} className={mode === 'pickup' ? 'text-pink-400 mr-2' : 'text-purple-400 mr-2'} />
+            <h3 className="font-bold text-sm">{mode === 'pickup' ? 'Gerador de Cantadas' : 'Gerador de Respostas'}</h3>
           </div>
 
           <div className="flex-1 md:overflow-y-auto p-4 md:p-6 scrollbar-thin scrollbar-thumb-white/10 pb-20 md:pb-6">
@@ -648,7 +899,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
                 <div className="flex items-center gap-2 mb-6">
                   <div className="h-px flex-1 bg-white/10"></div>
                   <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Sugestões do Puxe Assunto
+                    {mode === 'pickup' ? 'Cantadas Geradas' : 'Sugestões do Puxe Assunto'}
                   </span>
                   <div className="h-px flex-1 bg-white/10"></div>
                 </div>
@@ -667,51 +918,92 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
                 </div>
 
                 {/* 3. Refine Box */}
-                <div className="bg-[#111] border border-white/10 rounded-xl p-4 mb-6">
-                  <label className="flex items-center gap-2 text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
-                    <Sparkles size={12} className="text-yellow-400" />
-                    Refinar Resposta (Opcional)
-                  </label>
-                  <textarea
-                    value={userContext}
-                    onChange={(e) => setUserContext(e.target.value)}
-                    className="w-full bg-[#050505] border border-white/10 rounded-lg p-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/50 transition-all resize-none h-20"
-                    placeholder="Ex: Ela gosta de sushi, seja engraçado..."
-                  />
-                  <p className="text-[10px] text-gray-500 mt-2 text-right">
-                    Adicione contexto para personalizar
-                  </p>
-                </div>
+                {mode === 'pickup' ? (
+                  <div className="bg-[#111] border border-white/10 rounded-xl p-4 mb-6">
+                    <label className="flex items-center gap-2 text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
+                      <Heart size={12} className="text-pink-400" />
+                      Personalizar Cantadas (Opcional)
+                    </label>
+                    <textarea
+                      value={pickupContext}
+                      onChange={(e) => setPickupContext(e.target.value)}
+                      className="w-full bg-[#050505] border border-white/10 rounded-lg p-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-pink-500/50 focus:ring-1 focus:ring-pink-500/50 transition-all resize-none h-20"
+                      placeholder="Ex: cantadas sobre café, estilo nerd..."
+                    />
+                    <p className="text-[10px] text-gray-500 mt-2 text-right">
+                      Adicione temas ou estilos específicos
+                    </p>
+                  </div>
+                ) : (
+                  <div className="bg-[#111] border border-white/10 rounded-xl p-4 mb-6">
+                    <label className="flex items-center gap-2 text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
+                      <Sparkles size={12} className="text-yellow-400" />
+                      Refinar Resposta (Opcional)
+                    </label>
+                    <textarea
+                      value={userContext}
+                      onChange={(e) => setUserContext(e.target.value)}
+                      className="w-full bg-[#050505] border border-white/10 rounded-lg p-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/50 transition-all resize-none h-20"
+                      placeholder="Ex: Ela gosta de sushi, seja engraçado..."
+                    />
+                    <p className="text-[10px] text-gray-500 mt-2 text-right">
+                      Adicione contexto para personalizar
+                    </p>
+                  </div>
+                )}
 
                 {/* 4. Regenerate Button (Secondary) */}
                 <button
-                  onClick={runAnalysis}
+                  onClick={mode === 'pickup' ? runPickupLines : runAnalysis}
                   className="w-full py-4 bg-[#1a1a1a] border border-white/10 hover:bg-[#222] hover:border-purple-500/30 rounded-xl font-bold text-sm text-white transition-all flex items-center justify-center gap-2"
                 >
-                  <MessageCircleHeart size={18} />
-                  Regenerar Sugestões
+                  {mode === 'pickup' ? (
+                    <>
+                      <Heart size={18} className="text-pink-400" />
+                      Gerar Novas Cantadas
+                    </>
+                  ) : (
+                    <>
+                      <MessageCircleHeart size={18} />
+                      Regenerar Sugestões
+                    </>
+                  )}
                 </button>
 
               </div>
             ) : (
               /* Initial / Empty State */
               <div className="mt-4">
-                <button
-                  onClick={runAnalysis}
-                  disabled={!selectedImage}
-                  className={`
+                {mode === 'pickup' ? (
+                  <>
+                    <button
+                      onClick={runPickupLines}
+                      className="w-full py-4 rounded-xl font-bold text-sm shadow-lg transition-all duration-300 flex items-center justify-center gap-2 bg-gradient-to-r from-pink-600 to-red-600 text-white hover:shadow-pink-500/25 hover:scale-[1.02] active:scale-95"
+                    >
+                      <Heart size={18} className="fill-white/20" />
+                      Gerar Cantadas com Puxe Assunto
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={runAnalysis}
+                    disabled={!selectedImage}
+                    className={`
                                 w-full py-4 rounded-xl font-bold text-sm shadow-lg transition-all duration-300 flex items-center justify-center gap-2
                                 ${!selectedImage
-                      ? 'bg-white/5 text-gray-500 cursor-not-allowed'
-                      : 'bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:shadow-purple-500/25 hover:scale-[1.02] active:scale-95'}
+                        ? 'bg-white/5 text-gray-500 cursor-not-allowed'
+                        : 'bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:shadow-purple-500/25 hover:scale-[1.02] active:scale-95'}
                             `}
-                >
-                  <MessageCircleHeart size={18} className="fill-white/20" />
-                  Gerar respostas com Puxe Assunto
-                </button>
+                  >
+                    <MessageCircleHeart size={18} className="fill-white/20" />
+                    Gerar respostas com Puxe Assunto
+                  </button>
+                )}
 
                 <div className="flex flex-col items-center justify-center py-10 text-center opacity-30">
-                  <p className="text-xs text-gray-400">Os resultados aparecerão aqui</p>
+                  <p className="text-xs text-gray-400">
+                    {mode === 'pickup' ? 'As cantadas aparecerão aqui' : 'Os resultados aparecerão aqui'}
+                  </p>
                 </div>
               </div>
             )}
