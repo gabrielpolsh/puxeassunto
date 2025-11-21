@@ -97,9 +97,20 @@ export const analyzeChatScreenshot = async (base64Image: string, userContext?: s
       - O objetivo é sugerir o que EU (Direita) devo enviar para ELA/ELE (Esquerda).
 
       CENÁRIOS POSSÍVEIS (Identifique qual se aplica):
-      1. RESPOSTA: Se a última mensagem for da Esquerda, sugira uma resposta inteligente/engraçada/provocativa.
-      2. CONTINUAÇÃO: Se a última mensagem for da Direita (vácuo ou conversa morreu), sugira um "reviver" de assunto ou uma mudança de tópico (double text estratégico).
-      3. ABERTURA: Se for um perfil ou foto sem chat, sugira um abridor (opener) criativo baseado em detalhes da foto/bio.
+      1. RESPOSTA: Se a última mensagem for da Esquerda, sugira uma resposta adequada ao contexto.
+      2. CONTINUAÇÃO: Se a última mensagem for da Direita (vácuo ou conversa morreu), sugira um "reviver" de assunto ou uma mudança de tópico.
+      3. ABERTURA: Se for um perfil ou foto sem chat, sugira um abridor (opener) criativo.
+
+      ANÁLISE DE SENTIMENTO E TONS (CRUCIAL):
+      - Antes de gerar, IDENTIFIQUE O CLIMA da conversa (Triste, Sério, Divertido, Flertando, Tenso, etc).
+      - ADAPTE OS TONS AO CLIMA.
+      - ERRO GRAVE: Não use tons engraçados, sexys ou ousados se a conversa for séria, triste, de desabafo ou rejeição.
+      
+      Exemplos de adaptação (NÃO SE LIMITE A ESTES, CRIE TONS NOVOS SE PRECISAR):
+      - Conversa Triste/Séria? Use tons como: "Empático", "Acolhedor", "Compreensivo", "Apoio".
+      - Conversa Tensa/Briga? Use tons como: "Apaziguador", "Maduro", "Resolutivo".
+      - Conversa Divertida? Use tons como: "Engraçado", "Provocativo", "Ousado".
+      * O importante é o tom ser coerente com o sentimento da conversa.
 
       Diretrizes de Estilo:
       - EXTREMAMENTE CONCISO: Mensagens curtas (1-2 frases).
@@ -108,7 +119,7 @@ export const analyzeChatScreenshot = async (base64Image: string, userContext?: s
       
       Tarefas:
       1. Crie um TÍTULO curto (max 4 palavras) resumindo o contexto.
-      2. Gere 5 sugestões de resposta com tons variados (ex: Engraçado, Ousado, Casual, Provocativo, Curioso).
+      2. Gere 5 sugestões de resposta com tons variados ADAPTADOS AO SENTIMENTO IDENTIFICADO.
       
       Retorne APENAS um JSON válido com o seguinte formato (sem markdown):
       {
@@ -184,12 +195,15 @@ export const generatePickupLines = async (context?: string, base64Image?: string
       - CURTAS (1-2 frases no máximo)
       - VARIADAS em tom e estilo
       
-      Tipos de tom para variar:
-      - Engraçado/Divertido
-      - Ousado/Atrevido
-      - Inteligente/Nerd
-      - Romântico/Fofo
-      - Criativo/Diferente
+      ANÁLISE DE CONTEXTO E TONS (ADAPTATIVO):
+      Não use tons genéricos. Analise a imagem ou texto para identificar a "vibe" e escolha tons que combinem com o contexto específico.
+      
+      Exemplos de adaptação:
+      - Vibe intelectual? Use tons: "Sagaz", "Observador", "Culto"
+      - Vibe festa/balada? Use tons: "Energético", "Direto", "Divertido"
+      - Vibe natureza/chill? Use tons: "Good Vibes", "Poético", "Leve"
+      
+      Se não houver contexto claro, varie entre: Engraçado, Ousado, Inteligente, Romântico e Criativo.
       
       ${base64Image ? 'IMPORTANTE: Analise a imagem fornecida e crie cantadas personalizadas baseadas em detalhes específicos da foto (roupas, ambiente, expressão, hobbies visíveis, etc). Use esses detalhes para criar um título descritivo.' : ''}
       ${context ? `CONTEXTO ESPECIAL: ${context}\nUse esse contexto para personalizar as cantadas e criar um título que reflita o tema.` : ''}
