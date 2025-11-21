@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check, ArrowLeft, Sparkles, MessageCircleHeart } from 'lucide-react';
+import { Check, ArrowLeft, Sparkles, MessageCircleHeart, CheckCircle2 } from 'lucide-react';
 
 interface UpgradePageProps {
     onBack: () => void;
@@ -32,7 +32,7 @@ export const UpgradePage: React.FC<UpgradePageProps> = ({ onBack }) => {
                 {/* Hero Copy */}
                 <div className="text-center max-w-3xl mx-auto mb-12">
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 mb-6 animate-fade-in">
-                        <Sparkles size={12} className="text-purple-400" />
+                        <CheckCircle2 size={12} className="text-green-500" />
                         <span className="text-xs font-bold text-purple-300 uppercase tracking-wider">Oferta Limitada</span>
                     </div>
                     
@@ -96,7 +96,7 @@ export const UpgradePage: React.FC<UpgradePageProps> = ({ onBack }) => {
 
                         <div className="mb-8 relative">
                             <h3 className="text-2xl font-bold mb-4 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                                PRO
+                                PRO ILIMITADO
                             </h3>
                             <div className="flex items-baseline gap-2 mb-2">
                                 <span className="text-5xl font-bold text-white tracking-tight">R$ 29,90</span>
@@ -112,11 +112,11 @@ export const UpgradePage: React.FC<UpgradePageProps> = ({ onBack }) => {
                             </li>
                             <li className="flex items-start gap-3 text-gray-200">
                                 <Check size={20} className="text-purple-400 mt-0.5 shrink-0" />
-                                <span className="text-sm">Puxe Assunto mais inteligente e criativo</span>
+                                <span className="text-sm">Cantadas ilimitadas</span>
                             </li>
                             <li className="flex items-start gap-3 text-gray-200">
                                 <Check size={20} className="text-purple-400 mt-0.5 shrink-0" />
-                                <span className="text-sm">Tons de resposta exclusivos</span>
+                                <span className="text-sm">Puxe Assunto mais inteligente e criativo</span>
                             </li>
                             <li className="flex items-start gap-3 text-gray-200">
                                 <Check size={20} className="text-purple-400 mt-0.5 shrink-0" />
@@ -164,7 +164,7 @@ export const UpgradePage: React.FC<UpgradePageProps> = ({ onBack }) => {
                 {/* Footer */}
                 <div className="mt-20 text-center border-t border-white/5 pt-8">
                     <p className="text-gray-600 text-sm">
-                        © 2024 PuxeAssunto. Todos os direitos reservados.
+                        © 2025 PuxeAssunto. Todos os direitos reservados.
                     </p>
                 </div>
 

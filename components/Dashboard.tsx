@@ -95,22 +95,30 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
     }
   }, [results]);
 
-  // Timer for daily reset
+  // Timer for daily reset (Brazilian Time - UTC-3)
   useEffect(() => {
     const updateTimer = () => {
+      // Get current time in Brazil (UTC-3)
       const now = new Date();
-      const tomorrow = new Date();
-      tomorrow.setUTCHours(24, 0, 0, 0); // UTC midnight
+      const brazilOffset = -3 * 60; // Brazil is UTC-3
+      const localOffset = now.getTimezoneOffset();
+      const brazilTime = new Date(now.getTime() + (localOffset + brazilOffset) * 60 * 1000);
       
-      const diff = tomorrow.getTime() - now.getTime();
+      // Calculate midnight in Brazil time
+      const tomorrowBrazil = new Date(brazilTime);
+      tomorrowBrazil.setHours(24, 0, 0, 0);
+      
+      // Calculate difference
+      const diff = tomorrowBrazil.getTime() - brazilTime.getTime();
       const hours = Math.floor(diff / (1000 * 60 * 60));
       const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
       
-      setTimeUntilReset(`${hours}h ${minutes}m`);
+      setTimeUntilReset(`${hours}h ${minutes}m ${seconds}s`);
     };
 
     updateTimer();
-    const interval = setInterval(updateTimer, 60000); // Update every minute
+    const interval = setInterval(updateTimer, 1000); // Update every second for accuracy
 
     return () => clearInterval(interval);
   }, []);
@@ -146,15 +154,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
       setIsLoadingProfile(false);
 
       // 2. Count daily messages (Free Plan Limit)
-      // Use UTC midnight as the cutoff since database stores in UTC
-      const today = new Date();
-      today.setUTCHours(0, 0, 0, 0);
-
-      const { count, error } = await supabase
-        .from('messages')
-        .select('*', { count: 'exact', head: true })
-        .eq('role', 'user') // Count only user inputs/analyses
-        .gte('created_at', today.toISOString());
+      // Uses database function to ensure consistency with Brazil Time (UTC-3)
+      const { data: count, error } = await supabase.rpc('get_daily_message_count');
 
       if (error) {
         console.error('Messages count error:', error);
@@ -162,7 +163,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
           await supabase.auth.signOut();
           return;
         }
-      } else if (count !== null) {
+      } else if (typeof count === 'number') {
         setDailyCount(count);
       }
     } catch (error) {
@@ -569,9 +570,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
           {!isPro && (
             <button
               onClick={onUpgradeClick}
-              className="w-full mt-3 py-2 bg-gradient-to-r from-purple-900/50 to-pink-900/50 border border-purple-500/30 hover:border-purple-500/50 rounded-lg text-xs font-bold text-purple-200 transition-all flex items-center justify-center gap-1"
+              className="w-full mt-3 py-2 bg-purple-900/50 border border-purple-500/30 hover:border-purple-500/50 rounded-lg text-xs font-bold text-purple-200 transition-all flex items-center justify-center gap-2"
             >
-              <Zap size={12} />
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+              </span>
               Seja PRO
             </button>
           )}
@@ -627,8 +631,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
               {!isPro && (
                 <>
                   {/* Mobile Version */}
-                  <div className="flex md:hidden items-center gap-2 px-2.5 py-1 bg-white/5 rounded-full border border-white/5">
-                    <span className="text-[10px] text-gray-400">Restam: <span className="text-white font-bold">{Math.max(0, 5 - dailyCount)}</span></span>
+                  <div className="flex md:hidden flex-col items-end gap-1">
+                    <div className="flex items-center gap-2 px-2.5 py-1 bg-white/5 rounded-full border border-white/5">
+                      <span className="text-[10px] text-gray-400">Restam: <span className="text-white font-bold">{Math.max(0, 5 - dailyCount)}</span></span>
+                    </div>
+                    {dailyCount >= 5 && (
+                      <span className="text-[9px] text-gray-500 pr-1 font-mono">Renova em: {timeUntilReset}</span>
+                    )}
                   </div>
                   
                   {/* Desktop Version */}
@@ -638,7 +647,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
                       <button onClick={onUpgradeClick} className="text-xs font-bold text-purple-400 hover:text-purple-300 ml-1">UPGRADE</button>
                     </div>
                     {dailyCount >= 5 && (
-                      <span className="text-[10px] text-gray-500 pr-2">Reseta em {timeUntilReset}</span>
+                      <span className="text-[10px] text-gray-500 pr-2 font-mono">Novos Créditos gratuitos em: {timeUntilReset}</span>
                     )}
                   </div>
                 </>
