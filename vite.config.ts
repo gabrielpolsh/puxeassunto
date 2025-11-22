@@ -8,6 +8,13 @@ export default defineConfig(({ mode }) => {
       server: {
         port: 3000,
         host: '0.0.0.0',
+        proxy: {
+          '/images': {
+            target: 'https://einkgouevvogawatsgbn.supabase.co/storage/v1/object/public/puxeassunto',
+            changeOrigin: true,
+            rewrite: (path) => path.replace(/^\/images/, '')
+          }
+        }
       },
       plugins: [react()],
       define: {

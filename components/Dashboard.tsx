@@ -80,12 +80,11 @@ const uploadImage = async (fileOrBase64: string | File, userId: string): Promise
       return null;
     }
 
-    const { data: { publicUrl } } = supabase.storage
-      .from('puxeassunto')
-      .getPublicUrl(fileName);
-
-    console.log('Upload successful. Public URL:', publicUrl);
-    return publicUrl;
+    // Return local proxy URL instead of Supabase URL
+    // This requires a proxy rule in vite.config.ts (dev) and _redirects (prod)
+    const localUrl = `/images/${fileName}`;
+    console.log('Upload successful. Local URL:', localUrl);
+    return localUrl;
   } catch (error) {
     console.error('Error in uploadImage:', error);
     return null;
