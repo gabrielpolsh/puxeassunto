@@ -12,6 +12,7 @@ import { UpgradePage } from './components/UpgradePage';
 import { ThankYouPage } from './components/ThankYouPage';
 import { LegalPage } from './components/LegalPage';
 import { supabase } from './lib/supabase';
+import { metaService } from './services/metaService';
 
 // Scroll to Top Component
 const ScrollToTop: React.FC = () => {
@@ -20,9 +21,15 @@ const ScrollToTop: React.FC = () => {
   useEffect(() => {
     window.scrollTo(0, 0);
     
-    // Track page view on route change
-    if (typeof window !== 'undefined' && (window as any).fbq) {
-      (window as any).fbq('track', 'PageView');
+    // Track PageView with CAPI support
+    metaService.trackEvent({ eventName: 'PageView' });
+
+    // Track ViewContent for specific pages
+    if (pathname === '/' || pathname === '/dashboard') {
+         metaService.trackEvent({
+            eventName: 'ViewContent',
+            contentName: pathname === '/' ? 'Landing Page' : 'Dashboard',
+        });
     }
   }, [pathname]);
 

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Check, ArrowRight, MessageCircleHeart, Sparkles, Zap } from 'lucide-react';
+import { metaService } from '../services/metaService';
 
 interface ThankYouPageProps {
     onGoToDashboard: () => void;
@@ -10,6 +11,15 @@ export const ThankYouPage: React.FC<ThankYouPageProps> = ({ onGoToDashboard }) =
 
     useEffect(() => {
         setMounted(true);
+
+        // Track Purchase
+        metaService.trackEvent({
+            eventName: 'Purchase',
+            value: 29.90,
+            currency: 'BRL',
+            contentName: 'Plano PRO Ilimitado',
+            contentType: 'product'
+        });
     }, []);
 
     return (

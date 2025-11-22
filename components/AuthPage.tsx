@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Mail, Lock, ArrowRight, Loader2, MessageCircleHeart, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { metaService } from '../services/metaService';
 
 interface AuthPageProps {
   onLoginSuccess: () => void;
@@ -41,6 +42,15 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess, onBack }) =>
           password,
         });
         if (error) throw error;
+
+        // Track CompleteRegistration
+        metaService.trackEvent({
+            eventName: 'CompleteRegistration',
+            emails: [email],
+            contentName: 'Sign Up',
+            contentType: 'product'
+        });
+
         // Se o signup for bem sucedido, verificamos se logou automaticamente ou precisa confirmar
         // Para simplificar a UX neste demo, tratamos como sucesso
         onLoginSuccess(); 
