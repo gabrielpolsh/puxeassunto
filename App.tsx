@@ -19,6 +19,11 @@ const ScrollToTop: React.FC = () => {
 
   useEffect(() => {
     window.scrollTo(0, 0);
+    
+    // Track page view on route change
+    if (typeof window !== 'undefined' && (window as any).fbq) {
+      (window as any).fbq('track', 'PageView');
+    }
   }, [pathname]);
 
   return null;
