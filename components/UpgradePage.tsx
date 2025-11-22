@@ -1,5 +1,6 @@
 import React from 'react';
 import { Check, ArrowLeft, Sparkles, MessageCircleHeart, CheckCircle2 } from 'lucide-react';
+import { metaService } from '../services/metaService';
 
 interface UpgradePageProps {
     onBack: () => void;
@@ -7,6 +8,15 @@ interface UpgradePageProps {
 
 export const UpgradePage: React.FC<UpgradePageProps> = ({ onBack }) => {
     const handleUpgrade = () => {
+        // Track InitiateCheckout
+        metaService.trackEvent({
+            eventName: 'InitiateCheckout',
+            contentName: 'Plano PRO Ilimitado',
+            value: 29.90,
+            currency: 'BRL',
+            contentType: 'product'
+        });
+        
         window.open('https://pay.cakto.com.br/3f6ox25_658781', '_blank');
     };
 
