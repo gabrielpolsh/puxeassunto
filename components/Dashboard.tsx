@@ -25,6 +25,73 @@ import { supabase } from '../lib/supabase';
 import { analyzeChatScreenshot, generatePickupLines, Suggestion } from '../services/geminiService';
 import { SettingsModal } from './SettingsModal';
 
+// Helper to upload image to Supabase Storage
+const uploadImage = async (fileOrBase64: string | File, userId: string): Promise<string | null> => {
+  try {
+    // If it's already a URL, return it
+    if (typeof fileOrBase64 === 'string' && fileOrBase64.startsWith('http')) {
+      return fileOrBase64;
+    }
+
+    let blob: Blob;
+    let contentType = 'image/jpeg';
+
+    if (typeof fileOrBase64 === 'string') {
+      try {
+        // Try fetch first (best for Data URLs)
+        const res = await fetch(fileOrBase64);
+        blob = await res.blob();
+        contentType = blob.type || 'image/jpeg';
+      } catch (e) {
+        console.warn('Fetch failed, trying manual conversion', e);
+        // Manual fallback for Base64
+        const arr = fileOrBase64.split(',');
+        const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/jpeg';
+        contentType = mime;
+        const bstr = atob(arr[1]);
+        let n = bstr.length;
+        const u8arr = new Uint8Array(n);
+        while (n--) {
+          u8arr[n] = bstr.charCodeAt(n);
+        }
+        blob = new Blob([u8arr], { type: mime });
+      }
+    } else {
+      // File
+      blob = fileOrBase64;
+      contentType = fileOrBase64.type;
+    }
+
+    const fileExt = contentType.split('/')[1] || 'jpg';
+    const fileName = `${userId}/${Date.now()}.${fileExt}`;
+
+    console.log('Uploading to Supabase Storage:', fileName);
+
+    const { error: uploadError } = await supabase.storage
+      .from('puxeassunto')
+      .upload(fileName, blob, {
+        contentType,
+        upsert: false
+      });
+
+    if (uploadError) {
+      console.error('Supabase Storage Upload Error:', uploadError);
+      // If bucket doesn't exist or RLS fails, we might want to alert
+      return null;
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('puxeassunto')
+      .getPublicUrl(fileName);
+
+    console.log('Upload successful. Public URL:', publicUrl);
+    return publicUrl;
+  } catch (error) {
+    console.error('Error in uploadImage:', error);
+    return null;
+  }
+};
+
 interface DashboardProps {
   user: any;
   onUpgradeClick: () => void;
@@ -252,7 +319,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
       chat_id: sessionId,
       role: 'user',
       content: context,
-      image_data: image // Note: Storing base64 in DB is heavy, strictly for demo.
+      image_data: image // Note: Storing URL in DB (or base64 if upload fails).
     });
 
     // Save AI Part
@@ -363,7 +430,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
       }
 
       if (sessionId) {
-        await saveInteraction(sessionId, selectedImage, userContext, suggestions);
+        // Upload image to storage
+        const imageUrl = await uploadImage(selectedImage, user.id);
+        if (!imageUrl) {
+          console.warn('Image upload failed, saving as base64');
+          alert('Aviso: Não foi possível salvar a imagem no servidor. Ela será salva localmente.');
+        } else {
+          // Update local state to use URL immediately
+          setSelectedImage(imageUrl);
+        }
+        await saveInteraction(sessionId, imageUrl || selectedImage, userContext, suggestions);
       }
 
     } catch (err) {
@@ -401,11 +477,21 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
       if (sessionId) {
         // Save the pickup lines interaction
         if (image) {
+          const imageUrl = await uploadImage(image, user.id);
+          if (!imageUrl) {
+            console.warn('Image upload failed, saving as base64');
+            alert('Aviso: Não foi possível salvar a imagem no servidor. Ela será salva localmente.');
+          } else {
+            // Update local state to use URL immediately if it was the selected image
+            if (image === selectedImage) {
+              setSelectedImage(imageUrl);
+            }
+          }
           await supabase.from('messages').insert({
             chat_id: sessionId,
             role: 'user',
             content: pickupContext || 'Gerar cantadas com foto',
-            image_data: image
+            image_data: imageUrl || image
           });
         } else {
           await supabase.from('messages').insert({
@@ -730,7 +816,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
             ) : mode === 'pickup' && !selectedImage ? (
               /* --- Pickup Lines Mode --- */
               <div className="w-full h-full flex flex-col items-center justify-center relative z-10 mt-8 md:mt-0 p-4">
-                <div className="relative bg-[#0a0a0a]/80 backdrop-blur-xl border border-white/10 rounded-3xl p-6 md:p-12 text-center shadow-2xl z-10 w-[90%] md:w-full md:max-w-2xl mx-auto">
+                <div className="relative bg-[#0a0a0a]/80 backdrop-blur-xl border border-white/10 rounded-2xl p-6 md:p-12 text-center shadow-2xl z-10 w-[90%] md:w-full md:max-w-2xl mx-auto">
                   <div className="relative w-16 h-16 md:w-24 md:h-24 mx-auto mb-4 md:mb-6">
                     <div className="absolute inset-0 bg-gradient-to-tr from-pink-600 to-red-600 rounded-full blur-lg opacity-40 animate-pulse"></div>
                     <div className="relative w-full h-full bg-[#111] border border-white/10 rounded-full flex items-center justify-center shadow-xl">
