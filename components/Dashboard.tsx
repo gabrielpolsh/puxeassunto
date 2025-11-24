@@ -407,7 +407,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
     if (!selectedImage || isAnalyzing) return;
 
     // CHECK LIMITS
-    if (!isPro && dailyCount >= 5) {
+    if (!isPro && dailyCount >= 10) {
       onUpgradeClick();
       return;
     }
@@ -453,7 +453,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
     if (isAnalyzing) return;
 
     // CHECK LIMITS
-    if (!isPro && dailyCount >= 5) {
+    if (!isPro && dailyCount >= 10) {
       onUpgradeClick();
       return;
     }
@@ -716,7 +716,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
                     <div className="flex items-center gap-2 px-2.5 py-1 bg-white/5 rounded-full border border-white/5">
                       <span className="text-[10px] text-gray-400">Restam: <span className="text-white font-bold">{Math.max(0, 5 - dailyCount)}</span></span>
                     </div>
-                    {dailyCount >= 5 && (
+                    {dailyCount >= 10 && (
                       <span className="text-[9px] text-gray-500 pr-1 font-mono">Renova em: {timeUntilReset}</span>
                     )}
                   </div>
@@ -727,7 +727,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
                       <span className="text-xs text-gray-400">Restam: <span className="text-white font-bold">{Math.max(0, 5 - dailyCount)}</span></span>
                       <button onClick={onUpgradeClick} className="text-xs font-bold text-purple-400 hover:text-purple-300 ml-1">UPGRADE</button>
                     </div>
-                    {dailyCount >= 5 && (
+                    {dailyCount >= 10 && (
                       <span className="text-[10px] text-gray-500 pr-2 font-mono">Novos Créditos gratuitos em: {timeUntilReset}</span>
                     )}
                   </div>
@@ -1005,7 +1005,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
                       key={idx} 
                       suggestion={res} 
                       index={idx} 
-                      isLocked={!isPro && idx > 0}
+                      isLocked={!isPro && dailyCount > 5 && idx > 0}
                       onUnlock={onUpgradeClick}
                     />
                   ))}
