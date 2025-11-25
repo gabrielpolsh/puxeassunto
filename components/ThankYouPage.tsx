@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Check, ArrowRight, MessageCircleHeart, Sparkles, Zap } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 import { metaService } from '../services/metaService';
 
 interface ThankYouPageProps {
@@ -8,19 +9,31 @@ interface ThankYouPageProps {
 
 export const ThankYouPage: React.FC<ThankYouPageProps> = ({ onGoToDashboard }) => {
     const [mounted, setMounted] = useState(false);
+    const location = useLocation();
+    const hasTracked = useRef(false);
 
     useEffect(() => {
         setMounted(true);
 
-        // Track Purchase
-        metaService.trackEvent({
-            eventName: 'Purchase',
-            value: 29.90,
-            currency: 'BRL',
-            contentName: 'Plano PRO Ilimitado',
-            contentType: 'product'
-        });
-    }, []);
+        // Only track purchase if coming from a successful payment flow
+        // and ensure it only runs once per session/mount
+        if (location.state?.purchaseCompleted && !hasTracked.current) {
+            hasTracked.current = true;
+            
+            // Track Purchase
+            metaService.trackEvent({
+                eventName: 'Purchase',
+                value: 29.90,
+                currency: 'BRL',
+                contentName: 'Plano PRO Ilimitado',
+                contentType: 'product'
+            });
+
+            // Optional: Clear state to prevent re-tracking on reload?
+            // Actually, replacing state here might be good practice
+            window.history.replaceState({}, document.title);
+        }
+    }, [location.state]);
 
     return (
         <div className="min-h-screen bg-[#050505] text-white font-sans selection:bg-purple-500/30 relative overflow-hidden flex items-center justify-center p-4">

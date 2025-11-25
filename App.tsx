@@ -114,9 +114,8 @@ const AppRouter: React.FC = () => {
     // Check URL parameters for payment success
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('payment') === 'success') {
-      navigate('/thankyou');
-      // Clean URL without reloading
-      window.history.replaceState({}, '', '/thankyou');
+      // Navigate to Thank You page with state to verify origin
+      navigate('/thankyou', { state: { purchaseCompleted: true }, replace: true });
     }
   }, [navigate]);
 
