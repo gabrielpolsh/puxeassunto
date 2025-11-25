@@ -135,7 +135,7 @@ export const analyzeChatScreenshot = async (base64Image: string, userContext?: s
     }
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash-lite',
+      model: 'gemini-3-pro-preview',
       contents: {
         parts: [
           {
@@ -244,7 +244,7 @@ export const generatePickupLines = async (context?: string, base64Image?: string
     parts.push({ text: prompt });
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash-lite',
+      model: 'gemini-3-pro-preview',
       contents: {
         parts
       }
