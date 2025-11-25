@@ -57,7 +57,7 @@ export const Testimonials: React.FC = () => {
         </div>
         <h2 className="text-4xl md:text-6xl font-bold text-white mb-6">
           Quem usou, <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">aprovou.</span>
-        </h2>
+        </h2> 
         <p className="text-gray-400 max-w-xl mx-auto text-lg">
           Junte-se a milhares de pessoas que melhoraram sua comunicação e conseguiram mais encontros.
         </p>
