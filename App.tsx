@@ -174,7 +174,7 @@ const AppRouter: React.FC = () => {
           path="/upgrade"
           element={
             <ProtectedRoute user={user}>
-              <UpgradePage onBack={() => navigate('/dashboard')} />
+              <UpgradePage onBack={() => navigate('/dashboard')} user={user} />
             </ProtectedRoute>
           }
         />

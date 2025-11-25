@@ -22,6 +22,9 @@ serve(async (req) => {
 
         const status = data.status || data.state;
         const customerEmail = data.customer?.email || data.email;
+        
+        // Try to find user ID from external reference
+        const userId = data.external_reference || data.client_reference_id || data.custom_id || payload.external_reference;
 
         // Subscription Data
         const subscription = data.subscription;
@@ -31,7 +34,7 @@ serve(async (req) => {
         // Check if payment is approved/paid OR subscription is active
         const isPro = status === 'approved' || status === 'paid' || status === 'active' || payload.event === 'purchase_approved';
 
-        if (customerEmail) {
+        if (userId || customerEmail) {
             // 5. Update User in Supabase
             // Initialize Supabase Client (Admin context)
             const supabaseAdmin = createClient(
@@ -50,18 +53,32 @@ serve(async (req) => {
             if (status) updateData.subscription_status = status;
             if (nextPaymentDate) updateData.next_payment_date = nextPaymentDate;
 
-            // Find user profile by email
-            const { error } = await supabaseAdmin
-                .from('profiles')
-                .update(updateData)
-                .eq('email', customerEmail);
+            let error;
+            
+            if (userId) {
+                // Try updating by ID first (more reliable)
+                console.log(`Updating user by ID: ${userId}`);
+                const result = await supabaseAdmin
+                    .from('profiles')
+                    .update(updateData)
+                    .eq('id', userId);
+                error = result.error;
+            } else {
+                // Fallback to email
+                console.log(`Updating user by Email: ${customerEmail}`);
+                const result = await supabaseAdmin
+                    .from('profiles')
+                    .update(updateData)
+                    .eq('email', customerEmail);
+                error = result.error;
+            }
 
             if (error) {
                 console.error('Error updating profile:', error);
                 return new Response('Error updating profile', { status: 500 });
             }
 
-            console.log(`User ${customerEmail} updated. PRO: ${isPro}. Status: ${status}`);
+            console.log(`User ${userId || customerEmail} updated. PRO: ${isPro}. Status: ${status}`);
             return new Response(JSON.stringify({ message: 'User updated' }), {
                 headers: { 'Content-Type': 'application/json' },
                 status: 200

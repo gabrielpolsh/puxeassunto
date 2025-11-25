@@ -4,9 +4,10 @@ import { metaService } from '../services/metaService';
 
 interface UpgradePageProps {
     onBack: () => void;
+    user: any;
 }
 
-export const UpgradePage: React.FC<UpgradePageProps> = ({ onBack }) => {
+export const UpgradePage: React.FC<UpgradePageProps> = ({ onBack, user }) => {
     const handleUpgrade = () => {
         // Track InitiateCheckout
         metaService.trackEvent({
@@ -17,7 +18,18 @@ export const UpgradePage: React.FC<UpgradePageProps> = ({ onBack }) => {
             contentType: 'product'
         });
         
-        window.open('https://pay.cakto.com.br/3f6ox25_658781', '_blank');
+        // Append user data to URL for pre-filling and tracking
+        const checkoutUrl = new URL('https://pay.cakto.com.br/3f6ox25_658781');
+        if (user?.email) {
+            checkoutUrl.searchParams.append('email', user.email);
+            checkoutUrl.searchParams.append('customer_email', user.email); // Try both common formats
+        }
+        if (user?.id) {
+            checkoutUrl.searchParams.append('external_reference', user.id);
+            checkoutUrl.searchParams.append('client_reference_id', user.id);
+        }
+
+        window.open(checkoutUrl.toString(), '_blank');
     };
 
     return (
