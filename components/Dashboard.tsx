@@ -19,11 +19,13 @@ import {
   Send,
   Heart,
   Calendar,
-  Settings
+  Settings,
+  Lock
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { analyzeChatScreenshot, generatePickupLines, Suggestion } from '../services/geminiService';
 import { SettingsModal } from './SettingsModal';
+import { LoadingOverlay } from './LoadingOverlay';
 
 // Helper to upload image to Supabase Storage
 const uploadImage = async (fileOrBase64: string | File, userId: string): Promise<string | null> => {
@@ -103,6 +105,77 @@ interface AnalysisSession {
   created_at: string;
   results?: Suggestion[];
 }
+
+const RefineBoxLocked: React.FC<{ mode: 'analysis' | 'pickup', onUnlock: () => void }> = ({ mode, onUnlock }) => {
+  const [text, setText] = useState('');
+  const [exampleIndex, setExampleIndex] = useState(0);
+  const [isDeleting, setIsDeleting] = useState(false);
+  
+  const examples = mode === 'pickup' 
+    ? ['"Quero algo engraçado sobre gatos..."', '"Estilo nerd e inteligente..."', '"Cantada para quem gosta de academia..."', '"Algo romântico mas não meloso..."']
+    : ['"Ela gosta de viajar, use isso..."', '"Seja mais direto e ousado..."', '"A resposta deve ser curta e fria..."', '"Mostre que sou difícil..."'];
+
+  useEffect(() => {
+    const currentExample = examples[exampleIndex];
+    const typeSpeed = isDeleting ? 30 : 60;
+    const pauseTime = 1500;
+    
+    const timer = setTimeout(() => {
+      if (!isDeleting && text === currentExample) {
+        setTimeout(() => setIsDeleting(true), pauseTime);
+      } else if (isDeleting && text === '') {
+        setIsDeleting(false);
+        setExampleIndex((prev) => (prev + 1) % examples.length);
+      } else {
+        setText(currentExample.substring(0, text.length + (isDeleting ? -1 : 1)));
+      }
+    }, typeSpeed);
+
+    return () => clearTimeout(timer);
+  }, [text, isDeleting, exampleIndex, examples]);
+
+  return (
+    <div className="bg-[#111] border border-purple-500/20 rounded-xl p-1 relative overflow-hidden group mb-6">
+      {/* Animated Border/Glow Effect */}
+      <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-purple-500/10 opacity-50 animate-pulse pointer-events-none" />
+      
+      <div className="bg-[#0a0a0a] rounded-lg p-4 relative z-10">
+        <div className="flex items-center justify-between mb-3">
+          <label className="flex items-center gap-2 text-xs font-bold text-gray-300 uppercase tracking-wider">
+            {mode === 'pickup' ? <Heart size={12} className="text-pink-400" /> : <MessageCircleHeart size={12} className="text-purple-400" />}
+            {mode === 'pickup' ? 'Personalizar Cantadas' : 'Refinar Resposta'}
+          </label>
+          <div className="flex items-center gap-1 px-2 py-0.5 bg-purple-500/20 border border-purple-500/30 rounded text-[10px] font-bold text-purple-300 uppercase">
+            <Lock size={10} /> PRO
+          </div>
+        </div>
+
+        <div className="relative">
+          {/* Fake Input with Typing Animation */}
+          <div className="w-full bg-[#050505] border border-white/10 rounded-lg p-3 h-24 text-sm font-mono overflow-hidden relative">
+            <span className="text-gray-300">{text}</span>
+            <span className="animate-pulse text-purple-400">|</span>
+          </div>
+
+          {/* Unlock Overlay - Gradient from bottom so text is visible */}
+          <div className="absolute inset-0 flex flex-col items-center justify-end pb-3 bg-gradient-to-t from-[#050505] via-[#050505]/80 to-transparent rounded-lg">
+            <button 
+              onClick={onUnlock}
+              className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white text-xs font-bold rounded-full shadow-lg shadow-purple-900/40 transition-all transform hover:scale-105 flex items-center gap-2"
+            >
+              <Zap size={12} className="fill-white" />
+              Desbloquear Função
+            </button>
+          </div>
+        </div>
+        
+        <p className="text-[10px] text-gray-500 mt-2 text-center">
+          Dê comandos para a IA personalizar sua resposta
+        </p>
+      </div>
+    </div>
+  );
+};
 
 export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) => {
   // --- State ---
@@ -407,7 +480,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
     if (!selectedImage || isAnalyzing) return;
 
     // CHECK LIMITS
-    if (!isPro && dailyCount >= 10) {
+    if (!isPro && dailyCount >= 5) {
       onUpgradeClick();
       return;
     }
@@ -453,7 +526,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
     if (isAnalyzing) return;
 
     // CHECK LIMITS
-    if (!isPro && dailyCount >= 10) {
+    if (!isPro && dailyCount >= 5) {
       onUpgradeClick();
       return;
     }
@@ -524,6 +597,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen md:h-screen bg-[#050505] text-white font-sans md:overflow-hidden selection:bg-pink-500/30 relative">
+
+      <LoadingOverlay isVisible={isAnalyzing} isPro={isPro} />
 
       <SettingsModal
         isOpen={showSettings}
@@ -714,9 +789,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
                   {/* Mobile Version */}
                   <div className="flex md:hidden flex-col items-end gap-1">
                     <div className="flex items-center gap-2 px-2.5 py-1 bg-white/5 rounded-full border border-white/5">
-                      <span className="text-[10px] text-gray-400">Restam: <span className="text-white font-bold">{Math.max(0, 5 - dailyCount)}</span></span>
+                      <span className="text-[10px] text-gray-400">
+                        Restam: <span className="text-white font-bold">{Math.max(0, 5 - dailyCount)}</span>
+                      </span>
                     </div>
-                    {dailyCount >= 10 && (
+                    {dailyCount >= 3 && (
                       <span className="text-[9px] text-gray-500 pr-1 font-mono">Renova em: {timeUntilReset}</span>
                     )}
                   </div>
@@ -724,15 +801,26 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
                   {/* Desktop Version */}
                   <div className="hidden md:flex flex-col items-end gap-1">
                     <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-full border border-white/5">
-                      <span className="text-xs text-gray-400">Restam: <span className="text-white font-bold">{Math.max(0, 5 - dailyCount)}</span></span>
+                      <span className="text-xs text-gray-400">
+                        Restam: <span className="text-white font-bold">{Math.max(0, 5 - dailyCount)}</span>
+                      </span>
                       <button onClick={onUpgradeClick} className="text-xs font-bold text-purple-400 hover:text-purple-300 ml-1">UPGRADE</button>
                     </div>
-                    {dailyCount >= 10 && (
+                    {dailyCount >= 3 && (
                       <span className="text-[10px] text-gray-500 pr-2 font-mono">Novos Créditos gratuitos em: {timeUntilReset}</span>
                     )}
                   </div>
                 </>
               )}
+
+              {/* New Chat Shortcut (Mobile Only) */}
+              <button 
+                onClick={mode === 'pickup' ? handleNewPickupLines : handleNewAnalysis}
+                className="md:hidden w-8 h-8 flex items-center justify-center bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors border border-white/5 active:scale-95"
+                title="Nova Conversa"
+              >
+                <Plus size={18} />
+              </button>
             </div>
           </div>
 
@@ -972,18 +1060,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
 
           <div className="flex-1 md:overflow-y-auto p-4 md:p-6 scrollbar-thin scrollbar-thumb-white/10 pb-20 md:pb-6">
 
-            {/* Loading State */}
+            {/* Loading State - Now handled by LoadingOverlay, but keeping a placeholder to prevent layout shift if needed */}
             {isAnalyzing ? (
-              <div className="flex flex-col items-center justify-center h-64 animate-fade-in">
-                <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-tr from-purple-600 to-pink-600 rounded-full blur-xl opacity-50 animate-pulse"></div>
-                  <div className="relative bg-[#1a1a1a] border border-white/10 p-4 rounded-2xl shadow-2xl">
-                    <MessageCircleHeart className="w-10 h-10 text-white animate-pulse" strokeWidth={2} />
-                  </div>
-                </div>
-                <p className="mt-6 text-sm font-medium text-gray-300 animate-pulse">
-                  O Puxe Assunto está pensando...
-                </p>
+              <div className="flex flex-col items-center justify-center h-64 opacity-0">
+                 {/* Invisible placeholder */}
               </div>
             ) : results.length > 0 ? (
               /* Results View (Reordered for Mobile Flow) */
@@ -1001,18 +1081,30 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
                 {/* 2. Suggestions List - Increased Spacing */}
                 <div className="space-y-10 mb-8">
                   {results.map((res, idx) => (
-                    <ResultCard 
-                      key={idx} 
-                      suggestion={res} 
-                      index={idx} 
-                      isLocked={!isPro && dailyCount > 5 && idx > 0}
-                      onUnlock={onUpgradeClick}
-                    />
+                    <React.Fragment key={idx}>
+                      {!isPro && idx === 2 && (
+                        <div className="flex items-center gap-4 py-2">
+                          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-purple-500/50 to-transparent"></div>
+                          <span className="text-[10px] font-bold text-purple-400 uppercase tracking-widest whitespace-nowrap">
+                            Disponível no PRO
+                          </span>
+                          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-purple-500/50 to-transparent"></div>
+                        </div>
+                      )}
+                      <ResultCard 
+                        suggestion={res} 
+                        index={idx} 
+                        isLocked={!isPro && idx > 1}
+                        onUnlock={onUpgradeClick}
+                      />
+                    </React.Fragment>
                   ))}
                 </div>
 
                 {/* 3. Refine Box */}
-                {mode === 'pickup' ? (
+                {!isPro ? (
+                  <RefineBoxLocked mode={mode} onUnlock={onUpgradeClick} />
+                ) : mode === 'pickup' ? (
                   <div className="bg-[#111] border border-white/10 rounded-xl p-4 mb-6">
                     <label className="flex items-center gap-2 text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
                       <Heart size={12} className="text-pink-400" />
@@ -1048,20 +1140,26 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
 
                 {/* 4. Regenerate Button (Secondary) */}
                 <button
-                  onClick={mode === 'pickup' ? runPickupLines : runAnalysis}
-                  className="w-full py-4 bg-[#1a1a1a] border border-white/10 hover:bg-[#222] hover:border-purple-500/30 rounded-xl font-bold text-sm text-white transition-all flex items-center justify-center gap-2"
+                  onClick={!isPro ? onUpgradeClick : (mode === 'pickup' ? runPickupLines : runAnalysis)}
+                  className={`w-full py-4 border rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2
+                    ${!isPro 
+                      ? 'bg-[#111] border-white/5 text-gray-500 hover:bg-[#161616]' 
+                      : 'bg-[#1a1a1a] border-white/10 hover:bg-[#222] hover:border-purple-500/30 text-white'
+                    }`}
                 >
+                  {!isPro && <Lock size={14} className="text-gray-500" />}
                   {mode === 'pickup' ? (
                     <>
-                      <Heart size={18} className="text-pink-400" />
+                      <Heart size={18} className={!isPro ? "text-gray-600" : "text-pink-400"} />
                       Gerar Novas Cantadas
                     </>
                   ) : (
                     <>
-                      <MessageCircleHeart size={18} />
+                      <MessageCircleHeart size={18} className={!isPro ? "text-gray-600" : ""} />
                       Regenerar Sugestões
                     </>
                   )}
+                  {!isPro && <span className="ml-1 text-[10px] bg-purple-500/20 text-purple-300 px-1.5 py-0.5 rounded uppercase tracking-wider">PRO</span>}
                 </button>
 
               </div>

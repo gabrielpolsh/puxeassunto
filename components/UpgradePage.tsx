@@ -1,5 +1,5 @@
-import React from 'react';
-import { Check, ArrowLeft, Sparkles, MessageCircleHeart, CheckCircle2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Check, ArrowLeft, Sparkles, MessageCircleHeart, CheckCircle2, Clock } from 'lucide-react';
 import { metaService } from '../services/metaService';
 
 interface UpgradePageProps {
@@ -8,12 +8,33 @@ interface UpgradePageProps {
 }
 
 export const UpgradePage: React.FC<UpgradePageProps> = ({ onBack, user }) => {
+    const [timeLeft, setTimeLeft] = useState('');
+
+    useEffect(() => {
+        const updateTimer = () => {
+            const now = new Date();
+            const midnight = new Date(now);
+            midnight.setHours(24, 0, 0, 0);
+            const diff = midnight.getTime() - now.getTime();
+            
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+            
+            setTimeLeft(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
+        };
+        
+        updateTimer();
+        const interval = setInterval(updateTimer, 1000);
+        return () => clearInterval(interval);
+    }, []);
+
     const handleUpgrade = () => {
         // Track InitiateCheckout
         metaService.trackEvent({
             eventName: 'InitiateCheckout',
             contentName: 'Plano PRO Ilimitado',
-            value: 29.90,
+            value: 10.00,
             currency: 'BRL',
             contentType: 'product'
         });
@@ -110,21 +131,37 @@ export const UpgradePage: React.FC<UpgradePageProps> = ({ onBack, user }) => {
                         {/* Gradient Glow */}
                         <div className="absolute -top-[100px] -right-[100px] w-[200px] h-[200px] bg-purple-600/20 blur-[80px] group-hover:bg-purple-600/30 transition-all"></div>
 
-                        <div className="absolute top-6 right-6">
-                            <span className="bg-gradient-to-r from-purple-600 to-pink-600 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-lg">
-                                Recomendado
-                            </span>
-                        </div>
-
-                        <div className="mb-8 relative">
-                            <h3 className="text-2xl font-bold mb-4 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                                PRO ILIMITADO
-                            </h3>
-                            <div className="flex items-baseline gap-2 mb-2">
-                                <span className="text-5xl font-bold text-white tracking-tight">R$ 29,90</span>
-                                <span className="text-base text-gray-400">/mês</span>
+                        <div className="mb-2 relative">
+                            <div className="flex items-center gap-2 mb-4">
+                                <h3 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent shrink-0">
+                                    PRO ILIMITADO
+                                </h3>
+                                <span className="bg-gradient-to-r from-purple-600 to-pink-600 text-white text-[9px] md:text-[10px] font-bold px-2 py-0.5 md:px-3 md:py-1 rounded-full uppercase tracking-wider shadow-lg animate-pulse shrink-0">
+                                    OFERTA RELÂMPAGO
+                                </span>
                             </div>
-                            <p className="text-sm text-gray-400">Menos de R$ 1,00 por dia.</p>
+                            <div className="flex flex-col mb-2">
+                                <span className="text-sm text-gray-500 line-through mb-1">De R$ 29,90 por</span>
+                                <div className="flex items-baseline gap-2">
+                                    <span className="text-6xl font-extrabold text-white tracking-tighter drop-shadow-[0_0_15px_rgba(168,85,247,0.5)]">
+                                        R$ 10
+                                    </span>
+                                    <span className="text-xl font-bold text-purple-400">,00</span>
+                                </div>
+                            </div>
+
+                            <p className="text-sm text-green-400 font-bold flex items-center gap-1 mb-4">
+                                <Sparkles size={14} />
+                                Apenas R$ 10,00 hoje!
+                            </p>
+
+                            {/* Timer Banner */}
+                            <div className="w-full bg-red-500/10 border border-red-500/20 rounded-lg py-2 px-3 mb-4 flex items-center justify-center gap-2 animate-pulse">
+                                 <Clock size={14} className="text-red-400" />
+                                 <span className="text-xs font-bold text-red-300 uppercase tracking-wide text-center">
+                                     Encerra hoje ({new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}) em: <span className="text-white font-mono ml-1 text-sm">{timeLeft}</span>
+                                 </span>
+                            </div>
                         </div>
 
                         <ul className="space-y-3 mb-8 flex-1 relative">
