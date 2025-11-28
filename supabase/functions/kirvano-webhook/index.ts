@@ -57,20 +57,13 @@ serve(async (req) => {
                 Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
             );
 
-            // Prepare update object
-            const updateData: any = {
-                is_pro: isPro,
-                updated_at: new Date().toISOString(),
-                subscription_status: status
-            };
-
             // Try to find user by Email
             console.log(`Updating user by Email: ${customerEmail}`);
             
-            // First, check if user exists
+            // First, check if user exists and get current status
             const { data: user, error: fetchError } = await supabaseAdmin
                 .from('profiles')
-                .select('id')
+                .select('id, is_pro, subscription_status')
                 .eq('email', customerEmail)
                 .single();
 
@@ -79,6 +72,36 @@ serve(async (req) => {
             }
 
             if (user) {
+                // PROTECTION: Smart status update logic
+                // Allow updates if:
+                // 1. User is upgrading to PRO (isPro = true), OR
+                // 2. User is NOT PRO (free tier), OR
+                // 3. It's a LEGITIMATE cancellation/refund (canceled, refunded, chargeback)
+                
+                const isCancellation = 
+                    status === 'canceled' || 
+                    status === 'refunded' || 
+                    status === 'chargeback' ||
+                    event === 'SUBSCRIPTION_CANCELED' ||
+                    event === 'SALE_REFUNDED';
+
+                const shouldUpdate = isPro || !user.is_pro || isCancellation;
+
+                if (!shouldUpdate) {
+                    console.log(`PROTECTED: User ${user.id} is PRO. Ignoring irrelevant status update (${status})`);
+                    return new Response(JSON.stringify({ message: 'Protected PRO user from irrelevant update' }), {
+                        headers: { 'Content-Type': 'application/json' },
+                        status: 200
+                    });
+                }
+
+                // Prepare update object
+                const updateData: any = {
+                    is_pro: isPro,
+                    updated_at: new Date().toISOString(),
+                    subscription_status: status
+                };
+
                 const { error: updateError } = await supabaseAdmin
                     .from('profiles')
                     .update(updateData)

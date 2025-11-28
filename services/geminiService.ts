@@ -183,7 +183,7 @@ export const analyzeChatScreenshot = async (base64Image: string, userContext?: s
     }
 
     // Use different model based on guest or logged-in user
-    const modelName = isGuest ? 'gemini-2.5-flash-lite' : 'gemini-3-pro-preview';
+    const modelName = isGuest ? 'gemini-2.5-flash-lite' : 'gemini-2.5-pro';
 
     const response = await ai.models.generateContent({
       model: modelName,

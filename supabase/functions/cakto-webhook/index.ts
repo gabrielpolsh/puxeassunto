@@ -42,6 +42,48 @@ serve(async (req) => {
                 Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
             );
 
+            // First, check current user status
+            let currentUser;
+            if (userId) {
+                const { data } = await supabaseAdmin
+                    .from('profiles')
+                    .select('id, is_pro, subscription_status')
+                    .eq('id', userId)
+                    .single();
+                currentUser = data;
+            } else {
+                const { data } = await supabaseAdmin
+                    .from('profiles')
+                    .select('id, is_pro, subscription_status')
+                    .eq('email', customerEmail)
+                    .single();
+                currentUser = data;
+            }
+
+            // PROTECTION: Smart status update logic
+            // Allow updates if:
+            // 1. User is upgrading to PRO (isPro = true), OR
+            // 2. User is NOT PRO (free tier), OR
+            // 3. It's a LEGITIMATE cancellation/refund (canceled, refunded, etc)
+            
+            const isCancellation = 
+                status === 'canceled' || 
+                status === 'cancelled' ||
+                status === 'refunded' || 
+                status === 'chargeback' ||
+                payload.event === 'subscription.canceled' ||
+                payload.event === 'purchase.refunded';
+
+            const shouldUpdate = isPro || !currentUser?.is_pro || isCancellation;
+
+            if (currentUser && currentUser.is_pro && !shouldUpdate) {
+                console.log(`PROTECTED: User ${currentUser.id} is PRO. Ignoring irrelevant status update (${status})`);
+                return new Response(JSON.stringify({ message: 'Protected PRO user from irrelevant update' }), {
+                    headers: { 'Content-Type': 'application/json' },
+                    status: 200
+                });
+            }
+
             // Prepare update object
             const updateData: any = {
                 is_pro: isPro,
