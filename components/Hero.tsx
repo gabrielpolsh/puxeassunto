@@ -171,7 +171,7 @@ const UploadWidget: React.FC<{ onUpload: () => void, isDragging: boolean }> = ({
   </div>
 );
 
-const HeroResultCard: React.FC<{ suggestion: Suggestion, index: number, isLocked?: boolean }> = ({ suggestion, index, isLocked = false }) => {
+const HeroResultCard: React.FC<{ suggestion: Suggestion, index: number, isLocked?: boolean, onUnlock?: () => void }> = ({ suggestion, index, isLocked = false, onUnlock }) => {
   const [copied, setCopied] = useState(false);
 
   const copyToClipboard = () => {
@@ -218,7 +218,15 @@ const HeroResultCard: React.FC<{ suggestion: Suggestion, index: number, isLocked
           <span className="text-[9px] text-gray-500 leading-tight">{suggestion.explanation}</span>
         </div>
 
-        {!isLocked && (
+        {isLocked ? (
+          <button
+            onClick={onUnlock}
+            className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold transition-all bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white"
+          >
+            <ArrowRight size={10} />
+            Ver
+          </button>
+        ) : (
           <button
             onClick={copyToClipboard}
             className={`
@@ -418,7 +426,15 @@ export const Hero: React.FC<HeroProps> = ({ onAction, user }) => {
                 {!isAnalyzing && guestResults.slice(0, 5).map((res, idx) => (
                   <div key={idx} className="flex justify-start animate-slide-up" style={{ animationDelay: `${idx * 150}ms` }}>
                     <div className="max-w-[95%]">
-                      <HeroResultCard suggestion={res} index={idx} isLocked={true} />
+                      <HeroResultCard 
+                        suggestion={res} 
+                        index={idx} 
+                        isLocked={true} 
+                        onUnlock={() => {
+                          setUpsellType('unlock');
+                          setShowUpsell(true);
+                        }}
+                      />
                     </div>
                   </div>
                 ))}
