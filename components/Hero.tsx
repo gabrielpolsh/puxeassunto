@@ -243,6 +243,7 @@ export const Hero: React.FC<HeroProps> = ({ onAction, user }) => {
   const [hasUsedGuest, setHasUsedGuest] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [showUpsell, setShowUpsell] = useState(false);
+  const [upsellType, setUpsellType] = useState<'unlock' | 'limit'>('unlock'); // Track upsell context
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -254,6 +255,7 @@ export const Hero: React.FC<HeroProps> = ({ onAction, user }) => {
   const processFile = (file: File) => {
     // If they already used it and are trying again (without results on screen), prompt signup
     if (hasUsedGuest && guestResults.length === 0) {
+      setUpsellType('limit'); // Limit reached type
       setShowUpsell(true);
       return;
     }
@@ -265,7 +267,7 @@ export const Hero: React.FC<HeroProps> = ({ onAction, user }) => {
       setIsAnalyzing(true);
 
       try {
-        const { suggestions } = await analyzeChatScreenshot(img);
+        const { suggestions } = await analyzeChatScreenshot(img, undefined, true);
         setGuestResults(suggestions);
         localStorage.setItem('puxe_assunto_guest_used', 'true');
         setHasUsedGuest(true);
@@ -416,7 +418,7 @@ export const Hero: React.FC<HeroProps> = ({ onAction, user }) => {
                 {!isAnalyzing && guestResults.slice(0, 5).map((res, idx) => (
                   <div key={idx} className="flex justify-start animate-slide-up" style={{ animationDelay: `${idx * 150}ms` }}>
                     <div className="max-w-[95%]">
-                      <HeroResultCard suggestion={res} index={idx} isLocked={idx > 0} />
+                      <HeroResultCard suggestion={res} index={idx} isLocked={true} />
                     </div>
                   </div>
                 ))}
@@ -425,7 +427,10 @@ export const Hero: React.FC<HeroProps> = ({ onAction, user }) => {
                 {!isAnalyzing && guestResults.length > 0 && (
                   <div className="flex justify-center pt-4 pb-2 animate-fade-in" style={{ animationDelay: '800ms' }}>
                     <button
-                      onClick={() => setShowUpsell(true)}
+                      onClick={() => {
+                        setUpsellType('unlock');
+                        setShowUpsell(true);
+                      }}
                       className="px-5 py-2.5 bg-white hover:bg-gray-100 rounded-xl text-xs font-bold text-black transition-all flex items-center gap-2 group shadow-lg"
                     >
                       <MessageCircle size={14} className="group-hover:scale-110 transition-transform" />
@@ -457,25 +462,51 @@ export const Hero: React.FC<HeroProps> = ({ onAction, user }) => {
                   <MessageCircleHeart size={32} className="text-white" />
                 </div>
 
-                <h3 className="text-2xl font-bold text-white mb-2">Desbloqueie tudo!</h3>
-                <p className="text-gray-400 text-sm mb-6 leading-relaxed max-w-[260px]">
-                  Você já usou sua análise gratuita. Crie uma conta para continuar e ter acesso a:
-                </p>
+                {upsellType === 'unlock' ? (
+                  <>
+                    <h3 className="text-2xl font-bold text-white mb-2">Veja as respostas completas!</h3>
+                    <p className="text-gray-400 text-sm mb-6 leading-relaxed max-w-[260px]">
+                      Crie uma conta gratuita e desbloqueie as respostas + muito mais:
+                    </p>
 
-                <ul className="text-left space-y-3 mb-8 w-full max-w-[260px]">
-                  <li className="flex items-center gap-3 text-sm text-gray-300">
-                    <div className="p-1 bg-green-500/10 rounded-full"><Check size={12} className="text-green-400" /></div>
-                    Mais análises gratuitas
-                  </li>
-                  <li className="flex items-center gap-3 text-sm text-gray-300">
-                    <div className="p-1 bg-green-500/10 rounded-full"><Check size={12} className="text-green-400" /></div>
-                    Histórico de conversas
-                  </li>
-                  <li className="flex items-center gap-3 text-sm text-gray-300">
-                    <div className="p-1 bg-green-500/10 rounded-full"><Check size={12} className="text-green-400" /></div>
-                    Tons exclusivos
-                  </li>
-                </ul>
+                    <ul className="text-left space-y-3 mb-8 w-full max-w-[260px]">
+                      <li className="flex items-center gap-3 text-sm text-gray-300">
+                        <div className="p-1 bg-green-500/10 rounded-full"><Check size={12} className="text-green-400" /></div>
+                        Análises gratuitas
+                      </li>
+                      <li className="flex items-center gap-3 text-sm text-gray-300">
+                        <div className="p-1 bg-green-500/10 rounded-full"><Check size={12} className="text-green-400" /></div>
+                        Histórico de conversas
+                      </li>
+                      <li className="flex items-center gap-3 text-sm text-gray-300">
+                        <div className="p-1 bg-green-500/10 rounded-full"><Check size={12} className="text-green-400" /></div>
+                        Tons personalizados exclusivos
+                      </li>
+                    </ul>
+                  </>
+                ) : (
+                  <>
+                    <h3 className="text-2xl font-bold text-white mb-2">Desbloqueie tudo!</h3>
+                    <p className="text-gray-400 text-sm mb-6 leading-relaxed max-w-[260px]">
+                      Você já usou sua análise gratuita. Crie uma conta para continuar e ter acesso a:
+                    </p>
+
+                    <ul className="text-left space-y-3 mb-8 w-full max-w-[260px]">
+                      <li className="flex items-center gap-3 text-sm text-gray-300">
+                        <div className="p-1 bg-green-500/10 rounded-full"><Check size={12} className="text-green-400" /></div>
+                        Mais análises gratuitas
+                      </li>
+                      <li className="flex items-center gap-3 text-sm text-gray-300">
+                        <div className="p-1 bg-green-500/10 rounded-full"><Check size={12} className="text-green-400" /></div>
+                        Histórico de conversas
+                      </li>
+                      <li className="flex items-center gap-3 text-sm text-gray-300">
+                        <div className="p-1 bg-green-500/10 rounded-full"><Check size={12} className="text-green-400" /></div>
+                        Tons exclusivos
+                      </li>
+                    </ul>
+                  </>
+                )}
 
                 <button
                   onClick={onAction}

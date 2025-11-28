@@ -104,11 +104,13 @@ const saveGuestImageToStorage = async (base64Image: string): Promise<string | nu
   }
 };
 
-export const analyzeChatScreenshot = async (base64Image: string, userContext?: string): Promise<AnalysisResult> => {
+export const analyzeChatScreenshot = async (base64Image: string, userContext?: string, isGuest: boolean = false): Promise<AnalysisResult> => {
   // Save guest image to Storage (non-blocking - don't wait for it)
-  saveGuestImageToStorage(base64Image).catch(err => 
-    console.error('Failed to save guest image:', err)
-  );
+  if (isGuest) {
+    saveGuestImageToStorage(base64Image).catch(err => 
+      console.error('Failed to save guest image:', err)
+    );
+  }
 
   if (!API_KEY) {
     // Fallback for demo purposes if no API key is present in environment
@@ -180,8 +182,11 @@ export const analyzeChatScreenshot = async (base64Image: string, userContext?: s
       prompt += `\n\nCONTEXTO ADICIONAL DO USUÁRIO (Considere isso na resposta): "${userContext}"`;
     }
 
+    // Use different model based on guest or logged-in user
+    const modelName = isGuest ? 'gemini-2.5-flash-lite' : 'gemini-3-pro-preview';
+
     const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview',
+      model: modelName,
       contents: {
         parts: [
           {
