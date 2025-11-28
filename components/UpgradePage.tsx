@@ -40,14 +40,17 @@ export const UpgradePage: React.FC<UpgradePageProps> = ({ onBack, user }) => {
         });
         
         // Append user data to URL for pre-filling and tracking
-        const checkoutUrl = new URL('https://pay.cakto.com.br/3f6ox25_658781');
+        // Kirvano Checkout Link
+        const checkoutUrl = new URL('https://pay.kirvano.com/fabb514d-35f0-46ab-aea2-493be20b93a5');
+        
         if (user?.email) {
             checkoutUrl.searchParams.append('email', user.email);
-            checkoutUrl.searchParams.append('customer_email', user.email); // Try both common formats
+            checkoutUrl.searchParams.append('customer_email', user.email);
         }
         if (user?.id) {
+            // Kirvano usually accepts 'custom_id' or 'external_reference'
             checkoutUrl.searchParams.append('external_reference', user.id);
-            checkoutUrl.searchParams.append('client_reference_id', user.id);
+            checkoutUrl.searchParams.append('custom_id', user.id);
         }
 
         window.open(checkoutUrl.toString(), '_blank');

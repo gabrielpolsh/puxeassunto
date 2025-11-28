@@ -53,6 +53,47 @@
   }
 }
 
+@keyframes scan {
+  0% {
+    top: 0%;
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    top: 100%;
+    opacity: 0;
+  }
+}
+
+@keyframes spin-reverse {
+  from {
+    transform: rotate(360deg);
+  }
+  to {
+    transform: rotate(0deg);
+  }
+}
+
+@keyframes bounce-slow {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes loading-progress {
+  0% { width: 0%; }
+  50% { width: 70%; }
+  100% { width: 100%; }
+}
+
 .animate-fade-in {
   animation: fade-in 0.3s ease-out;
 }
@@ -67,6 +108,22 @@
 
 .animate-slide-down {
   animation: slide-down 0.4s ease-out;
+}
+
+.animate-scan {
+  animation: scan 2s linear infinite;
+}
+
+.animate-spin-reverse {
+  animation: spin-reverse 3s linear infinite;
+}
+
+.animate-bounce-slow {
+  animation: bounce-slow 2s ease-in-out infinite;
+}
+
+.animate-loading-progress {
+  animation: loading-progress 4s ease-in-out infinite;
 }
 
 /* Toggle Switch Enhancement */
@@ -94,4 +151,8 @@ button[role="switch"]:active span {
 
 .scrollbar-thumb-white\/10::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.1);
+}
+
+.perspective-1000 {
+  perspective: 1000px;
 }

@@ -177,6 +177,81 @@ const RefineBoxLocked: React.FC<{ mode: 'analysis' | 'pickup', onUnlock: () => v
   );
 };
 
+const ProPersuasionLoader: React.FC = () => {
+  const [index, setIndex] = useState(0);
+  
+  const messages = [
+    {
+      icon: Zap,
+      title: "Dica Pro",
+      text: "Usuários PRO têm 3x mais respostas.",
+      color: "text-yellow-400"
+    },
+    {
+      icon: Lock,
+      title: "Desbloqueie Tudo",
+      text: "Acesso ilimitado a todos os tons.",
+      color: "text-purple-400"
+    },
+    {
+      icon: Sparkles,
+      title: "Seja Irresistível",
+      text: "As melhores cantadas estão no PRO.",
+      color: "text-pink-400"
+    }
+  ];
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setIndex((prev) => (prev + 1) % messages.length);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const current = messages[index];
+  const Icon = current.icon;
+
+  return (
+    <div className="flex flex-col items-center justify-center h-full py-8 animate-fade-in px-6">
+      <div className="w-full max-w-[280px] relative">
+        
+        {/* Minimalist Card */}
+        <div className="bg-[#111] border border-white/5 rounded-2xl p-6 text-center shadow-xl relative overflow-hidden">
+          
+          {/* Subtle Background Glow */}
+          <div className={`absolute top-0 left-1/2 -translate-x-1/2 w-24 h-24 ${current.color.replace('text-', 'bg-')}/10 blur-3xl rounded-full pointer-events-none transition-colors duration-500`} />
+
+          <div className="relative z-10 flex flex-col items-center">
+            <div className={`mb-3 p-3 rounded-full bg-white/5 ${current.color} transition-colors duration-500`}>
+              <Icon size={20} />
+            </div>
+            
+            <h3 className="text-sm font-bold text-white mb-1 transition-all duration-500">
+              {current.title}
+            </h3>
+            
+            <p className="text-xs text-gray-400 leading-relaxed mb-4 h-8 transition-all duration-500">
+              {current.text}
+            </p>
+
+            {/* Minimalist Progress Bar */}
+            <div className="w-12 h-1 bg-white/10 rounded-full overflow-hidden mx-auto">
+              <div 
+                key={index}
+                className={`h-full ${current.color.replace('text-', 'bg-')} w-full animate-[loading-progress_3s_ease-in-out]`} 
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <p className="text-[10px] text-gray-600 mt-6 animate-pulse font-mono uppercase tracking-widest">
+        Analisando...
+      </p>
+    </div>
+  );
+};
+
 export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) => {
   // --- State ---
   const [mode, setMode] = useState<'analysis' | 'pickup'>('analysis');
@@ -598,8 +673,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
   return (
     <div className="flex flex-col md:flex-row min-h-screen md:h-screen bg-[#050505] text-white font-sans md:overflow-hidden selection:bg-pink-500/30 relative">
 
-      <LoadingOverlay isVisible={isAnalyzing} isPro={isPro} />
-
       <SettingsModal
         isOpen={showSettings}
         onClose={() => setShowSettings(false)}
@@ -1015,6 +1088,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
                 <div className="relative max-w-full max-h-full shadow-2xl shadow-black rounded-lg overflow-hidden border border-white/10 group">
                   <img src={selectedImage} className="max-w-full max-h-[60vh] md:max-h-[80vh] object-contain" alt="Contexto" />
                   
+                  <div className="md:hidden">
+                    <LoadingOverlay isVisible={isAnalyzing} isPro={isPro} type="mobile" />
+                  </div>
+
                   {/* Remove Image Button */}
                   <button
                     onClick={() => setSelectedImage(null)}
@@ -1031,6 +1108,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
                 <div className="relative max-w-full max-h-full shadow-2xl shadow-black rounded-lg overflow-hidden border border-white/10 group">
                   <img src={selectedImage} className="max-w-full max-h-[60vh] md:max-h-[80vh] object-contain" alt="Print" />
                   
+                  <div className="md:hidden">
+                    <LoadingOverlay isVisible={isAnalyzing} isPro={isPro} type="mobile" />
+                  </div>
+
                   {/* Remove Image Button */}
                   <button
                     onClick={() => setSelectedImage(null)}
@@ -1060,11 +1141,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
 
           <div className="flex-1 md:overflow-y-auto p-4 md:p-6 scrollbar-thin scrollbar-thumb-white/10 pb-20 md:pb-6">
 
-            {/* Loading State - Now handled by LoadingOverlay, but keeping a placeholder to prevent layout shift if needed */}
+            {/* Loading State - Desktop Sidebar */}
             {isAnalyzing ? (
-              <div className="flex flex-col items-center justify-center h-64 opacity-0">
-                 {/* Invisible placeholder */}
-              </div>
+              <>
+                <div className="hidden md:flex h-full items-center justify-center">
+                   <LoadingOverlay isVisible={isAnalyzing} isPro={isPro} type="desktop" />
+                </div>
+                <div className="md:hidden h-full">
+                   <ProPersuasionLoader />
+                </div>
+              </>
             ) : results.length > 0 ? (
               /* Results View (Reordered for Mobile Flow) */
               <div className="animate-slide-up pb-4">
@@ -1138,29 +1224,25 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
                   </div>
                 )}
 
-                {/* 4. Regenerate Button (Secondary) */}
-                <button
-                  onClick={!isPro ? onUpgradeClick : (mode === 'pickup' ? runPickupLines : runAnalysis)}
-                  className={`w-full py-4 border rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2
-                    ${!isPro 
-                      ? 'bg-[#111] border-white/5 text-gray-500 hover:bg-[#161616]' 
-                      : 'bg-[#1a1a1a] border-white/10 hover:bg-[#222] hover:border-purple-500/30 text-white'
-                    }`}
-                >
-                  {!isPro && <Lock size={14} className="text-gray-500" />}
-                  {mode === 'pickup' ? (
-                    <>
-                      <Heart size={18} className={!isPro ? "text-gray-600" : "text-pink-400"} />
-                      Gerar Novas Cantadas
-                    </>
-                  ) : (
-                    <>
-                      <MessageCircleHeart size={18} className={!isPro ? "text-gray-600" : ""} />
-                      Regenerar Sugestões
-                    </>
-                  )}
-                  {!isPro && <span className="ml-1 text-[10px] bg-purple-500/20 text-purple-300 px-1.5 py-0.5 rounded uppercase tracking-wider">PRO</span>}
-                </button>
+                {/* 4. Regenerate Button (Secondary) - ONLY FOR PRO */}
+                {isPro && (
+                  <button
+                    onClick={mode === 'pickup' ? runPickupLines : runAnalysis}
+                    className="w-full py-4 border rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 bg-[#1a1a1a] border-white/10 hover:bg-[#222] hover:border-purple-500/30 text-white"
+                  >
+                    {mode === 'pickup' ? (
+                      <>
+                        <Heart size={18} className="text-pink-400" />
+                        Gerar Novas Cantadas
+                      </>
+                    ) : (
+                      <>
+                        <MessageCircleHeart size={18} />
+                        Regenerar Sugestões
+                      </>
+                    )}
+                  </button>
+                )}
 
               </div>
             ) : (
