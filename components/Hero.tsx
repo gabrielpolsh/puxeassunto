@@ -1,10 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { ArrowRight, Sparkles, MessageCircle } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { ArrowRight, Sparkles, MessageCircle, Upload, Check, Copy, Zap, Loader2, X, Heart, MessageCircleHeart } from 'lucide-react';
+import { analyzeChatScreenshot, Suggestion } from '../services/geminiService';
 
 interface HeroProps {
   onAction: () => void;
   user: any;
 }
+
+
 
 // Scenarios for the dynamic chat animation
 const SCENARIOS = [
@@ -40,41 +43,290 @@ const SCENARIOS = [
   }
 ];
 
-export const Hero: React.FC<HeroProps> = ({ onAction, user }) => {
-  const [scenarioIndex, setScenarioIndex] = useState(0);
-  const [step, setStep] = useState(0); // 0: Context, 1: Typing, 2: Suggestion
+// --- Components ---
 
-  // Chat Scenario Loop
+const ChatAnimation: React.FC = () => {
+  const [scenarioIndex, setScenarioIndex] = useState(0);
+  const [step, setStep] = useState(0);
+
   useEffect(() => {
     let timeout: ReturnType<typeof setTimeout>;
-
-    if (step === 0) {
-      // Show context messages for 2s, then start typing
-      timeout = setTimeout(() => setStep(1), 2000);
-    } else if (step === 1) {
-      // Typing animation for 1.5s, then show suggestion
-      timeout = setTimeout(() => setStep(2), 1500);
-    } else if (step === 2) {
-      // Show suggestion for 5s, then next scenario
-      timeout = setTimeout(() => {
-        setStep(0);
-        setScenarioIndex((prev) => (prev + 1) % SCENARIOS.length);
-      }, 5000);
-    }
-
+    if (step === 0) timeout = setTimeout(() => setStep(1), 2000);
+    else if (step === 1) timeout = setTimeout(() => setStep(2), 1500);
+    else if (step === 2) timeout = setTimeout(() => {
+      setStep(0);
+      setScenarioIndex((prev) => (prev + 1) % SCENARIOS.length);
+    }, 5000);
     return () => clearTimeout(timeout);
   }, [step, scenarioIndex]);
 
   const currentScenario = SCENARIOS[scenarioIndex];
 
   return (
-    <section className="relative pt-32 pb-20 md:pt-48 md:pb-32">
+    <div className="relative w-full max-w-[380px] lg:max-w-[420px] mx-auto lg:mx-0 origin-top">
+      {/* Floating Container */}
+      <div className="relative w-full animate-float">
+        {/* Contact Badge */}
+        <div className="absolute -top-10 left-0 right-0 flex justify-center z-20">
+          <div className="bg-[#1a1a1a]/80 backdrop-blur-xl border border-white/10 pl-2 pr-4 py-1.5 rounded-full flex items-center gap-2 shadow-xl">
+            <img src={currentScenario.avatar} alt="Avatar" className="w-6 h-6 rounded-full object-cover border border-black" />
+            <span className="text-white font-bold text-xs">{currentScenario.name}</span>
+          </div>
+        </div>
+
+        {/* Messages Area */}
+        <div className="flex flex-col gap-2 mt-20 min-h-[180px] justify-center">
+          {/* Context Messages */}
+          <div className="flex flex-col gap-2">
+            {currentScenario.messages.map((msg, idx) => (
+              <div key={`${scenarioIndex}-${idx}`} className="self-start max-w-[85%] animate-message-in origin-left" style={{ animationDelay: `${idx * 200}ms` }}>
+                <div className="bg-[#111] border border-white/10 text-gray-200 px-3 py-2 rounded-xl rounded-tl-none shadow-lg backdrop-blur-sm">
+                  <p className="text-xs leading-relaxed">{msg.text}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Interaction Area */}
+          <div className="h-16 relative mt-2">
+            {step === 1 && (
+              <div className="absolute right-0 top-0 self-end animate-fade-in">
+                <div className="bg-white/5 border border-white/5 p-2 rounded-xl rounded-tr-none">
+                  <div className="flex gap-1">
+                    <div className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                    <div className="w-1.5 h-1.5 bg-pink-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                    <div className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                  </div>
+                </div>
+              </div>
+            )}
+            {step === 2 && (
+              <div className="absolute right-0 top-0 w-full flex flex-col items-end animate-slide-up">
+                <div className="relative bg-[#0a0a0a] border border-white/10 text-white px-4 py-3 rounded-xl rounded-tr-none shadow-xl flex items-start gap-3">
+                  <p className="text-xs leading-relaxed font-medium">{currentScenario.suggestion}</p>
+                  <MessageCircle size={12} className="text-purple-400 shrink-0 mt-0.5" />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const UploadWidget: React.FC<{ onUpload: () => void, isDragging: boolean }> = ({ onUpload, isDragging }) => (
+  <div
+    onClick={onUpload}
+    className={`
+      relative w-[85%] md:w-full max-w-[400px] aspect-[3/4] mx-auto
+      flex flex-col items-center justify-center cursor-pointer transition-all duration-500 group
+    `}
+  >
+    {/* Main Card */}
+    <div className={`
+      relative bg-[#0a0a0a]/90 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8 text-center shadow-2xl z-20
+      w-full h-full flex flex-col items-center justify-center
+      transform transition-all duration-300 group-hover:scale-[1.02] group-hover:border-purple-500/30 group-hover:shadow-purple-900/20
+      ${isDragging ? 'border-purple-500 bg-purple-900/20 scale-105' : ''}
+    `}>
+
+      {/* Floating Badge */}
+      <div className="absolute -top-4 bg-gradient-to-r from-purple-600 to-pink-600 px-4 py-1.5 rounded-full shadow-lg shadow-purple-500/30">
+        <span className="text-xs font-bold text-white uppercase tracking-wider">Teste Grátis</span>
+      </div>
+
+      <div className="relative w-20 h-20 mx-auto mb-6">
+        <div className="absolute inset-0 bg-gradient-to-tr from-purple-600 to-pink-600 rounded-full blur-lg opacity-40 group-hover:opacity-70 transition-opacity duration-500 animate-pulse"></div>
+        <div className="relative w-full h-full bg-[#111] border border-white/10 rounded-full flex items-center justify-center shadow-xl group-hover:-translate-y-1 transition-transform duration-300">
+          <Upload size={32} className="text-white group-hover:text-purple-200 transition-colors" />
+        </div>
+      </div>
+
+      <h3 className="text-2xl font-bold text-white mb-3 tracking-tight">
+        Analise sua conversa
+      </h3>
+      <p className="text-sm text-gray-400 max-w-[240px] mx-auto mb-8 leading-relaxed">
+        Arraste o print ou clique para enviar. A IA vai criar a resposta perfeita.
+      </p>
+
+      <div className="flex flex-wrap justify-center gap-2 text-[10px] font-medium text-gray-500 uppercase tracking-wider">
+        <span className="bg-white/5 px-3 py-1 rounded-full border border-white/5">WhatsApp</span>
+        <span className="bg-white/5 px-3 py-1 rounded-full border border-white/5">Tinder</span>
+        <span className="bg-white/5 px-3 py-1 rounded-full border border-white/5">Insta</span>
+      </div>
+    </div>
+
+    {/* Decorative Elements in front */}
+    <div className="absolute -right-4 top-20 animate-float z-30" style={{ animationDelay: '1s' }}>
+      <div className="bg-[#1a1a1a] border border-white/10 p-3 rounded-2xl shadow-xl rotate-12">
+        <MessageCircle size={20} className="text-purple-400" />
+      </div>
+    </div>
+    <div className="absolute -left-4 bottom-20 animate-float z-30" style={{ animationDelay: '2s' }}>
+      <div className="bg-[#1a1a1a] border border-white/10 p-3 rounded-2xl shadow-xl -rotate-12">
+        <Heart size={20} className="text-pink-400" />
+      </div>
+    </div>
+  </div>
+);
+
+const HeroResultCard: React.FC<{ suggestion: Suggestion, index: number }> = ({ suggestion, index }) => {
+  const [copied, setCopied] = useState(false);
+
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(suggestion.message);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  // Dynamic border color based on tone
+  const getToneStyle = (tone: string) => {
+    const t = tone.toLowerCase();
+    if (t.includes('engraçado') || t.includes('divertido')) return 'border-yellow-500/30 shadow-[0_0_15px_rgba(234,179,8,0.05)]';
+    if (t.includes('romântico') || t.includes('sedutor') || t.includes('ousado')) return 'border-pink-500/30 shadow-[0_0_15px_rgba(236,72,153,0.05)]';
+    if (t.includes('direto') || t.includes('sério')) return 'border-blue-500/30 shadow-[0_0_15px_rgba(59,130,246,0.05)]';
+    return 'border-white/10';
+  };
+
+  return (
+    <div
+      className={`bg-[#111] border rounded-xl p-3 relative group transition-all duration-300 ${getToneStyle(suggestion.tone)} hover:bg-[#161616]`}
+    >
+      {/* Tone Badge */}
+      <div className="absolute -top-2 left-3 px-2 py-0.5 bg-[#0a0a0a] border border-white/10 rounded-full text-[8px] font-bold text-gray-300 uppercase tracking-wider shadow-sm z-10">
+        {suggestion.tone}
+      </div>
+
+      {/* Content */}
+      <div className="mt-2 mb-2 relative">
+        <p className="text-xs md:text-sm text-white leading-relaxed font-medium selection:bg-purple-500/40">
+          "{suggestion.message}"
+        </p>
+      </div>
+
+      {/* Footer Actions */}
+      <div className="flex items-center justify-between border-t border-white/5 pt-2 mt-1">
+        <div className="flex items-start gap-1.5 flex-1 mr-2">
+          <Zap size={10} className="text-purple-400 flex-shrink-0 mt-[2px]" />
+          <span className="text-[9px] text-gray-500 leading-tight">{suggestion.explanation}</span>
+        </div>
+
+        <button
+          onClick={copyToClipboard}
+          className={`
+            flex items-center gap-1 px-1.5 py-1 rounded-md text-[10px] font-medium transition-all
+            ${copied ? 'bg-green-500/20 text-green-400' : 'bg-white/5 text-gray-400 active:bg-white/10 hover:bg-white/10 hover:text-white'}
+          `}
+        >
+          {copied ? <Check size={10} /> : <Copy size={10} />}
+          {copied ? 'Copiado' : 'Copiar'}
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export const Hero: React.FC<HeroProps> = ({ onAction, user }) => {
+  // --- Guest Logic ---
+  const [guestImage, setGuestImage] = useState<string | null>(null);
+  const [guestResults, setGuestResults] = useState<Suggestion[]>([]);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [hasUsedGuest, setHasUsedGuest] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [showUpsell, setShowUpsell] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (localStorage.getItem('puxe_assunto_guest_used')) {
+      setHasUsedGuest(true);
+    }
+  }, []);
+
+  const processFile = (file: File) => {
+    // If they already used it and are trying again (without results on screen), prompt signup
+    if (hasUsedGuest && guestResults.length === 0) {
+      setShowUpsell(true);
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      const img = ev.target?.result as string;
+      setGuestImage(img);
+      setIsAnalyzing(true);
+
+      try {
+        const { suggestions } = await analyzeChatScreenshot(img);
+        setGuestResults(suggestions);
+        localStorage.setItem('puxe_assunto_guest_used', 'true');
+        setHasUsedGuest(true);
+      } catch (err) {
+        console.error(err);
+        alert("Erro ao analisar. Tente novamente.");
+        setGuestImage(null);
+      } finally {
+        setIsAnalyzing(false);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleGuestUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) processFile(file);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) processFile(file);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleCtaClick = () => {
+    if (user) {
+      onAction(); // Open app
+    } else if (hasUsedGuest && guestResults.length === 0) {
+      setShowUpsell(true); // Prompt signup with upsell
+    } else if (guestResults.length > 0) {
+      onAction(); // They have results, prompt signup to save/continue
+    } else {
+      fileInputRef.current?.click(); // Open upload
+    }
+  };
+
+  const resetGuest = () => {
+    setGuestImage(null);
+    setGuestResults([]);
+    // Do not reset hasUsedGuest
+  };
+
+  return (
+    <section className="relative pt-24 pb-20 md:pt-48 md:pb-32">
+      <input
+        type="file"
+        ref={fileInputRef}
+        className="hidden"
+        accept="image/*"
+        onChange={handleGuestUpload}
+      />
 
       {/* Grid Container */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-y-12 lg:gap-y-0 lg:gap-x-20 items-center">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-y-6 lg:gap-y-0 lg:gap-x-20 items-center">
 
         {/* 1. Title Block (Badge + H1) */}
-        <div className="lg:col-span-7 text-center lg:text-left z-10 lg:self-end">
+        <div className="lg:col-span-7 text-center lg:text-left z-10 lg:self-center">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 mb-6">
             <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
             <span className="text-xs font-medium text-gray-300">Nunca mais fique sem assunto</span>
@@ -89,124 +341,145 @@ export const Hero: React.FC<HeroProps> = ({ onAction, user }) => {
               </span>
             </h1>
           </div>
+
+          <p className="text-sm md:text-base text-gray-400 mt-0 mb-0 max-w-lg mx-auto lg:mx-0 leading-relaxed">
+            Chega de vácuo. Envie o print da conversa e deixe nossa Inteligência analisar o contexto.
+          </p>
+
+          {/* Desktop: Chat Animation visible here */}
+          <div className="hidden lg:block mt-12">
+            <ChatAnimation />
+          </div>
         </div>
 
-        {/* 2. Chat Visualization */}
-        <div className="w-full mt-5 lg:col-span-5 flex justify-center relative lg:translate-x-0 perspective-1000 lg:row-span-2 z-20">
+        {/* 2. Upload / Chat Visualization */}
+        <div
+          className="w-full mt-5 lg:col-span-5 flex justify-center relative lg:translate-x-0 lg:row-span-2 z-20"
+          onDrop={handleDrop}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+        >
 
-          {/* Floating Container */}
-          <div className="relative w-full max-w-[400px] animate-float">
+          {/* State 1: Upload Widget + Text + Animation */}
+          {!guestImage && !isAnalyzing && !showUpsell && (
+            <div className="animate-fade-in w-full flex flex-col items-center">
+              <UploadWidget onUpload={() => fileInputRef.current?.click()} isDragging={isDragging} />
 
-            {/* Contact Badge - Floating above */}
-            <div className="absolute -top-10 left-0 right-0 flex justify-center z-20 transition-all duration-500 transform">
-              <div className="bg-[#1a1a1a]/80 backdrop-blur-xl border border-white/10 pl-2 pr-5 py-2 rounded-full flex items-center gap-3 shadow-2xl shadow-purple-500/10">
-                <div className="relative">
-                  <img src={currentScenario.avatar} alt="Avatar" className="w-10 h-10 rounded-full object-cover border-2 border-black" />
-                  <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-[#1a1a1a] rounded-full"></div>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-white font-bold text-sm">{currentScenario.name}</span>
-                  <span className={`text-[10px] font-medium uppercase tracking-wider ${currentScenario.color}`}>Online</span>
-                </div>
+              <div className="lg:hidden w-full flex justify-center">
+                <ChatAnimation />
               </div>
             </div>
+          )}
 
-            {/* Messages Area - Minimal & Glass */}
-            <div className="flex flex-col gap-2 mt-2 perspective-1000 min-h-[320px] justify-center">
+          {/* State 2: Results / Analysis (Phone UI) */}
+          {(guestImage || isAnalyzing) && !showUpsell && (
+            <div className="relative w-full max-w-[400px] aspect-[3/4] bg-[#0a0a0a] border border-white/10 rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col animate-fade-in">
+              {/* Header */}
+              {/* Header Removed for Minimalism */}
+              <div className="absolute top-4 right-4 z-10">
+                <button onClick={resetGuest} className="p-2 bg-black/50 hover:bg-black/70 backdrop-blur-md rounded-full text-white/70 hover:text-white transition-colors border border-white/10">
+                  <X size={14} />
+                </button>
+              </div>
 
-              {/* Context Messages */}
-              <div className="flex flex-col gap-3 transition-all duration-500">
-                {currentScenario.messages.map((msg, idx) => (
-                  <div
-                    key={`${scenarioIndex}-${idx}`}
-                    className="self-start max-w-[85%] animate-message-in origin-left"
-                    style={{ animationDelay: `${idx * 200}ms` }}
-                  >
-                    <div className="bg-[#111] border border-white/10 text-gray-200 px-5 py-3 rounded-2xl rounded-tl-none shadow-lg backdrop-blur-sm">
-                      <p className="text-sm leading-relaxed">{msg.text}</p>
+              {/* Chat Area */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar bg-[#0a0a0a]">
+
+                {/* User Image Message */}
+                {guestImage && (
+                  <div className="flex justify-end animate-fade-in">
+                    <div className="max-w-[85%] bg-[#1a1a1a] border border-white/10 p-2 rounded-2xl rounded-tr-none">
+                      <img src={guestImage} alt="Upload" className="rounded-xl w-full object-cover max-h-48" />
+                    </div>
+                  </div>
+                )}
+
+                {/* AI Analyzing */}
+                {isAnalyzing && (
+                  <div className="flex justify-start animate-fade-in">
+                    <div className="bg-gradient-to-br from-purple-900/20 to-pink-900/20 border border-purple-500/20 p-4 rounded-2xl rounded-tl-none flex items-center gap-3">
+                      <Loader2 className="animate-spin text-purple-400" size={18} />
+                      <span className="text-xs text-purple-200 font-medium animate-pulse">Analisando conversa...</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Results */}
+                {!isAnalyzing && guestResults.map((res, idx) => (
+                  <div key={idx} className="flex justify-start animate-slide-up" style={{ animationDelay: `${idx * 150}ms` }}>
+                    <div className="max-w-[95%]">
+                      <HeroResultCard suggestion={res} index={idx} />
                     </div>
                   </div>
                 ))}
-              </div>
 
-              {/* Interaction Area */}
-              <div className="h-24 relative">
-                {/* Typing Indicator */}
-                {step === 1 && (
-                  <div className="absolute right-0 top-0 self-end animate-fade-in">
-                    <div className="bg-gradient-to-br from-purple-900/50 to-pink-900/50 border border-white/5 p-4 rounded-2xl rounded-tr-none backdrop-blur-md">
-                      <div className="flex gap-1.5">
-                        <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                        <div className="w-2 h-2 bg-pink-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                        <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
-                      </div>
-                    </div>
-                    <div className="text-right mt-2">
-                      <span className="text-xs text-purple-400/70 font-medium animate-pulse">IA pensando...</span>
-                    </div>
-                  </div>
-                )}
-
-                {/* AI Suggestion Bubble */}
-                {step === 2 && (
-                  <div className="absolute right-0 top-0 w-full flex flex-col items-end animate-slide-up">
-                    {/* Badge */}
-                    <div className="flex items-center gap-2 mb-2 mr-1">
-                      <div className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-full p-1">
-                        <Sparkles size={10} className="text-white" />
-                      </div>
-                      <span className="text-xs font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400 uppercase tracking-widest">Sugestão Puxe Assunto</span>
-                    </div>
-
-                    {/* Bubble */}
-                    <div className="relative group cursor-pointer transition-transform hover:scale-[1.02]">
-                      <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl rounded-tr-none blur opacity-40 group-hover:opacity-75 transition duration-500"></div>
-                      <div className="relative bg-[#0a0a0a] border border-white/10 text-white px-6 py-4 rounded-2xl rounded-tr-none shadow-2xl flex items-start gap-4">
-                        <p className="text-sm md:text-base leading-relaxed font-medium">
-                          {currentScenario.suggestion}
-                        </p>
-                        <div className="bg-white/10 p-1.5 rounded-full mt-0.5 hover:bg-white/20 transition-colors">
-                          <MessageCircle size={14} className="text-purple-400" />
-                        </div>
-                      </div>
-                    </div>
+                {/* CTA after results */}
+                {!isAnalyzing && guestResults.length > 0 && (
+                  <div className="flex justify-center pt-4 pb-2 animate-fade-in" style={{ animationDelay: '800ms' }}>
+                    <button
+                      onClick={onAction}
+                      className="px-6 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-xs font-bold text-white transition-all flex items-center gap-2 group"
+                    >
+                      <span>Ver mais opções</span>
+                      <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform" />
+                    </button>
                   </div>
                 )}
               </div>
-
             </div>
-          </div>
+          )}
 
-          {/* Glow behind chat */}
+          {/* Glow behind */}
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-gradient-to-tr from-purple-600/20 to-pink-600/20 rounded-full blur-[60px] -z-10"></div>
-        </div>
 
-        {/* 3. Content Block (Description, Buttons, Social Proof) */}
-        <div className="lg:col-span-7 text-center lg:text-left z-10 lg:self-start">
-          <p className="text-lg md:text-xl text-gray-400 mb-10 max-w-2xl mx-auto lg:mx-0 leading-relaxed">
-            Chega de vácuo. Envie o print da conversa e deixe nossa Inteligência analisar o contexto para criar respostas irresistíveis em segundos. Acabe com o silêncio constrangedor.
-          </p>
+          {/* Upsell Modal/Overlay - Fixed to viewport */}
+          {/* State 3: Upsell Card (Replaces Upload/Results) */}
+          {showUpsell && (
+            <div className="relative w-full max-w-[400px] aspect-[3/4] mx-auto animate-slide-up">
+              <div className="relative bg-[#111] border border-white/10 p-8 rounded-[2.5rem] w-full h-full flex flex-col items-center justify-center text-center shadow-2xl">
 
-          <div className="flex flex-col sm:flex-row items-center gap-4 justify-center lg:justify-start">
-            <button
-              onClick={onAction}
-              className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full text-white font-bold shadow-lg shadow-pink-500/25 hover:shadow-pink-500/40 hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-2"
-            >
-              {user ? "Abrir Puxe Assunto" : "Testar Agora"} <ArrowRight className="w-5 h-5" />
-            </button>
-          </div>
-
-          <div className="mt-10 flex items-center justify-center lg:justify-start gap-4 text-sm text-gray-500">
-            <div className="flex -space-x-2">
-              {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="w-8 h-8 rounded-full bg-gray-800 border-2 border-black overflow-hidden">
-                  <img src={`https://picsum.photos/seed/${i + 20}/100`} alt="User" className="w-full h-full object-cover" />
+                {/* Close Button */}
+                <div className="absolute top-4 right-4 z-10">
+                  <button onClick={() => setShowUpsell(false)} className="p-2 bg-black/50 hover:bg-black/70 backdrop-blur-md rounded-full text-white/70 hover:text-white transition-colors border border-white/10">
+                    <X size={14} />
+                  </button>
                 </div>
-              ))}
+
+                <div className="w-16 h-16 mx-auto bg-gradient-to-tr from-purple-600 to-pink-600 rounded-xl flex items-center justify-center mb-6 shadow-lg shadow-purple-500/20 animate-pulse">
+                  <MessageCircleHeart size={32} className="text-white" />
+                </div>
+
+                <h3 className="text-2xl font-bold text-white mb-2">Desbloqueie tudo!</h3>
+                <p className="text-gray-400 text-sm mb-6 leading-relaxed max-w-[260px]">
+                  Você já usou sua análise gratuita. Crie uma conta para continuar e ter acesso a:
+                </p>
+
+                <ul className="text-left space-y-3 mb-8 w-full max-w-[260px]">
+                  <li className="flex items-center gap-3 text-sm text-gray-300">
+                    <div className="p-1 bg-green-500/10 rounded-full"><Check size={12} className="text-green-400" /></div>
+                    Mais análises gratuitas
+                  </li>
+                  <li className="flex items-center gap-3 text-sm text-gray-300">
+                    <div className="p-1 bg-green-500/10 rounded-full"><Check size={12} className="text-green-400" /></div>
+                    Histórico de conversas
+                  </li>
+                  <li className="flex items-center gap-3 text-sm text-gray-300">
+                    <div className="p-1 bg-green-500/10 rounded-full"><Check size={12} className="text-green-400" /></div>
+                    Tons exclusivos
+                  </li>
+                </ul>
+
+                <button
+                  onClick={onAction}
+                  className="w-full max-w-[260px] py-3 bg-white text-black font-bold rounded-xl hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
+                >
+                  Criar Conta Grátis <ArrowRight size={16} />
+                </button>
+              </div>
             </div>
-            <p>Mais de <span className="text-white font-semibold">10.000</span> conversas salvas.</p>
-          </div>
+          )}
         </div>
+
 
       </div>
 
@@ -237,6 +510,6 @@ export const Hero: React.FC<HeroProps> = ({ onAction, user }) => {
             animation: fadeIn 0.8s ease-in-out;
         }
       `}</style>
-    </section>
+    </section >
   );
 };
