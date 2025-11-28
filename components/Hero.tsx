@@ -171,7 +171,7 @@ const UploadWidget: React.FC<{ onUpload: () => void, isDragging: boolean }> = ({
   </div>
 );
 
-const HeroResultCard: React.FC<{ suggestion: Suggestion, index: number }> = ({ suggestion, index }) => {
+const HeroResultCard: React.FC<{ suggestion: Suggestion, index: number, isLocked?: boolean }> = ({ suggestion, index, isLocked = false }) => {
   const [copied, setCopied] = useState(false);
 
   const copyToClipboard = () => {
@@ -191,18 +191,24 @@ const HeroResultCard: React.FC<{ suggestion: Suggestion, index: number }> = ({ s
 
   return (
     <div
-      className={`bg-[#111] border rounded-xl p-3 relative group transition-all duration-300 ${getToneStyle(suggestion.tone)} hover:bg-[#161616]`}
+      className={`bg-[#111] border rounded-xl p-3 relative group transition-all duration-300 ${isLocked ? 'border-white/5' : `${getToneStyle(suggestion.tone)} hover:bg-[#161616]`}`}
     >
       {/* Tone Badge */}
-      <div className="absolute -top-2 left-3 px-2 py-0.5 bg-[#0a0a0a] border border-white/10 rounded-full text-[8px] font-bold text-gray-300 uppercase tracking-wider shadow-sm z-10">
+      <div className={`absolute -top-2 left-3 px-2 py-0.5 bg-[#0a0a0a] border border-white/10 rounded-full text-[8px] font-bold text-gray-300 uppercase tracking-wider shadow-sm z-10 ${isLocked ? 'opacity-70' : ''}`}>
         {suggestion.tone}
       </div>
 
       {/* Content */}
       <div className="mt-2 mb-2 relative">
-        <p className="text-xs md:text-sm text-white leading-relaxed font-medium selection:bg-purple-500/40">
-          "{suggestion.message}"
-        </p>
+        {isLocked ? (
+          <p className="text-xs md:text-sm text-white leading-relaxed font-medium">
+            "{suggestion.message.split(' ').slice(0, 6).join(' ')} <span className="blur-sm select-none opacity-50">{suggestion.message.split(' ').slice(6).join(' ')}</span>
+          </p>
+        ) : (
+          <p className="text-xs md:text-sm text-white leading-relaxed font-medium selection:bg-purple-500/40">
+            "{suggestion.message}"
+          </p>
+        )}
       </div>
 
       {/* Footer Actions */}
@@ -212,16 +218,18 @@ const HeroResultCard: React.FC<{ suggestion: Suggestion, index: number }> = ({ s
           <span className="text-[9px] text-gray-500 leading-tight">{suggestion.explanation}</span>
         </div>
 
-        <button
-          onClick={copyToClipboard}
-          className={`
-            flex items-center gap-1 px-1.5 py-1 rounded-md text-[10px] font-medium transition-all
-            ${copied ? 'bg-green-500/20 text-green-400' : 'bg-white/5 text-gray-400 active:bg-white/10 hover:bg-white/10 hover:text-white'}
-          `}
-        >
-          {copied ? <Check size={10} /> : <Copy size={10} />}
-          {copied ? 'Copiado' : 'Copiar'}
-        </button>
+        {!isLocked && (
+          <button
+            onClick={copyToClipboard}
+            className={`
+              flex items-center gap-1 px-1.5 py-1 rounded-md text-[10px] font-medium transition-all
+              ${copied ? 'bg-green-500/20 text-green-400' : 'bg-white/5 text-gray-400 active:bg-white/10 hover:bg-white/10 hover:text-white'}
+            `}
+          >
+            {copied ? <Check size={10} /> : <Copy size={10} />}
+            {copied ? 'Copiado' : 'Copiar'}
+          </button>
+        )}
       </div>
     </div>
   );
@@ -405,10 +413,10 @@ export const Hero: React.FC<HeroProps> = ({ onAction, user }) => {
                 )}
 
                 {/* Results */}
-                {!isAnalyzing && guestResults.map((res, idx) => (
+                {!isAnalyzing && guestResults.slice(0, 5).map((res, idx) => (
                   <div key={idx} className="flex justify-start animate-slide-up" style={{ animationDelay: `${idx * 150}ms` }}>
                     <div className="max-w-[95%]">
-                      <HeroResultCard suggestion={res} index={idx} />
+                      <HeroResultCard suggestion={res} index={idx} isLocked={idx > 0} />
                     </div>
                   </div>
                 ))}
@@ -417,11 +425,11 @@ export const Hero: React.FC<HeroProps> = ({ onAction, user }) => {
                 {!isAnalyzing && guestResults.length > 0 && (
                   <div className="flex justify-center pt-4 pb-2 animate-fade-in" style={{ animationDelay: '800ms' }}>
                     <button
-                      onClick={onAction}
-                      className="px-6 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-xs font-bold text-white transition-all flex items-center gap-2 group"
+                      onClick={() => setShowUpsell(true)}
+                      className="px-5 py-2.5 bg-white hover:bg-gray-100 rounded-xl text-xs font-bold text-black transition-all flex items-center gap-2 group shadow-lg"
                     >
-                      <span>Ver mais opções</span>
-                      <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform" />
+                      <MessageCircle size={14} className="group-hover:scale-110 transition-transform" />
+                      <span>Ver Todas as Respostas</span>
                     </button>
                   </div>
                 )}

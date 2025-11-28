@@ -1,4 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
+import { supabase } from '../lib/supabase';
 
 const API_KEY = process.env.API_KEY || '';
 
@@ -63,7 +64,52 @@ const compressBase64Image = async (base64String: string, maxSizeKB: number = 200
   });
 };
 
+// Helper function to save guest image to Supabase Storage
+const saveGuestImageToStorage = async (base64Image: string): Promise<string | null> => {
+  try {
+    // Convert base64 to blob
+    const base64Data = base64Image.split(',')[1] || base64Image;
+    const byteCharacters = atob(base64Data);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], { type: 'image/jpeg' });
+
+    // Generate unique filename with timestamp
+    const timestamp = new Date().getTime();
+    const randomStr = Math.random().toString(36).substring(7);
+    const fileName = `guest_${timestamp}_${randomStr}.jpg`;
+
+    // Upload to Supabase Storage
+    const { data, error } = await supabase.storage
+      .from('puxeassunto-sem-login')
+      .upload(fileName, blob, {
+        contentType: 'image/jpeg',
+        cacheControl: '3600',
+        upsert: false
+      });
+
+    if (error) {
+      console.error('Error uploading to Supabase Storage:', error);
+      return null;
+    }
+
+    console.log('Image saved to Storage:', data.path);
+    return data.path;
+  } catch (error) {
+    console.error('Error saving guest image:', error);
+    return null;
+  }
+};
+
 export const analyzeChatScreenshot = async (base64Image: string, userContext?: string): Promise<AnalysisResult> => {
+  // Save guest image to Storage (non-blocking - don't wait for it)
+  saveGuestImageToStorage(base64Image).catch(err => 
+    console.error('Failed to save guest image:', err)
+  );
+
   if (!API_KEY) {
     // Fallback for demo purposes if no API key is present in environment
     console.warn("No API Key found. Returning mock data.");
