@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Check, ArrowLeft, Sparkles, MessageCircleHeart, CheckCircle2, Clock } from 'lucide-react';
+import React from 'react';
+import { Check, ArrowLeft, Sparkles, MessageCircleHeart, CheckCircle2 } from 'lucide-react';
 import { metaService } from '../services/metaService';
 
 interface UpgradePageProps {
@@ -8,52 +8,21 @@ interface UpgradePageProps {
 }
 
 export const UpgradePage: React.FC<UpgradePageProps> = ({ onBack, user }) => {
-    const [timeLeft, setTimeLeft] = useState('');
-
-    useEffect(() => {
-        const updateTimer = () => {
-            const now = new Date();
-            const midnight = new Date(now);
-            midnight.setHours(24, 0, 0, 0);
-            const diff = midnight.getTime() - now.getTime();
-            
-            const hours = Math.floor(diff / (1000 * 60 * 60));
-            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-            
-            setTimeLeft(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
-        };
-        
-        updateTimer();
-        const interval = setInterval(updateTimer, 1000);
-        return () => clearInterval(interval);
-    }, []);
 
     const handleUpgrade = () => {
         // Track InitiateCheckout
         metaService.trackEvent({
             eventName: 'InitiateCheckout',
             contentName: 'Plano PRO Ilimitado',
-            value: 10.00,
+            value: 15.00,
             currency: 'BRL',
             contentType: 'product'
         });
         
-        // Append user data to URL for pre-filling and tracking
         // Kirvano Checkout Link
-        const checkoutUrl = new URL('https://pay.kirvano.com/fabb514d-35f0-46ab-aea2-493be20b93a5');
+        const checkoutUrl = 'https://pay.kirvano.com/1b352195-0b65-4afa-9a3e-bd58515446e9';
         
-        if (user?.email) {
-            checkoutUrl.searchParams.append('email', user.email);
-            checkoutUrl.searchParams.append('customer_email', user.email);
-        }
-        if (user?.id) {
-            // Kirvano usually accepts 'custom_id' or 'external_reference'
-            checkoutUrl.searchParams.append('external_reference', user.id);
-            checkoutUrl.searchParams.append('custom_id', user.id);
-        }
-
-        window.open(checkoutUrl.toString(), '_blank');
+        window.open(checkoutUrl, '_blank');
     };
 
     return (
@@ -147,7 +116,7 @@ export const UpgradePage: React.FC<UpgradePageProps> = ({ onBack, user }) => {
                                 <span className="text-sm text-gray-500 line-through mb-1">De R$ 29,90 por</span>
                                 <div className="flex items-baseline gap-2">
                                     <span className="text-6xl font-extrabold text-white tracking-tighter drop-shadow-[0_0_15px_rgba(168,85,247,0.5)]">
-                                        R$ 10
+                                        R$ 15
                                     </span>
                                     <span className="text-xl font-bold text-purple-400">,00</span>
                                 </div>
@@ -155,16 +124,8 @@ export const UpgradePage: React.FC<UpgradePageProps> = ({ onBack, user }) => {
 
                             <p className="text-sm text-green-400 font-bold flex items-center gap-1 mb-4">
                                 <Sparkles size={14} />
-                                Apenas R$ 10,00 hoje!
+                                Apenas R$ 15,00!
                             </p>
-
-                            {/* Timer Banner */}
-                            <div className="w-full bg-red-500/10 border border-red-500/20 rounded-lg py-2 px-3 mb-4 flex items-center justify-center gap-2 animate-pulse">
-                                 <Clock size={14} className="text-red-400" />
-                                 <span className="text-xs font-bold text-red-300 uppercase tracking-wide text-center">
-                                     Encerra hoje ({new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}) em: <span className="text-white font-mono ml-1 text-sm">{timeLeft}</span>
-                                 </span>
-                            </div>
                         </div>
 
                         <ul className="space-y-3 mb-8 flex-1 relative">
