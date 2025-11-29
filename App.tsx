@@ -11,6 +11,7 @@ import { Dashboard } from './components/Dashboard';
 import { UpgradePage } from './components/UpgradePage';
 import { ThankYouPage } from './components/ThankYouPage';
 import { LegalPage } from './components/LegalPage';
+import { FacePage } from './components/FacePage';
 import { supabase } from './lib/supabase';
 import { metaService } from './services/metaService';
 
@@ -192,6 +193,12 @@ const AppRouter: React.FC = () => {
         <Route
           path="/terms"
           element={<LegalPage type="terms" onBack={() => navigate('/')} />}
+        />
+
+        {/* Face Page - Landing without login */}
+        <Route
+          path="/face"
+          element={<FacePage />}
         />
 
         {/* Redirect any unknown routes to landing */}

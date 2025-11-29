@@ -104,6 +104,119 @@ const saveGuestImageToStorage = async (base64Image: string): Promise<string | nu
   }
 };
 
+// Function for /face page - uses gemini-3-pro and returns 11 suggestions
+export const analyzeChatScreenshotFace = async (base64Image: string): Promise<AnalysisResult> => {
+  // Save image to Storage (non-blocking)
+  saveGuestImageToStorage(base64Image).catch(err => 
+    console.error('Failed to save face image:', err)
+  );
+
+  if (!API_KEY) {
+    // Fallback for demo purposes if no API key is present in environment
+    console.warn("No API Key found. Returning mock data for Face page.");
+    return new Promise(resolve => setTimeout(() => resolve({
+      title: "Conversa Analisada",
+      suggestions: [
+        { tone: "Engraçado", message: "Essa é a hora que eu finjo que não vi e a gente recomeça? 😂", explanation: "Quebra o gelo com humor." },
+        { tone: "Curioso", message: "Tô curioso... o que aconteceu depois disso?", explanation: "Mostra interesse na história." },
+        { tone: "Direto", message: "Topa continuar esse papo pessoalmente?", explanation: "Para quem quer agilizar o encontro." },
+        { tone: "Ousado", message: "Se você for tão interessante ao vivo quanto por msg, tô com problemas.", explanation: "Elogio com desafio." },
+        { tone: "Descontraído", message: "Nota 10 pra essa história, mas quero saber a versão sem cortes.", explanation: "Mantém a leveza e curiosidade." },
+        { tone: "Romântico", message: "Adorei conversar com você... tô começando a gostar disso.", explanation: "Demonstra interesse genuíno." },
+        { tone: "Provocativo", message: "Você sempre demora assim pra responder ou sou especial?", explanation: "Brincadeira leve sobre tempo de resposta." },
+        { tone: "Empático", message: "Entendo completamente o que você tá passando...", explanation: "Mostra que você se importa." },
+        { tone: "Misterioso", message: "Tenho uma teoria sobre você, mas vou guardar pra mim por enquanto 😏", explanation: "Cria intriga e curiosidade." },
+        { tone: "Confiante", message: "Sabia que você ia responder, ninguém resiste.", explanation: "Demonstra autoconfiança." },
+        { tone: "Fofo", message: "Adorei essa conversa, você é muito especial sabia?", explanation: "Elogio sincero e carinhoso." }
+      ]
+    }), 2000));
+  }
+
+  try {
+    const ai = new GoogleGenAI({ apiKey: API_KEY });
+    
+    // Compress image before sending
+    const compressedImage = await compressBase64Image(base64Image);
+    
+    // Remove header if present (data:image/png;base64,)
+    const cleanBase64 = compressedImage.split(',')[1] || compressedImage;
+
+    const prompt = `
+      Atue como um especialista em "Game" e conquista digital (Tinder, Bumble, Instagram, WhatsApp).
+      
+      ANÁLISE VISUAL CRÍTICA:
+      - Mensagens à DIREITA (Verde/Azul/etc) são MINHAS (do usuário).
+      - Mensagens à ESQUERDA (Cinza/Branco) são DELA/DELE (do "alvo").
+      - O objetivo é sugerir o que EU (Direita) devo enviar para ELA/ELE (Esquerda).
+
+      CENÁRIOS POSSÍVEIS (Identifique qual se aplica):
+      1. RESPOSTA: Se a última mensagem for da Esquerda, sugira uma resposta adequada ao contexto.
+      2. CONTINUAÇÃO: Se a última mensagem for da Direita (vácuo ou conversa morreu), sugira um "reviver" de assunto ou uma mudança de tópico.
+      3. ABERTURA: Se for um perfil ou foto sem chat, sugira um abridor (opener) criativo.
+
+      ANÁLISE DE SENTIMENTO E TONS (CRUCIAL):
+      - Antes de gerar, IDENTIFIQUE O CLIMA da conversa (Triste, Sério, Divertido, Flertando, Tenso, etc).
+      - ADAPTE OS TONS AO CLIMA.
+      - ERRO GRAVE: Não use tons engraçados, sexys ou ousados se a conversa for séria, triste, de desabafo ou rejeição.
+      
+      Exemplos de adaptação (NÃO SE LIMITE A ESTES, CRIE TONS NOVOS SE PRECISAR):
+      - Conversa Triste/Séria? Use tons como: "Empático", "Acolhedor", "Compreensivo", "Apoio".
+      - Conversa Tensa/Briga? Use tons como: "Apaziguador", "Maduro", "Resolutivo".
+      - Conversa Divertida? Use tons como: "Engraçado", "Provocativo", "Ousado".
+      * O importante é o tom ser coerente com o sentimento da conversa.
+
+      Diretrizes de Estilo:
+      - EXTREMAMENTE CONCISO: Mensagens curtas (1-2 frases).
+      - NATURALIDADE: Use gírias leves, sem pontuação excessiva, pareça humano.
+      - ZERO GENÉRICO: Proibido "Oi tudo bem". Use detalhes específicos da imagem.
+      
+      Tarefas:
+      1. Crie um TÍTULO curto (max 4 palavras) resumindo o contexto.
+      2. Gere 11 sugestões de resposta com tons variados ADAPTADOS AO SENTIMENTO IDENTIFICADO.
+      
+      Retorne APENAS um JSON válido com o seguinte formato (sem markdown):
+      {
+        "title": "Título do Contexto",
+        "suggestions": [
+          { "tone": "Tom (ex: Ousado)", "message": "Texto da mensagem", "explanation": "Por que funciona" }
+        ]
+      }
+    `;
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-pro',
+      contents: {
+        parts: [
+          {
+            inlineData: {
+              mimeType: 'image/jpeg', 
+              data: cleanBase64
+            }
+          },
+          { text: prompt }
+        ]
+      }
+    });
+
+    const text = response.text || '{}';
+    // Clean up potential markdown code blocks
+    const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
+    
+    const parsed = JSON.parse(cleanText);
+    
+    // Ensure compatibility if AI returns array directly (legacy handling)
+    if (Array.isArray(parsed)) {
+      return { title: "Nova Análise", suggestions: parsed };
+    }
+    
+    return parsed as AnalysisResult;
+
+  } catch (error) {
+    console.error("Error calling Gemini for Face page:", error);
+    throw error;
+  }
+};
+
 export const analyzeChatScreenshot = async (base64Image: string, userContext?: string, isGuest: boolean = false): Promise<AnalysisResult> => {
   // Save guest image to Storage (non-blocking - don't wait for it)
   if (isGuest) {
