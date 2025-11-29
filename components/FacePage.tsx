@@ -400,7 +400,7 @@ export const FacePage: React.FC = () => {
     });
     
     // Kirvano Checkout Link
-    const checkoutUrl = 'https://pay.kirvano.com/1b352195-0b65-4afa-9a3e-bd58515446e9';
+    const checkoutUrl = 'https://pay.kirvano.com/6ba6e6eb-5862-457f-8021-2c2e81ae75f6';
     window.open(checkoutUrl, '_blank');
   };
 

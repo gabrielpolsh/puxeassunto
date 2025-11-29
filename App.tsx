@@ -10,6 +10,7 @@ import { AuthPage } from './components/AuthPage';
 import { Dashboard } from './components/Dashboard';
 import { UpgradePage } from './components/UpgradePage';
 import { ThankYouPage } from './components/ThankYouPage';
+import { ThankYouPage2 } from './components/ThankYouPage2';
 import { LegalPage } from './components/LegalPage';
 import { FacePage } from './components/FacePage';
 import { supabase } from './lib/supabase';
@@ -183,6 +184,12 @@ const AppRouter: React.FC = () => {
         <Route
           path="/thankyou"
           element={<ThankYouPage onGoToDashboard={() => navigate('/dashboard')} />}
+        />
+
+        {/* Thank You Page 2 - For Face page purchases */}
+        <Route
+          path="/thankyou2"
+          element={<ThankYouPage2 />}
         />
 
         {/* Legal Pages */}
