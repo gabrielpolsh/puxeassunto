@@ -898,7 +898,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
                 </button>
                 <div className="w-px h-3 bg-white/10"></div>
                 <a
-                  href="https://wa.me/18734804971?text=Ol%C3%A1!%20Vim%20pelo%20site%20Puxe%20Assunto%20e%20preciso%20de%20suporte."
+                  href="https://wa.me/5561981620092?text=Ol%C3%A1!%20Vim%20pelo%20site%20Puxe%20Assunto%20e%20preciso%20de%20suporte."
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-1 text-[10px] text-gray-500 hover:text-green-400 transition-colors"

@@ -25,7 +25,7 @@ export const ThankYouPage2: React.FC = () => {
     };
 
     const handleWhatsAppSupport = () => {
-        window.open('https://wa.me/18734804971?text=Olá! Acabei de fazer uma compra no Puxe Assunto e preciso de ajuda.', '_blank');
+        window.open('https://wa.me/5561981620092?text=Olá! Acabei de fazer uma compra no Puxe Assunto e preciso de ajuda.', '_blank');
     };
 
     return (
