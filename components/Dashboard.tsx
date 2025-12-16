@@ -79,11 +79,12 @@ const getSignedImageUrl = async (imagePath: string): Promise<string | null> => {
 };
 
 // Helper to upload image to Supabase Storage
-const uploadImage = async (fileOrBase64: string | File, userId: string): Promise<string | null> => {
+// Returns { path, signedUrl } - path for DB storage, signedUrl for immediate display
+const uploadImage = async (fileOrBase64: string | File, userId: string): Promise<{ path: string; signedUrl: string } | null> => {
   try {
-    // If it's already a URL, return it
+    // If it's already a signed URL or external URL, return as-is
     if (typeof fileOrBase64 === 'string' && fileOrBase64.startsWith('http')) {
-      return fileOrBase64;
+      return { path: fileOrBase64, signedUrl: fileOrBase64 };
     }
 
     let blob: Blob;
@@ -117,6 +118,7 @@ const uploadImage = async (fileOrBase64: string | File, userId: string): Promise
 
     const fileExt = contentType.split('/')[1] || 'jpg';
     const fileName = `${userId}/${Date.now()}.${fileExt}`;
+    const storagePath = `/images/${fileName}`;
 
     console.log('Uploading to Supabase Storage:', fileName);
 
@@ -129,15 +131,27 @@ const uploadImage = async (fileOrBase64: string | File, userId: string): Promise
 
     if (uploadError) {
       console.error('Supabase Storage Upload Error:', uploadError);
-      // If bucket doesn't exist or RLS fails, we might want to alert
       return null;
     }
 
-    // Return local proxy URL instead of Supabase URL
-    // This requires a proxy rule in vite.config.ts (dev) and _redirects (prod)
-    const localUrl = `/images/${fileName}`;
-    console.log('Upload successful. Local URL:', localUrl);
-    return localUrl;
+    // Generate signed URL for immediate use (private bucket)
+    const { data: signedData, error: signedError } = await supabase.storage
+      .from('puxeassunto')
+      .createSignedUrl(fileName, 3600); // 1 hour
+
+    if (signedError || !signedData) {
+      console.error('Error creating signed URL after upload:', signedError);
+      return { path: storagePath, signedUrl: storagePath };
+    }
+
+    // Cache the signed URL
+    signedUrlCache.set(fileName, {
+      url: signedData.signedUrl,
+      expiry: Date.now() + 3600000
+    });
+
+    console.log('Upload successful. Signed URL generated.');
+    return { path: storagePath, signedUrl: signedData.signedUrl };
   } catch (error) {
     console.error('Error in uploadImage:', error);
     return null;
@@ -663,15 +677,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
 
       if (sessionId) {
         // Upload image to storage
-        const imageUrl = await uploadImage(selectedImage, user.id);
-        if (!imageUrl) {
+        const uploadResult = await uploadImage(selectedImage, user.id);
+        if (!uploadResult) {
           console.warn('Image upload failed, saving as base64');
           alert('Aviso: Não foi possível salvar a imagem no servidor. Ela será salva localmente.');
+          await saveInteraction(sessionId, selectedImage, userContext, suggestions);
         } else {
-          // Update local state to use URL immediately
-          setSelectedImage(imageUrl);
+          // Update local state to use signed URL for immediate display
+          setSelectedImage(uploadResult.signedUrl);
+          // Save path (not signed URL) to database
+          await saveInteraction(sessionId, uploadResult.path, userContext, suggestions);
         }
-        await saveInteraction(sessionId, imageUrl || selectedImage, userContext, suggestions);
       }
 
     } catch (err) {
@@ -709,21 +725,24 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
       if (sessionId) {
         // Save the pickup lines interaction
         if (image) {
-          const imageUrl = await uploadImage(image, user.id);
-          if (!imageUrl) {
+          const uploadResult = await uploadImage(image, user.id);
+          let imageToSave = image;
+          if (!uploadResult) {
             console.warn('Image upload failed, saving as base64');
             alert('Aviso: Não foi possível salvar a imagem no servidor. Ela será salva localmente.');
           } else {
-            // Update local state to use URL immediately if it was the selected image
+            // Update local state to use signed URL for immediate display
             if (image === selectedImage) {
-              setSelectedImage(imageUrl);
+              setSelectedImage(uploadResult.signedUrl);
             }
+            // Use path for database storage
+            imageToSave = uploadResult.path;
           }
           await supabase.from('messages').insert({
             chat_id: sessionId,
             role: 'user',
             content: pickupContext || 'Gerar cantadas com foto',
-            image_data: imageUrl || image
+            image_data: imageToSave
           });
         } else {
           await supabase.from('messages').insert({
