@@ -56,7 +56,7 @@ export const Testimonials: React.FC = () => {
            <span className="text-xs font-medium text-gray-300 uppercase tracking-wide">Depoimentos</span>
         </div>
         <h2 className="text-4xl md:text-6xl font-bold text-white mb-6">
-          Quem usou, <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">aprovou.</span>
+          Quem usou, <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-rose-400">aprovou.</span>
         </h2> 
         <p className="text-gray-400 max-w-xl mx-auto text-lg">
           Junte-se a milhares de pessoas que melhoraram sua comunicação e conseguiram mais encontros.
@@ -98,7 +98,7 @@ const TestimonialCard: React.FC<{ data: typeof testimonials[0] }> = ({ data }) =
   <div className="w-[350px] md:w-[400px] bg-[#111]/40 backdrop-blur-md border border-white/5 rounded-2xl p-6 hover:bg-[#161616]/60 hover:border-white/10 transition-all duration-300 group cursor-default relative overflow-hidden">
     
     {/* Subtle Glow on Hover */}
-    <div className="absolute inset-0 bg-gradient-to-tr from-purple-500/5 to-pink-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+    <div className="absolute inset-0 bg-gradient-to-tr from-red-500/5 to-rose-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
 
     <div className="flex items-start justify-between mb-4 relative z-10">
       <div className="flex items-center gap-3">
@@ -113,7 +113,7 @@ const TestimonialCard: React.FC<{ data: typeof testimonials[0] }> = ({ data }) =
           <p className="text-xs text-gray-500">{data.handle}</p>
         </div>
       </div>
-      <Quote className="text-white/10 fill-current group-hover:text-purple-500/20 transition-colors" size={32} />
+      <Quote className="text-white/10 fill-current group-hover:text-rose-500/20 transition-colors" size={32} />
     </div>
     
     <p className="text-gray-300 text-sm leading-relaxed mb-4 relative z-10">

@@ -68,17 +68,17 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess, onBack }) =>
       {/* Left Side - Visual & Branding (Hidden on Mobile) */}
       <div className="hidden lg:flex w-1/2 relative overflow-hidden bg-[#0a0a0a] border-r border-white/5 flex-col justify-between p-16">
         {/* Background Effects */}
-        <div className="absolute top-[-20%] left-[-20%] w-[70%] h-[70%] bg-purple-600/10 rounded-full blur-[120px] pointer-events-none"></div>
-        <div className="absolute bottom-[-20%] right-[-20%] w-[70%] h-[70%] bg-pink-600/10 rounded-full blur-[120px] pointer-events-none"></div>
+        <div className="absolute top-[-20%] left-[-20%] w-[70%] h-[70%] bg-red-600/10 rounded-full blur-[120px] pointer-events-none"></div>
+        <div className="absolute bottom-[-20%] right-[-20%] w-[70%] h-[70%] bg-rose-600/10 rounded-full blur-[120px] pointer-events-none"></div>
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-10"></div>
 
         {/* Logo */}
         <div className="relative z-10 flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-pink-500 rounded-xl flex items-center justify-center shadow-lg shadow-purple-900/20 border border-white/10">
+            <div className="w-10 h-10 bg-gradient-to-br from-red-600 to-rose-500 rounded-xl flex items-center justify-center shadow-lg shadow-red-900/20 border border-white/10">
               <MessageCircleHeart className="w-5 h-5 text-white" strokeWidth={2.5} />
             </div>
             <span className="text-xl font-bold text-white tracking-tight">
-            Puxe<span className="font-light text-purple-200">Assunto</span>
+            Puxe<span className="font-light text-rose-200">Assunto</span>
           </span>
         </div>
 
@@ -127,7 +127,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess, onBack }) =>
 
         <div className="w-full max-w-[400px]">
             <div className="text-center mb-10">
-                <div className="lg:hidden w-12 h-12 mx-auto bg-gradient-to-br from-purple-600 to-pink-500 rounded-xl flex items-center justify-center shadow-lg shadow-purple-900/20 mb-6">
+                <div className="lg:hidden w-12 h-12 mx-auto bg-gradient-to-br from-red-600 to-rose-500 rounded-xl flex items-center justify-center shadow-lg shadow-red-900/20 mb-6">
                     <MessageCircleHeart className="w-6 h-6 text-white" strokeWidth={2.5} />
                 </div>
                 <h1 className="text-3xl font-bold text-white mb-3">
@@ -204,14 +204,14 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess, onBack }) =>
                     <label className="text-xs font-medium text-gray-300 uppercase tracking-wide ml-1">Email</label>
                     <div className="relative group">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <Mail className="h-5 w-5 text-gray-500 group-focus-within:text-purple-400 transition-colors" />
+                            <Mail className="h-5 w-5 text-gray-500 group-focus-within:text-red-400 transition-colors" />
                         </div>
                         <input
                             type="email"
                             required
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            className="block w-full pl-10 pr-3 py-3 bg-[#111] border border-white/10 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20 transition-all"
+                            className="block w-full pl-10 pr-3 py-3 bg-[#111] border border-white/10 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:border-red-500/50 focus:ring-2 focus:ring-red-500/20 transition-all"
                             placeholder="seu@email.com"
                         />
                     </div>
@@ -221,14 +221,14 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess, onBack }) =>
                     <label className="text-xs font-medium text-gray-300 uppercase tracking-wide ml-1">Senha</label>
                     <div className="relative group">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <Lock className="h-5 w-5 text-gray-500 group-focus-within:text-purple-400 transition-colors" />
+                            <Lock className="h-5 w-5 text-gray-500 group-focus-within:text-red-400 transition-colors" />
                         </div>
                         <input
                             type="password"
                             required
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            className="block w-full pl-10 pr-3 py-3 bg-[#111] border border-white/10 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20 transition-all"
+                            className="block w-full pl-10 pr-3 py-3 bg-[#111] border border-white/10 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:border-red-500/50 focus:ring-2 focus:ring-red-500/20 transition-all"
                             placeholder="••••••••"
                         />
                     </div>
@@ -257,7 +257,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess, onBack }) =>
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full flex justify-center items-center py-3.5 px-4 border border-transparent rounded-xl shadow-sm text-sm font-bold text-white bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 focus:ring-offset-[#050505] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 hover:scale-[1.01] hover:shadow-lg hover:shadow-purple-500/20"
+                        className="w-full flex justify-center items-center py-3.5 px-4 border border-transparent rounded-xl shadow-sm text-sm font-bold text-white bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 focus:ring-offset-[#050505] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 hover:scale-[1.01] hover:shadow-lg hover:shadow-red-500/20"
                     >
                         {loading ? (
                             <Loader2 className="animate-spin" size={20} />
@@ -280,7 +280,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess, onBack }) =>
                             setError(null); 
                             setConfirmPassword('');
                         }}
-                        className="ml-2 font-semibold text-white hover:text-purple-400 transition-colors"
+                        className="ml-2 font-semibold text-white hover:text-red-400 transition-colors"
                     >
                         {isLogin ? 'Cadastre-se agora' : 'Fazer Login'}
                     </button>

@@ -15,11 +15,11 @@ const SCENARIOS = [
     name: "Crush ❤️",
     avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&crop=faces",
     messages: [
-      { text: "Vi que você foi no show ontem...", isMe: false },
-      { text: "Estava bom?", isMe: false }
+      { text: "Tô entediada aqui em casa...", isMe: false },
+      { text: "O que você tá fazendo? 👀", isMe: false }
     ],
-    suggestion: "Nossa, nem me fale! A energia estava incrível. Você curte essa banda também?",
-    color: "text-green-400"
+    suggestion: "Pensando em você, coincidentemente 😏 Quer uma companhia pra curar esse tédio?",
+    color: "text-rose-400"
   },
   {
     name: "Match Tinder 🔥",
@@ -28,22 +28,66 @@ const SCENARIOS = [
       { text: "Deu match! 😉", isMe: false },
       { text: "Adorei suas fotos!", isMe: false }
     ],
-    suggestion: "Obrigado! 😉 O sorriso é de fábrica, mas o fotógrafo ajudou. E você, o que faz por aqui?",
-    color: "text-pink-400"
+    suggestion: "Suas fotos são lindas, mas aposto que pessoalmente é ainda melhor... Quando vou descobrir? 😏",
+    color: "text-rose-400"
   },
   {
-    name: "Ex 😬",
+    name: "Ficante 🌙",
     avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&h=150&fit=crop&crop=faces",
     messages: [
-      { text: "Vi seu story...", isMe: false },
-      { text: "E aí, sumido...", isMe: false }
+      { text: "Ontem foi bom hein...", isMe: false },
+      { text: "Quero repetir 😈", isMe: false }
     ],
-    suggestion: "Oi! Tudo correndo bem por aqui. Espero que esteja tudo bem contigo também.",
-    color: "text-blue-400"
+    suggestion: "Bom? Foi incrível 🔥 Mas acho que a gente pode fazer ainda melhor... Hoje você tá livre?",
+    color: "text-red-400"
   }
 ];
 
 // --- Components ---
+
+// Typewriter Animation for Hero Title
+const TITLE_PHRASES = [
+  "Travou no meio da conversa?",
+  "Ela te respondeu seco?",
+  "Não sabe puxar assunto?",
+  "A conversa esfriou?",
+  "Quer deixar ela curiosa?",
+];
+
+const TypewriterTitle: React.FC = () => {
+  const [phraseIndex, setPhraseIndex] = useState(0);
+  const [displayText, setDisplayText] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    const currentPhrase = TITLE_PHRASES[phraseIndex];
+    const typeSpeed = isDeleting ? 40 : 80;
+    const pauseTime = 2500;
+
+    const timeout = setTimeout(() => {
+      if (!isDeleting && displayText === currentPhrase) {
+        // Pause before deleting
+        setTimeout(() => setIsDeleting(true), pauseTime);
+      } else if (isDeleting && displayText === '') {
+        // Move to next phrase
+        setIsDeleting(false);
+        setPhraseIndex((prev) => (prev + 1) % TITLE_PHRASES.length);
+      } else {
+        // Type or delete character
+        setDisplayText(currentPhrase.substring(0, displayText.length + (isDeleting ? -1 : 1)));
+      }
+    }, typeSpeed);
+
+    return () => clearTimeout(timeout);
+  }, [displayText, isDeleting, phraseIndex]);
+
+  return (
+    <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-rose-200 to-red-500">
+      {displayText}
+      <span className="animate-pulse text-rose-400">|</span>
+    </span>
+  );
+};
 
 const ChatAnimation: React.FC = () => {
   const [scenarioIndex, setScenarioIndex] = useState(0);
@@ -93,9 +137,9 @@ const ChatAnimation: React.FC = () => {
               <div className="absolute right-0 top-0 self-end animate-fade-in">
                 <div className="bg-white/5 border border-white/5 p-2 rounded-xl rounded-tr-none">
                   <div className="flex gap-1">
-                    <div className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                    <div className="w-1.5 h-1.5 bg-pink-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                    <div className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                    <div className="w-1.5 h-1.5 bg-red-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                    <div className="w-1.5 h-1.5 bg-rose-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                    <div className="w-1.5 h-1.5 bg-red-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
                   </div>
                 </div>
               </div>
@@ -104,7 +148,7 @@ const ChatAnimation: React.FC = () => {
               <div className="absolute right-0 top-0 w-full flex flex-col items-end animate-slide-up">
                 <div className="relative bg-[#0a0a0a] border border-white/10 text-white px-4 py-3 rounded-xl rounded-tr-none shadow-xl flex items-start gap-3">
                   <p className="text-xs leading-relaxed font-medium">{currentScenario.suggestion}</p>
-                  <MessageCircle size={12} className="text-purple-400 shrink-0 mt-0.5" />
+                  <MessageCircle size={12} className="text-red-400 shrink-0 mt-0.5" />
                 </div>
               </div>
             )}
@@ -127,19 +171,19 @@ const UploadWidget: React.FC<{ onUpload: () => void, isDragging: boolean }> = ({
     <div className={`
       relative bg-[#0a0a0a]/90 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8 text-center shadow-2xl z-20
       w-full h-full flex flex-col items-center justify-center
-      transform transition-all duration-300 group-hover:scale-[1.02] group-hover:border-purple-500/30 group-hover:shadow-purple-900/20
-      ${isDragging ? 'border-purple-500 bg-purple-900/20 scale-105' : ''}
+      transform transition-all duration-300 group-hover:scale-[1.02] group-hover:border-red-500/30 group-hover:shadow-red-900/20
+      ${isDragging ? 'border-red-500 bg-red-900/20 scale-105' : ''}
     `}>
 
       {/* Floating Badge */}
-      <div className="absolute -top-4 bg-gradient-to-r from-purple-600 to-pink-600 px-4 py-1.5 rounded-full shadow-lg shadow-purple-500/30">
+      <div className="absolute -top-4 bg-gradient-to-r from-red-600 to-rose-600 px-4 py-1.5 rounded-full shadow-lg shadow-red-500/30">
         <span className="text-xs font-bold text-white uppercase tracking-wider">Teste Grátis</span>
       </div>
 
       <div className="relative w-20 h-20 mx-auto mb-6">
-        <div className="absolute inset-0 bg-gradient-to-tr from-purple-600 to-pink-600 rounded-full blur-lg opacity-40 group-hover:opacity-70 transition-opacity duration-500 animate-pulse"></div>
+        <div className="absolute inset-0 bg-gradient-to-tr from-red-600 to-rose-600 rounded-full blur-lg opacity-40 group-hover:opacity-70 transition-opacity duration-500 animate-pulse"></div>
         <div className="relative w-full h-full bg-[#111] border border-white/10 rounded-full flex items-center justify-center shadow-xl group-hover:-translate-y-1 transition-transform duration-300">
-          <Upload size={32} className="text-white group-hover:text-purple-200 transition-colors" />
+          <Upload size={32} className="text-white group-hover:text-rose-200 transition-colors" />
         </div>
       </div>
 
@@ -147,7 +191,7 @@ const UploadWidget: React.FC<{ onUpload: () => void, isDragging: boolean }> = ({
         Analise sua conversa
       </h3>
       <p className="text-sm text-gray-400 max-w-[240px] mx-auto mb-8 leading-relaxed">
-        Arraste o print ou clique para enviar. A IA vai criar a resposta perfeita.
+        Arraste o print ou clique para enviar. O Puxe Assunto vai criar a resposta perfeita.
       </p>
 
       <div className="flex flex-wrap justify-center gap-2 text-[10px] font-medium text-gray-500 uppercase tracking-wider">
@@ -160,12 +204,12 @@ const UploadWidget: React.FC<{ onUpload: () => void, isDragging: boolean }> = ({
     {/* Decorative Elements in front */}
     <div className="absolute -right-4 top-20 animate-float z-30" style={{ animationDelay: '1s' }}>
       <div className="bg-[#1a1a1a] border border-white/10 p-3 rounded-2xl shadow-xl rotate-12">
-        <MessageCircle size={20} className="text-purple-400" />
+        <MessageCircle size={20} className="text-red-400" />
       </div>
     </div>
     <div className="absolute -left-4 bottom-20 animate-float z-30" style={{ animationDelay: '2s' }}>
       <div className="bg-[#1a1a1a] border border-white/10 p-3 rounded-2xl shadow-xl -rotate-12">
-        <Heart size={20} className="text-pink-400" />
+        <Heart size={20} className="text-rose-400" />
       </div>
     </div>
   </div>
@@ -183,9 +227,9 @@ const HeroResultCard: React.FC<{ suggestion: Suggestion, index: number, isLocked
   // Dynamic border color based on tone
   const getToneStyle = (tone: string) => {
     const t = tone.toLowerCase();
-    if (t.includes('engraçado') || t.includes('divertido')) return 'border-yellow-500/30 shadow-[0_0_15px_rgba(234,179,8,0.05)]';
-    if (t.includes('romântico') || t.includes('sedutor') || t.includes('ousado')) return 'border-pink-500/30 shadow-[0_0_15px_rgba(236,72,153,0.05)]';
-    if (t.includes('direto') || t.includes('sério')) return 'border-blue-500/30 shadow-[0_0_15px_rgba(59,130,246,0.05)]';
+    if (t.includes('engraçado') || t.includes('divertido')) return 'border-amber-500/30 shadow-[0_0_15px_rgba(245,158,11,0.05)]';
+    if (t.includes('romântico') || t.includes('sedutor') || t.includes('ousado')) return 'border-rose-500/30 shadow-[0_0_15px_rgba(244,63,94,0.05)]';
+    if (t.includes('direto') || t.includes('sério')) return 'border-red-500/30 shadow-[0_0_15px_rgba(239,68,68,0.05)]';
     return 'border-white/10';
   };
 
@@ -205,7 +249,7 @@ const HeroResultCard: React.FC<{ suggestion: Suggestion, index: number, isLocked
             "{suggestion.message.split(' ').slice(0, 6).join(' ')} <span className="blur-sm select-none opacity-50">{suggestion.message.split(' ').slice(6).join(' ')}</span>
           </p>
         ) : (
-          <p className="text-xs md:text-sm text-white leading-relaxed font-medium selection:bg-purple-500/40">
+          <p className="text-xs md:text-sm text-white leading-relaxed font-medium selection:bg-rose-500/40">
             "{suggestion.message}"
           </p>
         )}
@@ -214,14 +258,14 @@ const HeroResultCard: React.FC<{ suggestion: Suggestion, index: number, isLocked
       {/* Footer Actions */}
       <div className="flex items-center justify-between border-t border-white/5 pt-2 mt-1">
         <div className="flex items-start gap-1.5 flex-1 mr-2">
-          <Zap size={10} className="text-purple-400 flex-shrink-0 mt-[2px]" />
+          <Zap size={10} className="text-red-400 flex-shrink-0 mt-[2px]" />
           <span className="text-[9px] text-gray-500 leading-tight">{suggestion.explanation}</span>
         </div>
 
         {isLocked ? (
           <button
             onClick={onUnlock}
-            className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold transition-all bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white"
+            className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold transition-all bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white"
           >
             <ArrowRight size={10} />
             Ver
@@ -352,16 +396,12 @@ export const Hero: React.FC<HeroProps> = ({ onAction, user }) => {
 
           <div className="min-h-[120px] md:min-h-[160px] lg:min-h-[180px] flex flex-col justify-center lg:block">
             <h1 className="text-[2.3rem] md:text-6xl lg:text-7xl font-extrabold text-white leading-[1.1] mb-6">
-              Não sabe o que
-              <br />
-              <span className="text-5xl md:text-6xl lg:text-7xl text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-500 to-purple-500">
-                responder?
-              </span>
+              <TypewriterTitle />
             </h1>
           </div>
 
           <p className="text-sm md:text-base text-gray-400 mt-0 mb-0 max-w-lg mx-auto lg:mx-0 leading-relaxed">
-            Chega de vácuo. Envie o print da conversa e deixe nossa Inteligência analisar o contexto.
+            Chega de ficar no vácuo. Envie o print da conversa e o <span className="text-rose-400 font-medium">Puxe Assunto</span> vai analisar o contexto e criar a resposta perfeita pra qualquer tipo de conversa.
           </p>
 
           {/* Desktop: Chat Animation visible here */}
@@ -415,9 +455,9 @@ export const Hero: React.FC<HeroProps> = ({ onAction, user }) => {
                 {/* AI Analyzing */}
                 {isAnalyzing && (
                   <div className="flex justify-start animate-fade-in">
-                    <div className="bg-gradient-to-br from-purple-900/20 to-pink-900/20 border border-purple-500/20 p-4 rounded-2xl rounded-tl-none flex items-center gap-3">
-                      <Loader2 className="animate-spin text-purple-400" size={18} />
-                      <span className="text-xs text-purple-200 font-medium animate-pulse">Analisando conversa...</span>
+                    <div className="bg-gradient-to-br from-red-900/20 to-rose-900/20 border border-red-500/20 p-4 rounded-2xl rounded-tl-none flex items-center gap-3">
+                      <Loader2 className="animate-spin text-red-400" size={18} />
+                      <span className="text-xs text-rose-200 font-medium animate-pulse">Analisando conversa...</span>
                     </div>
                   </div>
                 )}
@@ -459,7 +499,7 @@ export const Hero: React.FC<HeroProps> = ({ onAction, user }) => {
           )}
 
           {/* Glow behind */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-gradient-to-tr from-purple-600/20 to-pink-600/20 rounded-full blur-[60px] -z-10"></div>
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-gradient-to-tr from-red-600/20 to-rose-600/20 rounded-full blur-[60px] -z-10"></div>
 
           {/* Upsell Modal/Overlay - Fixed to viewport */}
           {/* State 3: Upsell Card (Replaces Upload/Results) */}
@@ -474,7 +514,7 @@ export const Hero: React.FC<HeroProps> = ({ onAction, user }) => {
                   </button>
                 </div>
 
-                <div className="w-16 h-16 mx-auto bg-gradient-to-tr from-purple-600 to-pink-600 rounded-xl flex items-center justify-center mb-6 shadow-lg shadow-purple-500/20 animate-pulse">
+                <div className="w-16 h-16 mx-auto bg-gradient-to-tr from-red-600 to-rose-600 rounded-xl flex items-center justify-center mb-6 shadow-lg shadow-red-500/20 animate-pulse">
                   <MessageCircleHeart size={32} className="text-white" />
                 </div>
 

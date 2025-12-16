@@ -118,7 +118,7 @@ export const UpgradePage: React.FC<UpgradePageProps> = ({ onBack, user }) => {
                                     <span className="text-6xl font-extrabold text-white tracking-tighter drop-shadow-[0_0_15px_rgba(168,85,247,0.5)]">
                                         R$ 15
                                     </span>
-                                    <span className="text-xl font-bold text-purple-400">,00</span>
+                                    <span className="text-xl font-bold text-red-400">,00</span>
                                 </div>
                             </div>
 
@@ -157,7 +157,7 @@ export const UpgradePage: React.FC<UpgradePageProps> = ({ onBack, user }) => {
 
                         <button
                             onClick={handleUpgrade}
-                            className="relative w-full py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold rounded-xl shadow-lg shadow-purple-900/40 transition-all transform hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2 group-hover:shadow-purple-500/25"
+                            className="relative w-full py-4 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-bold rounded-xl shadow-lg shadow-red-900/40 transition-all transform hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2 group-hover:shadow-red-500/25"
                         >
                             <MessageCircleHeart size={20} className="fill-white/20" />
                             Quero Ser PRO Agora

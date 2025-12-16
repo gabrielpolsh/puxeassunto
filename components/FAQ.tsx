@@ -50,7 +50,7 @@ export const FAQ: React.FC = () => {
                     {faq.question}
                 </span>
                 {openIndex === index ? (
-                  <Minus className="text-brand-pink" />
+                  <Minus className="text-rose-500" />
                 ) : (
                   <Plus className="text-gray-500" />
                 )}

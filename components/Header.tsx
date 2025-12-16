@@ -23,16 +23,16 @@ export const Header: React.FC<HeaderProps> = ({ onAction, user }) => {
         <div className="flex items-center gap-3 group cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
           <div className="relative">
             {/* Glow Effect behind icon */}
-            <div className="absolute -inset-2 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full opacity-0 group-hover:opacity-25 blur-lg transition-opacity duration-500"></div>
+            <div className="absolute -inset-2 bg-gradient-to-r from-red-600 to-rose-600 rounded-full opacity-0 group-hover:opacity-25 blur-lg transition-opacity duration-500"></div>
             
             {/* App Icon Container */}
-            <div className="relative w-10 h-10 bg-gradient-to-br from-purple-600 to-pink-500 rounded-xl flex items-center justify-center shadow-lg shadow-purple-900/20 border border-white/10 group-hover:scale-105 transition-transform duration-300">
+            <div className="relative w-10 h-10 bg-gradient-to-br from-red-600 to-rose-500 rounded-xl flex items-center justify-center shadow-lg shadow-red-900/20 border border-white/10 group-hover:scale-105 transition-transform duration-300">
               <MessageCircleHeart className="w-5 h-5 text-white fill-white/20" strokeWidth={2.5} />
             </div>
           </div>
           
           <span className="text-xl font-bold text-white tracking-tight group-hover:opacity-90 transition-opacity">
-            Puxe<span className="font-light text-purple-200">Assunto</span>
+            Puxe<span className="font-light text-rose-200">Assunto</span>
           </span>
         </div>
 

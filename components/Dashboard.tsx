@@ -27,6 +27,57 @@ import { analyzeChatScreenshot, generatePickupLines, Suggestion } from '../servi
 import { SettingsModal } from './SettingsModal';
 import { LoadingOverlay } from './LoadingOverlay';
 
+// Cache for signed URLs (avoid repeated API calls)
+const signedUrlCache = new Map<string, { url: string; expiry: number }>();
+
+// Helper to get signed URL for private bucket images (with caching)
+const getSignedImageUrl = async (imagePath: string): Promise<string | null> => {
+  try {
+    // If it's already a full URL (not from our storage), return as-is
+    if (imagePath.startsWith('http') && !imagePath.includes('supabase')) {
+      return imagePath;
+    }
+    
+    // If it's a base64 data URL, return as-is
+    if (imagePath.startsWith('data:')) {
+      return imagePath;
+    }
+    
+    // Extract the path from /images/ prefix if present
+    let storagePath = imagePath;
+    if (imagePath.startsWith('/images/')) {
+      storagePath = imagePath.replace('/images/', '');
+    }
+    
+    // Check cache first (with 5 min buffer before expiry)
+    const cached = signedUrlCache.get(storagePath);
+    if (cached && cached.expiry > Date.now() + 300000) {
+      return cached.url;
+    }
+    
+    // Generate signed URL (expires in 1 hour = 3600 seconds)
+    const { data, error } = await supabase.storage
+      .from('puxeassunto')
+      .createSignedUrl(storagePath, 3600);
+    
+    if (error) {
+      console.error('Error creating signed URL:', error);
+      return null;
+    }
+    
+    // Cache the URL (expires in 1 hour)
+    signedUrlCache.set(storagePath, {
+      url: data.signedUrl,
+      expiry: Date.now() + 3600000
+    });
+    
+    return data.signedUrl;
+  } catch (error) {
+    console.error('Error in getSignedImageUrl:', error);
+    return null;
+  }
+};
+
 // Helper to upload image to Supabase Storage
 const uploadImage = async (fileOrBase64: string | File, userId: string): Promise<string | null> => {
   try {
@@ -135,17 +186,17 @@ const RefineBoxLocked: React.FC<{ mode: 'analysis' | 'pickup', onUnlock: () => v
   }, [text, isDeleting, exampleIndex, examples]);
 
   return (
-    <div className="bg-[#111] border border-purple-500/20 rounded-xl p-1 relative overflow-hidden group mb-6">
+    <div className="bg-[#111] border border-red-500/20 rounded-xl p-1 relative overflow-hidden group mb-6">
       {/* Animated Border/Glow Effect */}
-      <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-purple-500/10 opacity-50 animate-pulse pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-r from-red-500/10 via-rose-500/10 to-red-500/10 opacity-50 animate-pulse pointer-events-none" />
       
       <div className="bg-[#0a0a0a] rounded-lg p-4 relative z-10">
         <div className="flex items-center justify-between mb-3">
           <label className="flex items-center gap-2 text-xs font-bold text-gray-300 uppercase tracking-wider">
-            {mode === 'pickup' ? <Heart size={12} className="text-pink-400" /> : <MessageCircleHeart size={12} className="text-purple-400" />}
+            {mode === 'pickup' ? <Heart size={12} className="text-rose-400" /> : <MessageCircleHeart size={12} className="text-red-400" />}
             {mode === 'pickup' ? 'Personalizar Cantadas' : 'Refinar Resposta'}
           </label>
-          <div className="flex items-center gap-1 px-2 py-0.5 bg-purple-500/20 border border-purple-500/30 rounded text-[10px] font-bold text-purple-300 uppercase">
+          <div className="flex items-center gap-1 px-2 py-0.5 bg-red-500/20 border border-red-500/30 rounded text-[10px] font-bold text-red-300 uppercase">
             <Lock size={10} /> PRO
           </div>
         </div>
@@ -154,14 +205,14 @@ const RefineBoxLocked: React.FC<{ mode: 'analysis' | 'pickup', onUnlock: () => v
           {/* Fake Input with Typing Animation */}
           <div className="w-full bg-[#050505] border border-white/10 rounded-lg p-3 h-24 text-sm font-mono overflow-hidden relative">
             <span className="text-gray-300">{text}</span>
-            <span className="animate-pulse text-purple-400">|</span>
+            <span className="animate-pulse text-red-400">|</span>
           </div>
 
           {/* Unlock Overlay - Gradient from bottom so text is visible */}
           <div className="absolute inset-0 flex flex-col items-center justify-end pb-3 bg-gradient-to-t from-[#050505] via-[#050505]/80 to-transparent rounded-lg">
             <button 
               onClick={onUnlock}
-              className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white text-xs font-bold rounded-full shadow-lg shadow-purple-900/40 transition-all transform hover:scale-105 flex items-center gap-2"
+              className="px-4 py-2 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white text-xs font-bold rounded-full shadow-lg shadow-red-900/40 transition-all transform hover:scale-105 flex items-center gap-2"
             >
               <Zap size={12} className="fill-white" />
               Desbloquear Função
@@ -177,10 +228,11 @@ const RefineBoxLocked: React.FC<{ mode: 'analysis' | 'pickup', onUnlock: () => v
   );
 };
 
-const ProPersuasionLoader: React.FC = () => {
+const ProPersuasionLoader: React.FC<{ isPro?: boolean }> = ({ isPro = false }) => {
   const [index, setIndex] = useState(0);
   
-  const messages = [
+  // Mensagens para usuários FREE (upsell)
+  const freeMessages = [
     {
       icon: Zap,
       title: "Dica Pro",
@@ -191,15 +243,39 @@ const ProPersuasionLoader: React.FC = () => {
       icon: Lock,
       title: "Desbloqueie Tudo",
       text: "Acesso ilimitado a todos os tons.",
-      color: "text-purple-400"
+      color: "text-red-400"
     },
     {
       icon: Sparkles,
       title: "Seja Irresistível",
       text: "As melhores cantadas estão no PRO.",
-      color: "text-pink-400"
+      color: "text-rose-400"
     }
   ];
+
+  // Mensagens para usuários PRO (dicas neutras)
+  const proMessages = [
+    {
+      icon: Sparkles,
+      title: "Analisando...",
+      text: "Criando respostas personalizadas.",
+      color: "text-purple-400"
+    },
+    {
+      icon: MessageCircleHeart,
+      title: "Quase lá...",
+      text: "Entendendo o contexto da conversa.",
+      color: "text-rose-400"
+    },
+    {
+      icon: Zap,
+      title: "Finalizando...",
+      text: "Preparando as melhores sugestões.",
+      color: "text-yellow-400"
+    }
+  ];
+
+  const messages = isPro ? proMessages : freeMessages;
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -262,6 +338,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
 
   // Studio State
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [isLoadingImage, setIsLoadingImage] = useState(false);
   const [userContext, setUserContext] = useState('');
   const [pickupContext, setPickupContext] = useState('');
   const [usePhotoForPickup, setUsePhotoForPickup] = useState(false);
@@ -401,6 +478,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
   };
 
   const loadSessionData = async (sessionId: string) => {
+    setIsLoadingImage(true);
+    
     // Get the last AI message for this session to show results
     // Also try to find the user image from the first message
     const { data: messages } = await supabase
@@ -420,7 +499,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
         setMode('pickup');
         // Check if it had a photo
         if (firstUserMsg?.image_data) {
-          setSelectedImage(firstUserMsg.image_data);
+          // Get signed URL for private bucket
+          const signedUrl = await getSignedImageUrl(firstUserMsg.image_data);
+          setSelectedImage(signedUrl || firstUserMsg.image_data);
           setUsePhotoForPickup(true);
         }
         // Extract context if available
@@ -435,7 +516,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
         // Find image in user messages
         const userMsg = messages.find(m => m.role === 'user' && m.image_data);
         if (userMsg) {
-          setSelectedImage(userMsg.image_data);
+          // Get signed URL for private bucket
+          const signedUrl = await getSignedImageUrl(userMsg.image_data);
+          setSelectedImage(signedUrl || userMsg.image_data);
           setUserContext(userMsg.content || '');
         }
       }
@@ -446,6 +529,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
         setResults(aiMsg.suggestions);
       }
     }
+    
+    setIsLoadingImage(false);
   };
 
   const createSession = async (title: string) => {
@@ -671,7 +756,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
   };
 
   return (
-    <div className="flex flex-col md:flex-row min-h-screen md:h-screen bg-[#050505] text-white font-sans md:overflow-hidden selection:bg-pink-500/30 relative">
+    <div className="flex flex-col md:flex-row min-h-screen md:h-screen bg-[#050505] text-white font-sans md:overflow-hidden selection:bg-rose-500/30 relative">
 
       <SettingsModal
         isOpen={showSettings}
@@ -709,10 +794,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
         {/* Header Logo */}
         <div className="h-16 flex items-center justify-between px-5 border-b border-white/5 shrink-0">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-purple-600 to-pink-500 rounded-lg flex items-center justify-center shadow-lg shadow-purple-900/20">
+            <div className="w-8 h-8 bg-gradient-to-br from-red-600 to-rose-500 rounded-lg flex items-center justify-center shadow-lg shadow-red-900/20">
               <MessageCircleHeart size={16} className="text-white" strokeWidth={2.5} />
             </div>
-            <span className="font-bold text-sm tracking-tight text-white">Puxe<span className="text-purple-400 font-light">Assunto</span></span>
+            <span className="font-bold text-sm tracking-tight text-white">Puxe<span className="text-rose-400 font-light">Assunto</span></span>
           </div>
           <button onClick={() => setShowMobileSidebar(false)} className="md:hidden text-gray-500 p-1">
             <X size={20} />
@@ -723,7 +808,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
         <div className="p-4 shrink-0 space-y-2">
           <button
             onClick={handleNewAnalysis}
-            className={`w-full py-3 px-4 ${mode === 'analysis' ? 'bg-purple-900/50 border-purple-500/30' : 'bg-white/5 border-white/10'} border hover:bg-white/10 hover:border-white/20 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2 group`}
+            className={`w-full py-3 px-4 ${mode === 'analysis' ? 'bg-red-900/50 border-red-500/30' : 'bg-white/5 border-white/10'} border hover:bg-white/10 hover:border-white/20 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2 group`}
           >
             <MessageCircle size={16} className="text-gray-400 group-hover:text-white" />
             Analisar Conversa
@@ -731,9 +816,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
           
           <button
             onClick={handleNewPickupLines}
-            className={`w-full py-3 px-4 ${mode === 'pickup' ? 'bg-pink-900/50 border-pink-500/30' : 'bg-white/5 border-white/10'} border hover:bg-white/10 hover:border-white/20 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2 group`}
+            className={`w-full py-3 px-4 ${mode === 'pickup' ? 'bg-rose-900/50 border-rose-500/30' : 'bg-white/5 border-white/10'} border hover:bg-white/10 hover:border-white/20 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2 group`}
           >
-            <Heart size={16} className="text-gray-400 group-hover:text-pink-400" />
+            <Heart size={16} className="text-gray-400 group-hover:text-rose-400" />
             Cantadas
           </button>
         </div>
@@ -771,13 +856,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
         {/* User Footer */}
         <div className="p-4 border-t border-white/5 shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-purple-900/50 border border-white/10 flex items-center justify-center text-xs font-bold">
+            <div className="w-8 h-8 rounded-full bg-red-900/50 border border-white/10 flex items-center justify-center text-xs font-bold">
               {user.email?.charAt(0).toUpperCase()}
             </div>
             <div className="flex-1 overflow-hidden">
               <div className="flex items-center gap-2">
                 <p className="text-xs font-medium truncate text-gray-300">{user.email}</p>
-                {isPro && <span className="text-[9px] bg-gradient-to-r from-purple-500 to-pink-500 text-white px-1.5 py-0.5 rounded font-bold">PRO</span>}
+                {isPro && <span className="text-[9px] bg-gradient-to-r from-red-500 to-rose-500 text-white px-1.5 py-0.5 rounded font-bold">PRO</span>}
               </div>
 
               <div className="flex items-center gap-2 mt-1">
@@ -789,6 +874,19 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
                   <Settings size={10} /> Conta
                 </button>
                 <div className="w-px h-3 bg-white/10"></div>
+                <a
+                  href="https://wa.me/5561981620092?text=Ol%C3%A1!%20Vim%20pelo%20site%20Puxe%20Assunto%20e%20preciso%20de%20suporte."
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 text-[10px] text-gray-500 hover:text-green-400 transition-colors"
+                  title="Suporte via WhatsApp"
+                >
+                  <svg viewBox="0 0 24 24" className="w-[10px] h-[10px] fill-current">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                  </svg>
+                  Suporte
+                </a>
+                <div className="w-px h-3 bg-white/10"></div>
                 <button onClick={handleLogout} className="flex items-center gap-1 text-[10px] text-gray-500 hover:text-red-400 transition-colors">
                   <LogOut size={10} /> Sair
                 </button>
@@ -799,7 +897,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
           {!isPro && (
             <button
               onClick={onUpgradeClick}
-              className="w-full mt-3 py-2 bg-purple-900/50 border border-purple-500/30 hover:border-purple-500/50 rounded-lg text-xs font-bold text-purple-200 transition-all flex items-center justify-center gap-2"
+              className="w-full mt-3 py-2 bg-red-900/50 border border-red-500/30 hover:border-red-500/50 rounded-lg text-xs font-bold text-red-200 transition-all flex items-center justify-center gap-2"
             >
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
@@ -844,10 +942,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
 
               {/* Mobile Brand */}
               <div className="flex items-center gap-2 md:hidden">
-                <div className="w-7 h-7 bg-gradient-to-br from-purple-600 to-pink-500 rounded-lg flex items-center justify-center shadow-lg">
+                <div className="w-7 h-7 bg-gradient-to-br from-red-600 to-rose-500 rounded-lg flex items-center justify-center shadow-lg">
                   <MessageCircleHeart size={14} className="text-white" strokeWidth={2.5} />
                 </div>
-                <span className="font-bold text-sm text-white">Puxe<span className="text-purple-400 font-light">Assunto</span></span>
+                <span className="font-bold text-sm text-white">Puxe<span className="text-rose-400 font-light">Assunto</span></span>
               </div>
 
               {/* Desktop Title */}
@@ -877,7 +975,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
                       <span className="text-xs text-gray-400">
                         Restam: <span className="text-white font-bold">{Math.max(0, 5 - dailyCount)}</span>
                       </span>
-                      <button onClick={onUpgradeClick} className="text-xs font-bold text-purple-400 hover:text-purple-300 ml-1">UPGRADE</button>
+                      <button onClick={onUpgradeClick} className="text-xs font-bold text-red-400 hover:text-red-300 ml-1">UPGRADE</button>
                     </div>
                     {dailyCount >= 3 && (
                       <span className="text-[10px] text-gray-500 pr-2 font-mono">Novos Créditos gratuitos em: {timeUntilReset}</span>
@@ -904,14 +1002,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
             <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#222 1px, transparent 1px)', backgroundSize: '24px 24px', opacity: 0.2 }}></div>
 
             {/* Aurora Effect */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[150%] h-[150%] bg-gradient-to-tr from-purple-900/10 via-transparent to-pink-900/10 blur-3xl rounded-full pointer-events-none"></div>
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[150%] h-[150%] bg-gradient-to-tr from-red-900/10 via-transparent to-rose-900/10 blur-3xl rounded-full pointer-events-none"></div>
 
             {/* Persistent Floating Icons (Tightened Positioning) */}
             <div className="absolute inset-0 pointer-events-none z-20 overflow-hidden">
               {/* Floating Bubble 1 (Top Left - Closer) */}
               <div className="absolute top-[5%] left-[5%] md:top-[10%] md:left-[10%] animate-float opacity-90 scale-75 md:scale-100 z-20">
                 <div className="bg-[#1a1a1a]/90 border border-white/10 px-4 py-2 rounded-2xl rounded-tl-none shadow-xl backdrop-blur-sm flex items-center gap-2 transform -rotate-6">
-                  <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                  <div className="w-2 h-2 bg-red-500 rounded-full"></div>
                   <div className="h-2 w-12 bg-white/10 rounded-full"></div>
                 </div>
               </div>
@@ -920,14 +1018,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
               <div className="absolute bottom-[3%] right-[5%] md:bottom-[15%] md:right-[10%] animate-float opacity-90 scale-75 md:scale-100 z-20" style={{ animationDelay: '1.5s' }}>
                 <div className="bg-[#1a1a1a]/90 border border-white/10 px-4 py-2 rounded-2xl rounded-tr-none shadow-xl backdrop-blur-sm flex items-center gap-2 transform rotate-6">
                   <div className="h-2 w-16 bg-white/10 rounded-full"></div>
-                  <div className="w-2 h-2 bg-pink-500 rounded-full"></div>
+                  <div className="w-2 h-2 bg-rose-500 rounded-full"></div>
                 </div>
               </div>
 
               {/* Floating Bubble 3 (Top Right - Extra - Closer) */}
               <div className="absolute top-[15%] right-[8%] md:top-[15%] md:right-[20%] animate-float opacity-60 scale-75 md:scale-90" style={{ animationDelay: '0.8s' }}>
                 <div className="bg-[#1a1a1a]/90 border border-white/10 p-2 rounded-full shadow-xl backdrop-blur-sm">
-                  <Heart size={16} className="text-pink-500 fill-pink-500/20" />
+                  <Heart size={16} className="text-rose-500 fill-rose-500/20" />
                 </div>
               </div>
 
@@ -949,13 +1047,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
                 <div className={`
                             relative bg-[#0a0a0a]/80 backdrop-blur-xl border border-white/10 rounded-3xl p-6 md:p-12 text-center shadow-2xl z-10
                             w-[90%] md:w-full mx-auto
-                            transform transition-all duration-300 group-hover:scale-[1.02] group-hover:border-purple-500/30 group-hover:shadow-purple-900/20
-                            ${isDragging ? 'border-purple-500 bg-purple-900/20 scale-105' : ''}
+                            transform transition-all duration-300 group-hover:scale-[1.02] group-hover:border-red-500/30 group-hover:shadow-red-900/20
+                            ${isDragging ? 'border-red-500 bg-red-900/20 scale-105' : ''}
                          `}>
                   <div className="relative w-16 h-16 md:w-24 md:h-24 mx-auto mb-4 md:mb-6">
-                    <div className="absolute inset-0 bg-gradient-to-tr from-purple-600 to-pink-600 rounded-full blur-lg opacity-40 group-hover:opacity-70 transition-opacity duration-500 animate-pulse"></div>
+                    <div className="absolute inset-0 bg-gradient-to-tr from-red-600 to-rose-600 rounded-full blur-lg opacity-40 group-hover:opacity-70 transition-opacity duration-500 animate-pulse"></div>
                     <div className="relative w-full h-full bg-[#111] border border-white/10 rounded-full flex items-center justify-center shadow-xl group-hover:-translate-y-1 transition-transform duration-300">
-                      <Upload size={24} className="md:w-8 md:h-8 text-white group-hover:text-purple-200 transition-colors" />
+                      <Upload size={24} className="md:w-8 md:h-8 text-white group-hover:text-rose-200 transition-colors" />
                     </div>
                   </div>
 
@@ -978,9 +1076,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
               <div className="w-full h-full flex flex-col items-center justify-center relative z-10 mt-8 md:mt-0 p-4">
                 <div className="relative bg-[#0a0a0a]/80 backdrop-blur-xl border border-white/10 rounded-2xl p-6 md:p-12 text-center shadow-2xl z-10 w-[90%] md:w-full md:max-w-2xl mx-auto">
                   <div className="relative w-16 h-16 md:w-24 md:h-24 mx-auto mb-4 md:mb-6">
-                    <div className="absolute inset-0 bg-gradient-to-tr from-pink-600 to-red-600 rounded-full blur-lg opacity-40 animate-pulse"></div>
+                    <div className="absolute inset-0 bg-gradient-to-tr from-red-600 to-rose-600 rounded-full blur-lg opacity-40 animate-pulse"></div>
                     <div className="relative w-full h-full bg-[#111] border border-white/10 rounded-full flex items-center justify-center shadow-xl">
-                      <Heart size={24} className="md:w-8 md:h-8 text-pink-400 fill-pink-400/20" />
+                      <Heart size={24} className="md:w-8 md:h-8 text-rose-400 fill-rose-400/20" />
                     </div>
                   </div>
 
@@ -1004,7 +1102,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
                         className={`
                           relative inline-flex items-center h-8 w-16 rounded-full transition-all duration-300 ease-in-out
                           ${usePhotoForPickup 
-                            ? 'bg-gradient-to-r from-pink-500 to-red-500 shadow-lg shadow-pink-500/30' 
+                            ? 'bg-gradient-to-r from-red-500 to-rose-500 shadow-lg shadow-red-500/30' 
                             : 'bg-white/10 border border-white/20'
                           }
                         `}
@@ -1024,7 +1122,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
                           {/* Icon inside circle */}
                           <span className="flex items-center justify-center h-full w-full">
                             {usePhotoForPickup ? (
-                              <ImageIcon size={14} className="text-pink-500" />
+                              <ImageIcon size={14} className="text-rose-500" />
                             ) : (
                               <X size={14} className="text-gray-500" />
                             )}
@@ -1033,7 +1131,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
                       </button>
                       
                       <span className={`text-sm font-medium transition-colors flex items-center gap-2 ${usePhotoForPickup ? 'text-white' : 'text-gray-500'}`}>
-                        <ImageIcon size={16} className={usePhotoForPickup ? 'text-pink-400' : 'text-gray-600'} />
+                        <ImageIcon size={16} className={usePhotoForPickup ? 'text-rose-400' : 'text-gray-600'} />
                         Com foto
                       </span>
                     </div>
@@ -1046,8 +1144,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
                       className={`
                         mb-6 md:mb-8 p-6 border-2 border-dashed rounded-2xl cursor-pointer transition-all duration-300 animate-slide-down
                         ${isDragging 
-                          ? 'border-pink-500 bg-pink-500/10 scale-[1.02]' 
-                          : 'border-white/20 bg-white/5 hover:border-pink-400/50 hover:bg-white/10'
+                          ? 'border-rose-500 bg-rose-500/10 scale-[1.02]' 
+                          : 'border-white/20 bg-white/5 hover:border-rose-400/50 hover:bg-white/10'
                         }
                       `}
                       onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragging(true); }}
@@ -1060,7 +1158,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
                       }}
                     >
                       <div className="flex flex-col items-center gap-3">
-                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-pink-500 to-red-500 flex items-center justify-center">
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-red-500 to-rose-500 flex items-center justify-center">
                           <Upload size={20} className="text-white" />
                         </div>
                         <div className="text-center">
@@ -1086,40 +1184,62 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
               /* Image Preview State for Pickup */
               <div className="relative w-full h-full flex items-center justify-center z-10 animate-fade-in p-2">
                 <div className="relative max-w-full max-h-full shadow-2xl shadow-black rounded-lg overflow-hidden border border-white/10 group">
-                  <img src={selectedImage} className="max-w-full max-h-[60vh] md:max-h-[80vh] object-contain" alt="Contexto" />
+                  {isLoadingImage ? (
+                    <div className="w-[300px] h-[400px] md:w-[400px] md:h-[500px] bg-gradient-to-br from-white/5 to-white/10 animate-pulse flex items-center justify-center">
+                      <div className="flex flex-col items-center gap-3">
+                        <ImageIcon size={32} className="text-white/20" />
+                        <span className="text-xs text-white/30">Carregando...</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <img src={selectedImage} className="max-w-full max-h-[60vh] md:max-h-[80vh] object-contain" alt="Contexto" />
+                  )}
                   
                   <div className="md:hidden">
                     <LoadingOverlay isVisible={isAnalyzing} isPro={isPro} type="mobile" />
                   </div>
 
                   {/* Remove Image Button */}
-                  <button
-                    onClick={() => setSelectedImage(null)}
-                    className="absolute top-4 right-4 p-2 bg-red-500/90 hover:bg-red-600 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-lg"
-                    title="Remover foto"
-                  >
-                    <X size={20} className="text-white" />
-                  </button>
+                  {!isLoadingImage && (
+                    <button
+                      onClick={() => setSelectedImage(null)}
+                      className="absolute top-4 right-4 p-2 bg-red-500/90 hover:bg-red-600 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-lg"
+                      title="Remover foto"
+                    >
+                      <X size={20} className="text-white" />
+                    </button>
+                  )}
                 </div>
               </div>
             ) : (
               /* Image Preview State */
               <div className="relative w-full h-full flex items-center justify-center z-10 animate-fade-in p-2">
                 <div className="relative max-w-full max-h-full shadow-2xl shadow-black rounded-lg overflow-hidden border border-white/10 group">
-                  <img src={selectedImage} className="max-w-full max-h-[60vh] md:max-h-[80vh] object-contain" alt="Print" />
+                  {isLoadingImage ? (
+                    <div className="w-[300px] h-[400px] md:w-[400px] md:h-[500px] bg-gradient-to-br from-white/5 to-white/10 animate-pulse flex items-center justify-center">
+                      <div className="flex flex-col items-center gap-3">
+                        <ImageIcon size={32} className="text-white/20" />
+                        <span className="text-xs text-white/30">Carregando...</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <img src={selectedImage} className="max-w-full max-h-[60vh] md:max-h-[80vh] object-contain" alt="Print" />
+                  )}
                   
                   <div className="md:hidden">
                     <LoadingOverlay isVisible={isAnalyzing} isPro={isPro} type="mobile" />
                   </div>
 
                   {/* Remove Image Button */}
-                  <button
-                    onClick={() => setSelectedImage(null)}
-                    className="absolute top-4 right-4 p-2 bg-red-500/90 hover:bg-red-600 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-lg"
-                    title="Remover foto"
-                  >
-                    <X size={20} className="text-white" />
-                  </button>
+                  {!isLoadingImage && (
+                    <button
+                      onClick={() => setSelectedImage(null)}
+                      className="absolute top-4 right-4 p-2 bg-red-500/90 hover:bg-red-600 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-lg"
+                      title="Remover foto"
+                    >
+                      <X size={20} className="text-white" />
+                    </button>
+                  )}
                 </div>
               </div>
             )}
@@ -1132,9 +1252,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
           {/* Panel Header */}
           <div className="h-14 md:h-16 border-b border-white/5 hidden md:flex items-center px-6 bg-[#0a0a0a] shrink-0">
             {mode === 'pickup' ? (
-              <Heart size={16} className="text-pink-400 mr-2" />
+              <Heart size={16} className="text-rose-400 mr-2" />
             ) : (
-              <MessageCircleHeart size={16} className="text-purple-400 mr-2" />
+              <MessageCircleHeart size={16} className="text-red-400 mr-2" />
             )}
             <h3 className="font-bold text-sm">{mode === 'pickup' ? 'Gerador de Cantadas' : 'Gerador de Respostas'}</h3>
           </div>
@@ -1148,7 +1268,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
                    <LoadingOverlay isVisible={isAnalyzing} isPro={isPro} type="desktop" />
                 </div>
                 <div className="md:hidden h-full">
-                   <ProPersuasionLoader />
+                   <ProPersuasionLoader isPro={isPro} />
                 </div>
               </>
             ) : results.length > 0 ? (
@@ -1170,11 +1290,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
                     <React.Fragment key={idx}>
                       {!isPro && idx === 2 && (
                         <div className="flex items-center gap-4 py-2">
-                          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-purple-500/50 to-transparent"></div>
-                          <span className="text-[10px] font-bold text-purple-400 uppercase tracking-widest whitespace-nowrap">
+                          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-red-500/50 to-transparent"></div>
+                          <span className="text-[10px] font-bold text-red-400 uppercase tracking-widest whitespace-nowrap">
                             Disponível no PRO
                           </span>
-                          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-purple-500/50 to-transparent"></div>
+                          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-red-500/50 to-transparent"></div>
                         </div>
                       )}
                       <ResultCard 
@@ -1193,13 +1313,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
                 ) : mode === 'pickup' ? (
                   <div className="bg-[#111] border border-white/10 rounded-xl p-4 mb-6">
                     <label className="flex items-center gap-2 text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
-                      <Heart size={12} className="text-pink-400" />
+                      <Heart size={12} className="text-rose-400" />
                       Personalizar Cantadas (Opcional)
                     </label>
                     <textarea
                       value={pickupContext}
                       onChange={(e) => setPickupContext(e.target.value)}
-                      className="w-full bg-[#050505] border border-white/10 rounded-lg p-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-pink-500/50 focus:ring-1 focus:ring-pink-500/50 transition-all resize-none h-20"
+                      className="w-full bg-[#050505] border border-white/10 rounded-lg p-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-rose-500/50 focus:ring-1 focus:ring-rose-500/50 transition-all resize-none h-20"
                       placeholder="Ex: cantadas sobre café, estilo nerd..."
                     />
                     <p className="text-[10px] text-gray-500 mt-2 text-right">
@@ -1209,13 +1329,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
                 ) : (
                   <div className="bg-[#111] border border-white/10 rounded-xl p-4 mb-6">
                     <label className="flex items-center gap-2 text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
-                      <MessageCircleHeart size={12} className="text-purple-400" />
+                      <MessageCircleHeart size={12} className="text-red-400" />
                       Refinar Resposta (Opcional)
                     </label>
                     <textarea
                       value={userContext}
                       onChange={(e) => setUserContext(e.target.value)}
-                      className="w-full bg-[#050505] border border-white/10 rounded-lg p-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/50 transition-all resize-none h-20"
+                      className="w-full bg-[#050505] border border-white/10 rounded-lg p-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-red-500/50 focus:ring-1 focus:ring-red-500/50 transition-all resize-none h-20"
                       placeholder="Ex: Ela gosta de sushi, seja engraçado..."
                     />
                     <p className="text-[10px] text-gray-500 mt-2 text-right">
@@ -1228,11 +1348,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
                 {isPro && (
                   <button
                     onClick={mode === 'pickup' ? runPickupLines : runAnalysis}
-                    className="w-full py-4 border rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 bg-[#1a1a1a] border-white/10 hover:bg-[#222] hover:border-purple-500/30 text-white"
+                    className="w-full py-4 border rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 bg-[#1a1a1a] border-white/10 hover:bg-[#222] hover:border-red-500/30 text-white"
                   >
                     {mode === 'pickup' ? (
                       <>
-                        <Heart size={18} className="text-pink-400" />
+                        <Heart size={18} className="text-rose-400" />
                         Gerar Novas Cantadas
                       </>
                     ) : (
@@ -1252,7 +1372,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
                   <>
                     <button
                       onClick={runPickupLines}
-                      className="w-full py-4 rounded-xl font-bold text-sm shadow-lg transition-all duration-300 flex items-center justify-center gap-2 bg-gradient-to-r from-pink-600 to-red-600 text-white hover:shadow-pink-500/25 hover:scale-[1.02] active:scale-95"
+                      className="w-full py-4 rounded-xl font-bold text-sm shadow-lg transition-all duration-300 flex items-center justify-center gap-2 bg-gradient-to-r from-red-600 to-rose-600 text-white hover:shadow-rose-500/25 hover:scale-[1.02] active:scale-95"
                     >
                       <Heart size={18} className="fill-white/20" />
                       Gerar Cantadas com Puxe Assunto
@@ -1266,7 +1386,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
                                 w-full py-4 rounded-xl font-bold text-sm shadow-lg transition-all duration-300 flex items-center justify-center gap-2
                                 ${!selectedImage
                         ? 'bg-white/5 text-gray-500 cursor-not-allowed'
-                        : 'bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:shadow-purple-500/25 hover:scale-[1.02] active:scale-95'}
+                        : 'bg-gradient-to-r from-red-600 to-rose-600 text-white hover:shadow-rose-500/25 hover:scale-[1.02] active:scale-95'}
                             `}
                   >
                     <MessageCircleHeart size={18} className="fill-white/20" />
@@ -1303,7 +1423,7 @@ const ResultCard: React.FC<{ suggestion: Suggestion, index: number, isLocked?: b
   const getToneStyle = (tone: string) => {
     const t = tone.toLowerCase();
     if (t.includes('engraçado') || t.includes('divertido')) return 'border-yellow-500/30 shadow-[0_0_15px_rgba(234,179,8,0.05)]';
-    if (t.includes('romântico') || t.includes('sedutor') || t.includes('ousado')) return 'border-pink-500/30 shadow-[0_0_15px_rgba(236,72,153,0.05)]';
+    if (t.includes('romântico') || t.includes('sedutor') || t.includes('ousado')) return 'border-rose-500/30 shadow-[0_0_15px_rgba(244,63,94,0.05)]';
     if (t.includes('direto') || t.includes('sério')) return 'border-blue-500/30 shadow-[0_0_15px_rgba(59,130,246,0.05)]';
     return 'border-white/10';
   };
@@ -1325,7 +1445,7 @@ const ResultCard: React.FC<{ suggestion: Suggestion, index: number, isLocked?: b
             "{suggestion.message.split(' ').slice(0, 6).join(' ')} <span className="blur-sm select-none opacity-50">{suggestion.message.split(' ').slice(6).join(' ')}</span>
           </p>
         ) : (
-          <p className="text-sm text-white leading-relaxed font-medium selection:bg-purple-500/40">
+          <p className="text-sm text-white leading-relaxed font-medium selection:bg-rose-500/40">
             "{suggestion.message}"
           </p>
         )}
@@ -1334,7 +1454,7 @@ const ResultCard: React.FC<{ suggestion: Suggestion, index: number, isLocked?: b
       {/* Footer Actions */}
       <div className="flex items-center justify-between border-t border-white/5 pt-3 mt-1">
         <div className="flex items-start gap-1.5 flex-1 mr-2">
-          <Zap size={12} className="text-purple-400 flex-shrink-0 mt-[2px]" />
+          <Zap size={12} className="text-red-400 flex-shrink-0 mt-[2px]" />
           <span className="text-[10px] text-gray-500 leading-tight">{suggestion.explanation}</span>
         </div>
 

@@ -13,6 +13,8 @@ import { ThankYouPage } from './components/ThankYouPage';
 import { ThankYouPage2 } from './components/ThankYouPage2';
 import { LegalPage } from './components/LegalPage';
 import { FacePage } from './components/FacePage';
+import { PuxarAssuntoPage, FlertePage, ConversasPage } from './components/seo';
+import { WhatsAppButton } from './components/WhatsAppButton';
 import { supabase } from './lib/supabase';
 import { metaService } from './services/metaService';
 
@@ -49,12 +51,12 @@ const ProtectedRoute: React.FC<{ children: React.ReactElement; user: any }> = ({
 // Landing Page Component
 const LandingPage: React.FC<{ onAction: () => void; user: any }> = ({ onAction, user }) => {
   return (
-    <div className="min-h-screen bg-[#050505] text-white selection:bg-purple-500/30 selection:text-purple-200 font-sans overflow-x-hidden relative">
-      {/* Global Background Effects */}
-      <div className="fixed top-[-10%] left-[-10%] w-[50%] h-[50%] bg-purple-600/10 rounded-full blur-[150px] pointer-events-none z-0" />
-      <div className="fixed bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-pink-600/10 rounded-full blur-[150px] pointer-events-none z-0" />
-      <div className="fixed top-[20%] right-[10%] w-[30%] h-[30%] bg-blue-600/5 rounded-full blur-[120px] pointer-events-none z-0" />
-
+    <div className="min-h-screen bg-[#050505] text-white selection:bg-rose-500/30 selection:text-rose-200 font-sans overflow-x-hidden relative">
+      {/* Background Light Effects */}
+      <div className="fixed top-0 left-1/2 -translate-x-1/2 w-full h-[800px] bg-gradient-to-b from-red-900/10 via-red-900/5 to-transparent pointer-events-none z-0" />
+      <div className="fixed top-1/4 right-[-10%] w-[600px] h-[600px] bg-red-600/5 rounded-full blur-[120px] pointer-events-none z-0" />
+      <div className="fixed bottom-1/4 left-[-10%] w-[500px] h-[500px] bg-rose-600/5 rounded-full blur-[100px] pointer-events-none z-0" />
+      
       <div className="relative z-10">
         <Header onAction={onAction} user={user} />
 
@@ -67,6 +69,9 @@ const LandingPage: React.FC<{ onAction: () => void; user: any }> = ({ onAction, 
 
         <Footer />
       </div>
+
+      {/* WhatsApp Floating Button */}
+      <WhatsAppButton />
     </div>
   );
 };
@@ -206,6 +211,20 @@ const AppRouter: React.FC = () => {
         <Route
           path="/face"
           element={<FacePage />}
+        />
+
+        {/* SEO Blog Pages */}
+        <Route
+          path="/blog/puxar-assunto"
+          element={<PuxarAssuntoPage onBack={() => navigate('/')} onAction={handleMainAction} />}
+        />
+        <Route
+          path="/blog/flerte"
+          element={<FlertePage onBack={() => navigate('/')} onAction={handleMainAction} />}
+        />
+        <Route
+          path="/blog/conversas"
+          element={<ConversasPage onBack={() => navigate('/')} onAction={handleMainAction} />}
         />
 
         {/* Redirect any unknown routes to landing */}

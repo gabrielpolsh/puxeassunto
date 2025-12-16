@@ -5,23 +5,23 @@ const SUGGESTIONS_DEMO = [
   { 
     tone: "Romântico", 
     text: "Adorei a sugestão! Vamos marcar algo para testar essa teoria pessoalmente? 😉", 
-    color: "text-pink-400",
-    bg: "bg-pink-500/10",
-    border: "border-pink-500/20"
+    color: "text-rose-400",
+    bg: "bg-rose-500/10",
+    border: "border-rose-500/20"
   },
   { 
     tone: "Engraçado", 
     text: "Se eu ganhasse um real cada vez que ouço isso, já estaria rico! 😂", 
-    color: "text-yellow-400",
-    bg: "bg-yellow-500/10",
-    border: "border-yellow-500/20"
+    color: "text-amber-400",
+    bg: "bg-amber-500/10",
+    border: "border-amber-500/20"
   },
   { 
     tone: "Misterioso", 
     text: "Interessante... mas isso é segredo de estado. 🤫", 
-    color: "text-purple-400",
-    bg: "bg-purple-500/10",
-    border: "border-purple-500/20"
+    color: "text-red-400",
+    bg: "bg-red-500/10",
+    border: "border-red-500/20"
   },
   { 
     tone: "Ousado", 
@@ -33,9 +33,9 @@ const SUGGESTIONS_DEMO = [
   { 
     tone: "Descontraído", 
     text: "Hahaha, justo! Mas agora fiquei curioso com o resto da história.", 
-    color: "text-blue-400",
-    bg: "bg-blue-500/10",
-    border: "border-blue-500/20"
+    color: "text-red-300",
+    bg: "bg-red-500/10",
+    border: "border-red-500/20"
   }
 ];
 
@@ -63,7 +63,7 @@ export const HowItWorks: React.FC = () => {
   return (
     <section id="como-funciona" className="pb-32 relative scroll-mt-32">
       {/* Connecting Line Background */}
-      <div className="absolute top-40 bottom-40 left-1/2 w-px bg-gradient-to-b from-transparent via-purple-500/20 to-transparent -translate-x-1/2 hidden lg:block"></div>
+      <div className="absolute top-40 bottom-40 left-1/2 w-px bg-gradient-to-b from-transparent via-red-500/20 to-transparent -translate-x-1/2 hidden lg:block"></div>
 
       <div className="text-center mb-24 relative z-10">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 mb-6 backdrop-blur-md">
@@ -72,7 +72,7 @@ export const HowItWorks: React.FC = () => {
         </div>
         <h2 className="text-4xl md:text-6xl font-bold text-white tracking-tight">
           Do print à resposta <br />
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">em segundos</span>
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-rose-400">em segundos</span>
         </h2>
       </div>
 
@@ -83,7 +83,7 @@ export const HowItWorks: React.FC = () => {
           {/* Text */}
           <div className="flex-1 relative lg:text-right">
             <div className="absolute -top-16 -left-10 lg:left-auto lg:-right-10 text-9xl font-black text-white/5 select-none -z-10 transition-colors group-hover:text-white/[0.07]">01</div>
-            <h3 className="text-3xl font-bold text-white mb-4 group-hover:text-purple-400 transition-colors">Mande o Print</h3>
+            <h3 className="text-3xl font-bold text-white mb-4 group-hover:text-red-400 transition-colors">Mande o Print</h3>
             <p className="text-gray-400 leading-relaxed text-lg lg:pl-12">
               Tire um print daquela conversa onde você travou. Pode ser do WhatsApp, Tinder, Instagram ou qualquer outro app. Basta fazer o upload.
             </p>
@@ -93,10 +93,10 @@ export const HowItWorks: React.FC = () => {
           <div className="flex-1 w-full flex justify-center lg:justify-start">
             <div className="relative w-full max-w-sm aspect-square lg:aspect-[4/3]">
                 {/* Background Glow */}
-                <div className="absolute inset-0 bg-purple-500/20 blur-[60px] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+                <div className="absolute inset-0 bg-red-500/20 blur-[60px] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
                 
                 {/* Card */}
-                <div className="w-full h-full bg-[#0a0a0a] border border-white/10 rounded-3xl p-1 overflow-hidden relative shadow-2xl transition-transform duration-500 group-hover:scale-[1.02] group-hover:border-purple-500/30">
+                <div className="w-full h-full bg-[#0a0a0a] border border-white/10 rounded-3xl p-1 overflow-hidden relative shadow-2xl transition-transform duration-500 group-hover:scale-[1.02] group-hover:border-red-500/30">
                     <div className="w-full h-full bg-[#111] rounded-[20px] border border-white/5 relative overflow-hidden">
                         
                         {/* iPhone Mockup - Positioned to be cut off */}
@@ -127,7 +127,7 @@ export const HowItWorks: React.FC = () => {
 
                             {/* Chat Header */}
                             <div className="h-12 border-b border-white/5 flex items-center px-4 gap-3 bg-[#1a1a1a]/50 backdrop-blur-md">
-                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500"></div>
+                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-500 to-rose-500"></div>
                                 <div className="flex flex-col">
                                     <div className="w-20 h-2 bg-white/20 rounded-full mb-1"></div>
                                     <div className="w-12 h-1.5 bg-white/10 rounded-full"></div>
@@ -147,7 +147,7 @@ export const HowItWorks: React.FC = () => {
 
                                 {/* Sent */}
                                 <div className="flex items-end gap-2 flex-row-reverse">
-                                    <div className="bg-purple-600 rounded-2xl rounded-br-none px-4 py-2.5 max-w-[85%]">
+                                    <div className="bg-red-600 rounded-2xl rounded-br-none px-4 py-2.5 max-w-[85%]">
                                         <div className="h-2 w-28 bg-white/50 rounded-full mb-2"></div>
                                         <div className="h-2 w-16 bg-white/30 rounded-full"></div>
                                     </div>
@@ -167,14 +167,14 @@ export const HowItWorks: React.FC = () => {
 
                         {/* Upload Icon - Floating in center */}
                         <div className="absolute inset-0 flex items-center justify-center z-30 pointer-events-none">
-                            <div className="w-20 h-20 bg-purple-600 rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(147,51,234,0.5)] animate-bounce-slow border-4 border-[#111]">
+                            <div className="w-20 h-20 bg-red-600 rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(220,38,38,0.5)] animate-bounce-slow border-4 border-[#111]">
                                 <Upload className="w-10 h-10 text-white" strokeWidth={2.5} />
                             </div>
                         </div>
 
                         {/* Floating Badge */}
                         <div className="absolute top-10 right-10 bg-white/10 backdrop-blur-md border border-white/20 p-2 rounded-xl animate-float" style={{ animationDelay: '1s' }}>
-                           <ImageIcon className="text-purple-400 w-6 h-6" />
+                           <ImageIcon className="text-red-400 w-6 h-6" />
                         </div>
 
                     </div>
@@ -238,7 +238,7 @@ export const HowItWorks: React.FC = () => {
           {/* Text */}
           <div className="flex-1 relative lg:text-right">
             <div className="absolute -top-16 -left-10 lg:left-auto lg:-right-10 text-9xl font-black text-white/5 select-none -z-10 transition-colors group-hover:text-white/[0.07]">03</div>
-            <h3 className="text-3xl font-bold text-white mb-4 group-hover:text-pink-400 transition-colors">Receba a Resposta</h3>
+            <h3 className="text-3xl font-bold text-white mb-4 group-hover:text-rose-400 transition-colors">Receba a Resposta</h3>
             <p className="text-gray-400 leading-relaxed text-lg lg:pl-12">
               Receba 5 opções de resposta com tons diferentes (engraçado, direto, misterioso). Escolha a perfeita, copie e envie.
             </p>
@@ -247,9 +247,9 @@ export const HowItWorks: React.FC = () => {
           {/* Visual */}
           <div className="flex-1 w-full flex justify-center lg:justify-start">
             <div className="relative w-full max-w-sm aspect-square">
-                <div className="absolute inset-0 bg-pink-500/20 blur-[60px] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+                <div className="absolute inset-0 bg-rose-500/20 blur-[60px] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
                 
-                <div className="w-full h-full bg-[#0a0a0a] border border-white/10 rounded-3xl p-1 overflow-hidden relative shadow-2xl transition-transform duration-500 group-hover:scale-[1.02] group-hover:border-pink-500/30">
+                <div className="w-full h-full bg-[#0a0a0a] border border-white/10 rounded-3xl p-1 overflow-hidden relative shadow-2xl transition-transform duration-500 group-hover:scale-[1.02] group-hover:border-rose-500/30">
                      <div className="w-full h-full bg-[#111] rounded-[20px] flex flex-col items-center justify-center p-8 relative">
                         
                         {/* Message Bubble */}
@@ -267,7 +267,7 @@ export const HowItWorks: React.FC = () => {
                             
                             {/* Copy Button Fake */}
                             <div className="mt-4 flex justify-end">
-                                <div className="px-3 py-1.5 rounded-lg bg-white/5 text-[10px] text-gray-400 font-medium hover:bg-pink-600 hover:text-white transition-colors cursor-default">
+                                <div className="px-3 py-1.5 rounded-lg bg-white/5 text-[10px] text-gray-400 font-medium hover:bg-rose-600 hover:text-white transition-colors cursor-default">
                                     Copiar Resposta
                                 </div>
                             </div>
@@ -283,8 +283,8 @@ export const HowItWorks: React.FC = () => {
                         </div>
 
                         {/* Floating Mini Heart Cards */}
-                        <div className="absolute bottom-24 left-6 bg-[#1a1a1a] border border-purple-500/30 p-2 rounded-lg shadow-lg animate-float" style={{ animationDelay: '1.5s' }}>
-                            <Heart className="w-4 h-4 text-purple-500 fill-purple-500/20" />
+                        <div className="absolute bottom-24 left-6 bg-[#1a1a1a] border border-red-500/30 p-2 rounded-lg shadow-lg animate-float" style={{ animationDelay: '1.5s' }}>
+                            <Heart className="w-4 h-4 text-red-500 fill-red-500/20" />
                         </div>
                      </div>
                 </div>
