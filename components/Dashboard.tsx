@@ -596,13 +596,19 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
     try {
       const { error } = await supabase.auth.signOut();
       if (error) {
+        // If session not found, it's already logged out - just clear local state
+        if (error.code === 'session_not_found') {
+          console.log('Session already expired, clearing local state');
+          window.location.reload();
+          return;
+        }
         console.error('Error signing out:', error);
-        alert('Erro ao sair. Tente novamente.');
       }
       // The onAuthStateChange listener in App.tsx will handle the redirect
     } catch (error) {
       console.error('Error signing out:', error);
-      alert('Erro ao sair. Tente novamente.');
+      // Force reload to clear any stale state
+      window.location.reload();
     }
   };
 
