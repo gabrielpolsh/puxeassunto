@@ -1,4 +1,4 @@
-# Proxy images to Supabase Storage
-/images/*  https://einkgouevvogawatsgbn.supabase.co/storage/v1/object/public/puxeassunto/:splat  200
+# Images are now served via signed URLs directly from Supabase (private bucket)
+# No proxy needed - the app generates temporary signed URLs
 
 /* /index.html 200

@@ -7,14 +7,8 @@ export default defineConfig(({ mode }) => {
     return {
       server: {
         port: 3000,
-        host: '0.0.0.0',
-        proxy: {
-          '/images': {
-            target: 'https://einkgouevvogawatsgbn.supabase.co/storage/v1/object/public/puxeassunto',
-            changeOrigin: true,
-            rewrite: (path) => path.replace(/^\/images/, '')
-          }
-        }
+        host: '0.0.0.0'
+        // Removed /images proxy - now using signed URLs directly from Supabase
       },
       plugins: [react()],
       define: {
