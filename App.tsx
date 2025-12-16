@@ -69,9 +69,6 @@ const LandingPage: React.FC<{ onAction: () => void; user: any }> = ({ onAction, 
 
         <Footer />
       </div>
-
-      {/* WhatsApp Floating Button */}
-      <WhatsAppButton />
     </div>
   );
 };
