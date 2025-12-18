@@ -1630,7 +1630,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <LayoutGrid size={12} className="text-rose-400 shrink-0" />
-                          <span className="text-xs font-medium text-white">Adicionar mais prints?</span>
+                          <span className="text-xs font-medium text-white">Usar múltiplos prints</span>
                         </div>
                         <p className="text-[9px] text-gray-500 mt-0.5">
                           Ative essa opção e envie até {MAX_IMAGES} prints para o Puxe Assunto entender melhor a conversa.
@@ -1645,7 +1645,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
                           }
                         }}
                         disabled={selectedImages.length > 1}
-                        title={selectedImages.length > 1 ? 'Remova prints para desativar' : 'Clique para alternar'}
+                        title={selectedImages.length > 1 ? 'Remova os prints extras para desativar' : 'Clique para alternar'}
                         className={`
                           relative inline-flex items-center h-6 w-12 rounded-full transition-all duration-300 ease-in-out shrink-0
                           ${selectedImages.length > 1 ? 'cursor-not-allowed opacity-60' : ''}
