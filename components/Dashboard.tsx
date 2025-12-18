@@ -363,6 +363,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
   // Drag and Drop para reordenar imagens
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const ghostRef = useRef<HTMLDivElement>(null);
   
   const MAX_IMAGES = 10;
 
@@ -711,10 +712,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
   const handleDragStart = (e: React.DragEvent, index: number) => {
     setDraggedIndex(index);
     e.dataTransfer.effectAllowed = 'move';
-    // Adiciona uma imagem fantasma transparente
-    const img = new Image();
-    img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
-    e.dataTransfer.setDragImage(img, 0, 0);
   };
 
   const handleDragOver = (e: React.DragEvent, index: number) => {
@@ -749,6 +746,66 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
   };
 
   const handleDragEnd = () => {
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  };
+
+  // Touch events para mobile
+  const touchStartPos = useRef<{ x: number; y: number } | null>(null);
+  const touchCurrentIndex = useRef<number | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent, index: number) => {
+    const touch = e.touches[0];
+    touchStartPos.current = { x: touch.clientX, y: touch.clientY };
+    touchCurrentIndex.current = index;
+    setDraggedIndex(index);
+    
+    // Mostra e posiciona o ghost diretamente no DOM
+    if (ghostRef.current) {
+      ghostRef.current.style.display = 'block';
+      ghostRef.current.style.transform = `translate(${touch.clientX - 40}px, ${touch.clientY - 50}px)`;
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (touchCurrentIndex.current === null) return;
+    
+    const touch = e.touches[0];
+    
+    // Atualiza posição do ghost diretamente no DOM (sem re-render)
+    if (ghostRef.current) {
+      ghostRef.current.style.transform = `translate(${touch.clientX - 40}px, ${touch.clientY - 50}px)`;
+    }
+    
+    const element = document.elementFromPoint(touch.clientX, touch.clientY);
+    
+    // Encontra o elemento pai com data-image-index
+    const imageContainer = element?.closest('[data-image-index]');
+    if (imageContainer) {
+      const overIndex = parseInt(imageContainer.getAttribute('data-image-index') || '-1');
+      if (overIndex !== -1 && overIndex !== touchCurrentIndex.current) {
+        setDragOverIndex(overIndex);
+      }
+    }
+  };
+
+  const handleTouchEnd = () => {
+    // Esconde o ghost
+    if (ghostRef.current) {
+      ghostRef.current.style.display = 'none';
+    }
+    
+    if (draggedIndex !== null && dragOverIndex !== null && draggedIndex !== dragOverIndex) {
+      setSelectedImages(prev => {
+        const newImages = [...prev];
+        const [draggedImage] = newImages.splice(draggedIndex, 1);
+        newImages.splice(dragOverIndex, 0, draggedImage);
+        return newImages;
+      });
+    }
+    
+    touchStartPos.current = null;
+    touchCurrentIndex.current = null;
     setDraggedIndex(null);
     setDragOverIndex(null);
   };
@@ -898,6 +955,30 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
         dailyCount={dailyCount}
         onUpgradeClick={onUpgradeClick}
       />
+
+      {/* Ghost Image para Drag no Mobile */}
+      <div 
+        ref={ghostRef}
+        className="fixed pointer-events-none z-[100] md:hidden will-change-transform"
+        style={{
+          display: 'none',
+          left: 0,
+          top: 0,
+        }}
+      >
+        {draggedIndex !== null && selectedImages[draggedIndex] && (
+          <div className="w-20 h-24 rounded-lg overflow-hidden border-2 border-rose-500 shadow-2xl shadow-rose-500/30 opacity-90 bg-[#111]">
+            <img 
+              src={selectedImages[draggedIndex]} 
+              className="w-full h-full object-cover"
+              alt="Arrastando"
+            />
+            <div className="absolute top-1 left-1 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center bg-gradient-to-r from-red-500 to-rose-500 shadow-lg">
+              {draggedIndex + 1}
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Hidden Input */}
       <input
@@ -1145,8 +1226,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
                 </div>
               </div>
 
-              {/* Floating Bubble 2 (Bottom Right - Moved DOWN on Mobile) */}
-              <div className="absolute bottom-[3%] right-[5%] md:bottom-[15%] md:right-[10%] animate-float opacity-90 scale-75 md:scale-100 z-20" style={{ animationDelay: '1.5s' }}>
+              {/* Floating Bubble 2 (Bottom Right - Hidden on Mobile) */}
+              <div className="hidden md:block absolute md:bottom-[15%] md:right-[10%] animate-float opacity-90 z-20" style={{ animationDelay: '1.5s' }}>
                 <div className="bg-[#1a1a1a]/90 border border-white/10 px-4 py-2 rounded-2xl rounded-tr-none shadow-xl backdrop-blur-sm flex items-center gap-2 transform rotate-6">
                   <div className="h-2 w-16 bg-white/10 rounded-full"></div>
                   <div className="w-2 h-2 bg-rose-500 rounded-full"></div>
@@ -1191,74 +1272,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
                     Arraste o print aqui ou clique para escolher. O Puxe Assunto vai criar a resposta perfeita.
                   </p>
 
-                  <div className="flex items-center justify-center gap-2 md:gap-3 text-[10px] md:text-xs font-medium text-gray-500 uppercase tracking-wider mb-6">
+                  <div className="flex items-center justify-center gap-2 md:gap-3 text-[10px] md:text-xs font-medium text-gray-500 uppercase tracking-wider">
                     <span className="bg-white/5 px-2 md:px-3 py-1 rounded-full border border-white/5">WhatsApp</span>
                     <span className="bg-white/5 px-2 md:px-3 py-1 rounded-full border border-white/5">Tinder</span>
                     <span className="bg-white/5 px-2 md:px-3 py-1 rounded-full border border-white/5">Insta</span>
-                  </div>
-                </div>
-
-                {/* Toggle Múltiplas Imagens - Fora do card clicável */}
-                <div className="mt-6 w-[90%] md:w-full md:max-w-2xl mx-auto" onClick={(e) => e.stopPropagation()}>
-                  <div className="bg-[#0a0a0a]/80 backdrop-blur-xl border border-white/10 rounded-2xl p-4 relative overflow-hidden">
-                    {/* PRO Badge se não for PRO */}
-                    {!isPro && (
-                      <div className="absolute top-2 right-2 flex items-center gap-1 px-2 py-0.5 bg-red-500/20 border border-red-500/30 rounded text-[10px] font-bold text-red-300 uppercase">
-                        <Lock size={10} /> PRO
-                      </div>
-                    )}
-                    
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <LayoutGrid size={14} className="text-rose-400" />
-                          <span className="text-sm font-medium text-white">Mais contexto</span>
-                        </div>
-                        <p className="text-[10px] md:text-xs text-gray-500">
-                          Envie até {MAX_IMAGES} prints para o Puxe Assunto entender melhor a conversa
-                        </p>
-                      </div>
-                      
-                      {/* Toggle Switch */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (!isPro) {
-                            onUpgradeClick();
-                            return;
-                          }
-                          setUseMultipleImages(!useMultipleImages);
-                        }}
-                        className={`
-                          relative inline-flex items-center h-7 w-14 rounded-full transition-all duration-300 ease-in-out shrink-0
-                          ${useMultipleImages && isPro
-                            ? 'bg-gradient-to-r from-red-500 to-rose-500 shadow-lg shadow-red-500/30' 
-                            : 'bg-white/10 border border-white/20'
-                          }
-                          ${!isPro ? 'opacity-60 cursor-pointer' : ''}
-                        `}
-                        role="switch"
-                        aria-checked={useMultipleImages && isPro}
-                      >
-                        <span
-                          className={`
-                            inline-block h-5 w-5 transform rounded-full transition-all duration-300 ease-in-out shadow-lg
-                            ${useMultipleImages && isPro
-                              ? 'translate-x-8 bg-white' 
-                              : 'translate-x-1 bg-gray-300'
-                            }
-                          `}
-                        >
-                          <span className="flex items-center justify-center h-full w-full">
-                            {useMultipleImages && isPro ? (
-                              <LayoutGrid size={10} className="text-rose-500" />
-                            ) : (
-                              <ImageIcon size={10} className="text-gray-500" />
-                            )}
-                          </span>
-                        </span>
-                      </button>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -1433,7 +1450,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
                   )}
                 </div>
 
-                {/* Toggle para ativar múltiplas imagens - abaixo da imagem */}
+                {/* Toggle para múltiplas imagens - abaixo da imagem */}
                 <div className="mt-4 w-full max-w-md mx-auto" onClick={(e) => e.stopPropagation()}>
                   <div className="bg-[#0a0a0a]/80 backdrop-blur-xl border border-white/10 rounded-xl p-3 relative overflow-hidden">
                     {!isPro && (
@@ -1446,10 +1463,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <LayoutGrid size={12} className="text-rose-400 shrink-0" />
-                          <span className="text-xs font-medium text-white">Adicionar mais prints</span>
+                          <span className="text-xs font-medium text-white">Adicionar mais prints?</span>
                         </div>
                         <p className="text-[9px] text-gray-500 mt-0.5">
-                          Até {MAX_IMAGES} prints para mais contexto
+                          Ative essa opção e envie até {MAX_IMAGES} prints para o Puxe Assunto entender melhor a conversa.
                         </p>
                       </div>
                       
@@ -1460,17 +1477,27 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
                             onUpgradeClick();
                             return;
                           }
-                          setUseMultipleImages(true);
+                          setUseMultipleImages(!useMultipleImages);
                         }}
                         className={`
                           relative inline-flex items-center h-6 w-12 rounded-full transition-all duration-300 ease-in-out shrink-0
-                          bg-white/10 border border-white/20 hover:border-rose-500/50
+                          ${useMultipleImages 
+                            ? 'bg-gradient-to-r from-red-500 to-rose-500 shadow-lg shadow-red-500/30' 
+                            : 'bg-white/10 border border-white/20 hover:border-rose-500/50'
+                          }
                           ${!isPro ? 'opacity-60' : ''}
                         `}
                       >
-                        <span className="inline-block h-4 w-4 transform rounded-full transition-all duration-300 ease-in-out shadow-lg translate-x-1 bg-gray-300">
+                        <span className={`
+                          inline-block h-4 w-4 transform rounded-full transition-all duration-300 ease-in-out shadow-lg
+                          ${useMultipleImages ? 'translate-x-7 bg-white' : 'translate-x-1 bg-gray-300'}
+                        `}>
                           <span className="flex items-center justify-center h-full w-full">
-                            <Plus size={8} className="text-gray-500" />
+                            {useMultipleImages ? (
+                              <Check size={8} className="text-rose-500" />
+                            ) : (
+                              <Plus size={8} className="text-gray-500" />
+                            )}
                           </span>
                         </span>
                       </button>
@@ -1482,13 +1509,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
               /* Multiple Images Preview State (modo PRO com toggle ativado) */
               <div className="relative w-full h-full flex flex-col items-center justify-start z-10 animate-fade-in py-16 md:p-4 overflow-y-auto">
                 {/* Header com contador */}
-                <div className="w-full max-w-4xl mx-auto mb-3 flex items-center justify-between">
+                <div className="w-full max-w-4xl mx-auto mb-3 flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
                     <LayoutGrid size={14} className="text-rose-400" />
                     <span className="text-xs font-medium text-white">
                       {selectedImages.length} de {MAX_IMAGES} prints
                     </span>
                   </div>
+                  
                   <button
                     onClick={() => {
                       setSelectedImages([]);
@@ -1510,14 +1538,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
                   {selectedImages.map((img, index) => (
                     <div 
                       key={index} 
+                      data-image-index={index}
                       draggable
                       onDragStart={(e) => handleDragStart(e, index)}
                       onDragOver={(e) => handleDragOver(e, index)}
                       onDragLeave={handleDragLeave}
                       onDrop={(e) => handleDrop(e, index)}
                       onDragEnd={handleDragEnd}
+                      onTouchStart={(e) => handleTouchStart(e, index)}
+                      onTouchMove={handleTouchMove}
+                      onTouchEnd={handleTouchEnd}
                       className={`
-                        relative group rounded-lg overflow-hidden border shadow-xl bg-[#111] aspect-[3/4] max-h-[35vh] md:max-h-[40vh] cursor-grab active:cursor-grabbing transition-all duration-200
+                        relative group rounded-lg overflow-hidden border shadow-xl bg-[#111] aspect-[3/4] max-h-[35vh] md:max-h-[40vh] cursor-grab active:cursor-grabbing transition-all duration-200 touch-none
                         ${draggedIndex === index ? 'opacity-50 scale-95 border-rose-500' : 'border-white/10'}
                         ${dragOverIndex === index ? 'border-rose-400 border-2 scale-105' : ''}
                       `}
@@ -1543,8 +1575,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
                         {index + 1}
                       </div>
 
-                      {/* Ícone de arrastar */}
-                      <div className="absolute bottom-1.5 left-1.5 p-1 bg-black/50 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+                      {/* Ícone de arrastar - Sempre visível no mobile */}
+                      <div className="absolute bottom-1.5 left-1.5 p-1 bg-black/50 rounded md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white/70">
                           <circle cx="9" cy="5" r="1" fill="currentColor"/>
                           <circle cx="9" cy="12" r="1" fill="currentColor"/>
@@ -1555,11 +1587,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
                         </svg>
                       </div>
                       
-                      {/* Botão remover */}
+                      {/* Botão remover - Sempre visível no mobile */}
                       {!isLoadingImage && (
                         <button
                           onClick={() => removeImage(index)}
-                          className="absolute top-1.5 right-1.5 p-1 bg-black/70 hover:bg-red-600 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-lg"
+                          className="absolute top-1.5 right-1.5 p-1 bg-black/70 hover:bg-red-600 rounded-full md:opacity-0 md:group-hover:opacity-100 transition-all duration-300 shadow-lg"
                           title="Remover imagem"
                         >
                           <X size={12} className="text-white" />
@@ -1589,6 +1621,60 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
                   <p className="text-[10px] text-gray-500">
                     <span className="text-rose-400">Dica:</span> Arraste os prints para reordenar (1 = mais antigo)
                   </p>
+                </div>
+
+                {/* Toggle para múltiplas imagens - sempre visível */}
+                <div className="mt-4 w-full max-w-md mx-auto" onClick={(e) => e.stopPropagation()}>
+                  <div className="bg-[#0a0a0a]/80 backdrop-blur-xl border border-white/10 rounded-xl p-3 relative overflow-hidden">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <LayoutGrid size={12} className="text-rose-400 shrink-0" />
+                          <span className="text-xs font-medium text-white">Adicionar mais prints?</span>
+                        </div>
+                        <p className="text-[9px] text-gray-500 mt-0.5">
+                          Ative essa opção e envie até {MAX_IMAGES} prints para o Puxe Assunto entender melhor a conversa.
+                        </p>
+                      </div>
+                      
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (selectedImages.length <= 1) {
+                            setUseMultipleImages(!useMultipleImages);
+                          }
+                        }}
+                        disabled={selectedImages.length > 1}
+                        title={selectedImages.length > 1 ? 'Remova prints para desativar' : 'Clique para alternar'}
+                        className={`
+                          relative inline-flex items-center h-6 w-12 rounded-full transition-all duration-300 ease-in-out shrink-0
+                          ${selectedImages.length > 1 ? 'cursor-not-allowed opacity-60' : ''}
+                          ${useMultipleImages 
+                            ? 'bg-gradient-to-r from-red-500 to-rose-500 shadow-lg shadow-red-500/30' 
+                            : 'bg-white/10 border border-white/20 hover:border-rose-500/50'
+                          }
+                        `}
+                      >
+                        <span className={`
+                          inline-block h-4 w-4 transform rounded-full transition-all duration-300 ease-in-out shadow-lg
+                          ${useMultipleImages ? 'translate-x-7 bg-white' : 'translate-x-1 bg-gray-300'}
+                        `}>
+                          <span className="flex items-center justify-center h-full w-full">
+                            {useMultipleImages ? (
+                              <Check size={8} className="text-rose-500" />
+                            ) : (
+                              <Plus size={8} className="text-gray-500" />
+                            )}
+                          </span>
+                        </span>
+                      </button>
+                    </div>
+                    {selectedImages.length > 1 && (
+                      <p className="text-[9px] text-amber-400/70 mt-2">
+                        Remova prints para poder desativar
+                      </p>
+                    )}
+                  </div>
                 </div>
 
                 {/* Loading overlay for mobile */}
