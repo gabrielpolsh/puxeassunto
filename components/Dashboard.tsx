@@ -43,7 +43,7 @@ const getSignedImageUrl = async (imagePath: string): Promise<string | null> => {
       return imagePath;
     }
     
-    // Extract the path from /images/ prefix if present
+    // Remove /images/ prefix if present (legacy format)
     let storagePath = imagePath;
     if (imagePath.startsWith('/images/')) {
       storagePath = imagePath.replace('/images/', '');
@@ -118,7 +118,6 @@ const uploadImage = async (fileOrBase64: string | File, userId: string): Promise
 
     const fileExt = contentType.split('/')[1] || 'jpg';
     const fileName = `${userId}/${Date.now()}.${fileExt}`;
-    const storagePath = `/images/${fileName}`;
 
     console.log('Uploading to Supabase Storage:', fileName);
 
@@ -141,7 +140,7 @@ const uploadImage = async (fileOrBase64: string | File, userId: string): Promise
 
     if (signedError || !signedData) {
       console.error('Error creating signed URL after upload:', signedError);
-      return { path: storagePath, signedUrl: storagePath };
+      return { path: fileName, signedUrl: fileName };
     }
 
     // Cache the signed URL
@@ -151,7 +150,7 @@ const uploadImage = async (fileOrBase64: string | File, userId: string): Promise
     });
 
     console.log('Upload successful. Signed URL generated.');
-    return { path: storagePath, signedUrl: signedData.signedUrl };
+    return { path: fileName, signedUrl: signedData.signedUrl };
   } catch (error) {
     console.error('Error in uploadImage:', error);
     return null;
@@ -351,14 +350,21 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
   const [showSettings, setShowSettings] = useState(false);
 
   // Studio State
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [selectedImages, setSelectedImages] = useState<string[]>([]);
   const [isLoadingImage, setIsLoadingImage] = useState(false);
   const [userContext, setUserContext] = useState('');
   const [pickupContext, setPickupContext] = useState('');
   const [usePhotoForPickup, setUsePhotoForPickup] = useState(false);
+  const [useMultipleImages, setUseMultipleImages] = useState(false);
   const [results, setResults] = useState<Suggestion[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  
+  // Drag and Drop para reordenar imagens
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  
+  const MAX_IMAGES = 10;
 
   // PRO / Limits State
   const [isPro, setIsPro] = useState(false);
@@ -515,7 +521,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
         if (firstUserMsg?.image_data) {
           // Get signed URL for private bucket
           const signedUrl = await getSignedImageUrl(firstUserMsg.image_data);
-          setSelectedImage(signedUrl || firstUserMsg.image_data);
+          setSelectedImages(signedUrl ? [signedUrl] : [firstUserMsg.image_data]);
           setUsePhotoForPickup(true);
         }
         // Extract context if available
@@ -530,10 +536,25 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
         // Find image in user messages
         const userMsg = messages.find(m => m.role === 'user' && m.image_data);
         if (userMsg) {
-          // Get signed URL for private bucket
-          const signedUrl = await getSignedImageUrl(userMsg.image_data);
-          setSelectedImage(signedUrl || userMsg.image_data);
+          // Check if it's multiple images (comma separated)
+          const imagePaths = userMsg.image_data.split(',');
+          const signedUrls: string[] = [];
+          
+          for (const path of imagePaths) {
+            const signedUrl = await getSignedImageUrl(path.trim());
+            if (signedUrl) {
+              signedUrls.push(signedUrl);
+            }
+          }
+          
+          const loadedImages = signedUrls.length > 0 ? signedUrls : imagePaths;
+          setSelectedImages(loadedImages);
           setUserContext(userMsg.content || '');
+          
+          // Se tem mais de 1 imagem, ativa o modo múltiplas imagens
+          if (loadedImages.length > 1) {
+            setUseMultipleImages(true);
+          }
         }
       }
 
@@ -611,10 +632,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
   };
 
   const resetStudio = () => {
-    setSelectedImage(null);
+    setSelectedImages([]);
     setUserContext('');
     setPickupContext('');
     setUsePhotoForPickup(false);
+    setUseMultipleImages(false);
     setResults([]);
     setShowMobileSidebar(false);
   };
@@ -632,9 +654,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      processFile(file);
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      processFiles(Array.from(files));
     }
     // Reset value to allow selecting the same file again
     if (fileInputRef.current) {
@@ -646,16 +668,93 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
     fileInputRef.current?.click();
   };
 
+  const processFiles = (files: File[]) => {
+    // Se não está no modo múltiplas imagens, só permite 1
+    const maxAllowed = (useMultipleImages && isPro) ? MAX_IMAGES : 1;
+    const remainingSlots = maxAllowed - selectedImages.length;
+    const filesToProcess = files.slice(0, remainingSlots);
+    
+    if (filesToProcess.length === 0) return;
+    
+    // Se só permite 1 imagem e já tem alguma, substitui
+    if (maxAllowed === 1 && selectedImages.length > 0) {
+      const file = files[0];
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setSelectedImages([reader.result as string]);
+      };
+      reader.readAsDataURL(file);
+      return;
+    }
+    
+    filesToProcess.forEach(file => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setSelectedImages(prev => {
+          if (prev.length >= maxAllowed) return prev;
+          return [...prev, reader.result as string];
+        });
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
   const processFile = (file: File) => {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setSelectedImage(reader.result as string);
-    };
-    reader.readAsDataURL(file);
+    processFiles([file]);
+  };
+
+  const removeImage = (index: number) => {
+    setSelectedImages(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Funções de Drag and Drop para reordenar
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+    // Adiciona uma imagem fantasma transparente
+    const img = new Image();
+    img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+    e.dataTransfer.setDragImage(img, 0, 0);
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (draggedIndex !== null && draggedIndex !== index) {
+      setDragOverIndex(index);
+    }
+  };
+
+  const handleDragLeave = () => {
+    setDragOverIndex(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === dropIndex) {
+      setDraggedIndex(null);
+      setDragOverIndex(null);
+      return;
+    }
+
+    setSelectedImages(prev => {
+      const newImages = [...prev];
+      const [draggedImage] = newImages.splice(draggedIndex, 1);
+      newImages.splice(dropIndex, 0, draggedImage);
+      return newImages;
+    });
+
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+    setDragOverIndex(null);
   };
 
   const runAnalysis = async () => {
-    if (!selectedImage || isAnalyzing) return;
+    if (selectedImages.length === 0 || isAnalyzing) return;
 
     // CHECK LIMITS
     if (!isPro && dailyCount >= 5) {
@@ -667,7 +766,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
 
     try {
       // 1. Analyze (Returns { title, suggestions })
-      const { title: aiTitle, suggestions } = await analyzeChatScreenshot(selectedImage, userContext);
+      const { title: aiTitle, suggestions } = await analyzeChatScreenshot(selectedImages, userContext);
       setResults(suggestions);
 
       // 2. Persist
@@ -680,18 +779,26 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
       }
 
       if (sessionId) {
-        // Upload image to storage
-        const uploadResult = await uploadImage(selectedImage, user.id);
-        if (!uploadResult) {
-          console.warn('Image upload failed, saving as base64');
-          alert('Aviso: Não foi possível salvar a imagem no servidor. Ela será salva localmente.');
-          await saveInteraction(sessionId, selectedImage, userContext, suggestions);
-        } else {
-          // Update local state to use signed URL for immediate display
-          setSelectedImage(uploadResult.signedUrl);
-          // Save path (not signed URL) to database
-          await saveInteraction(sessionId, uploadResult.path, userContext, suggestions);
+        // Upload all images to storage
+        const uploadedPaths: string[] = [];
+        const uploadedSignedUrls: string[] = [];
+        
+        for (const img of selectedImages) {
+          const uploadResult = await uploadImage(img, user.id);
+          if (uploadResult) {
+            uploadedPaths.push(uploadResult.path);
+            uploadedSignedUrls.push(uploadResult.signedUrl);
+          } else {
+            console.warn('Image upload failed for one image');
+            uploadedPaths.push(img); // fallback to base64
+            uploadedSignedUrls.push(img);
+          }
         }
+        
+        // Update local state to use signed URLs for immediate display
+        setSelectedImages(uploadedSignedUrls);
+        // Save paths (not signed URLs) to database - join with comma for multiple
+        await saveInteraction(sessionId, uploadedPaths.join(','), userContext, suggestions);
       }
 
     } catch (err) {
@@ -714,7 +821,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
     setIsAnalyzing(true);
 
     try {
-      const image = usePhotoForPickup && selectedImage ? selectedImage : undefined;
+      const image = usePhotoForPickup && selectedImages.length > 0 ? selectedImages[0] : undefined;
       const { title: aiTitle, suggestions } = await generatePickupLines(pickupContext, image);
       setResults(suggestions);
       
@@ -736,8 +843,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
             alert('Aviso: Não foi possível salvar a imagem no servidor. Ela será salva localmente.');
           } else {
             // Update local state to use signed URL for immediate display
-            if (image === selectedImage) {
-              setSelectedImage(uploadResult.signedUrl);
+            if (selectedImages.length > 0) {
+              setSelectedImages([uploadResult.signedUrl]);
             }
             // Use path for database storage
             imageToSave = uploadResult.path;
@@ -798,6 +905,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
         ref={fileInputRef}
         className="hidden"
         accept="image/*"
+        multiple
         onChange={handleFileSelect}
       />
 
@@ -948,8 +1056,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
           onDrop={(e) => { 
             e.preventDefault(); 
             setIsDragging(false); 
-            if ((mode === 'analysis' || (mode === 'pickup' && usePhotoForPickup)) && e.dataTransfer.files[0]) {
-              processFile(e.dataTransfer.files[0]);
+            if ((mode === 'analysis' || (mode === 'pickup' && usePhotoForPickup)) && e.dataTransfer.files.length > 0) {
+              processFiles(Array.from(e.dataTransfer.files));
             }
           }}
         >
@@ -1057,44 +1165,104 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
               <Send className="absolute bottom-[15%] left-[15%] md:left-[25%] text-white/5 w-10 h-10 animate-pulse-slow hidden md:block" style={{ animationDelay: '1s' }} />
             </div>
 
-            {!selectedImage && mode === 'analysis' ? (
+            {selectedImages.length === 0 && mode === 'analysis' ? (
               /* --- New Modern Upload State --- */
-              <div
-                onClick={triggerFileSelect}
-                className={`
-                            w-full h-full md:w-full md:max-w-2xl md:h-[80%] md:aspect-video 
-                            flex flex-col items-center justify-center cursor-pointer transition-all duration-500 group relative z-10 mt-8 md:mt-0
-                        `}
-              >
-                {/* Main Center Card */}
-                <div className={`
-                            relative bg-[#0a0a0a]/80 backdrop-blur-xl border border-white/10 rounded-3xl p-6 md:p-12 text-center shadow-2xl z-10
-                            w-[90%] md:w-full mx-auto
-                            transform transition-all duration-300 group-hover:scale-[1.02] group-hover:border-red-500/30 group-hover:shadow-red-900/20
-                            ${isDragging ? 'border-red-500 bg-red-900/20 scale-105' : ''}
-                         `}>
-                  <div className="relative w-16 h-16 md:w-24 md:h-24 mx-auto mb-4 md:mb-6">
+              <div className="w-full h-full flex flex-col items-center justify-center relative z-10 mt-8 md:mt-0 p-4">
+                <div
+                  onClick={triggerFileSelect}
+                  className={`
+                    relative bg-[#0a0a0a]/80 backdrop-blur-xl border border-white/10 rounded-3xl p-6 md:p-10 text-center shadow-2xl z-10
+                    w-[90%] md:w-full md:max-w-2xl mx-auto cursor-pointer
+                    transform transition-all duration-300 hover:scale-[1.02] hover:border-red-500/30 hover:shadow-red-900/20
+                    ${isDragging ? 'border-red-500 bg-red-900/20 scale-105' : ''}
+                  `}
+                >
+                  <div className="relative w-16 h-16 md:w-20 md:h-20 mx-auto mb-4 md:mb-5">
                     <div className="absolute inset-0 bg-gradient-to-tr from-red-600 to-rose-600 rounded-full blur-lg opacity-40 group-hover:opacity-70 transition-opacity duration-500 animate-pulse"></div>
                     <div className="relative w-full h-full bg-[#111] border border-white/10 rounded-full flex items-center justify-center shadow-xl group-hover:-translate-y-1 transition-transform duration-300">
-                      <Upload size={24} className="md:w-8 md:h-8 text-white group-hover:text-rose-200 transition-colors" />
+                      <Upload size={24} className="md:w-7 md:h-7 text-white group-hover:text-rose-200 transition-colors" />
                     </div>
                   </div>
 
-                  <h3 className="text-xl md:text-3xl font-bold text-white mb-2 md:mb-3 tracking-tight">
+                  <h3 className="text-xl md:text-2xl font-bold text-white mb-2 md:mb-3 tracking-tight">
                     Analise sua conversa
                   </h3>
-                  <p className="text-xs md:text-base text-gray-400 max-w-xs mx-auto mb-6 md:mb-8 leading-relaxed">
+                  <p className="text-xs md:text-sm text-gray-400 max-w-xs mx-auto mb-5 leading-relaxed">
                     Arraste o print aqui ou clique para escolher. O Puxe Assunto vai criar a resposta perfeita.
                   </p>
 
-                  <div className="flex items-center justify-center gap-2 md:gap-3 text-[10px] md:text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <div className="flex items-center justify-center gap-2 md:gap-3 text-[10px] md:text-xs font-medium text-gray-500 uppercase tracking-wider mb-6">
                     <span className="bg-white/5 px-2 md:px-3 py-1 rounded-full border border-white/5">WhatsApp</span>
                     <span className="bg-white/5 px-2 md:px-3 py-1 rounded-full border border-white/5">Tinder</span>
                     <span className="bg-white/5 px-2 md:px-3 py-1 rounded-full border border-white/5">Insta</span>
                   </div>
                 </div>
+
+                {/* Toggle Múltiplas Imagens - Fora do card clicável */}
+                <div className="mt-6 w-[90%] md:w-full md:max-w-2xl mx-auto" onClick={(e) => e.stopPropagation()}>
+                  <div className="bg-[#0a0a0a]/80 backdrop-blur-xl border border-white/10 rounded-2xl p-4 relative overflow-hidden">
+                    {/* PRO Badge se não for PRO */}
+                    {!isPro && (
+                      <div className="absolute top-2 right-2 flex items-center gap-1 px-2 py-0.5 bg-red-500/20 border border-red-500/30 rounded text-[10px] font-bold text-red-300 uppercase">
+                        <Lock size={10} /> PRO
+                      </div>
+                    )}
+                    
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <LayoutGrid size={14} className="text-rose-400" />
+                          <span className="text-sm font-medium text-white">Mais contexto</span>
+                        </div>
+                        <p className="text-[10px] md:text-xs text-gray-500">
+                          Envie até {MAX_IMAGES} prints para a IA entender melhor a conversa
+                        </p>
+                      </div>
+                      
+                      {/* Toggle Switch */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (!isPro) {
+                            onUpgradeClick();
+                            return;
+                          }
+                          setUseMultipleImages(!useMultipleImages);
+                        }}
+                        className={`
+                          relative inline-flex items-center h-7 w-14 rounded-full transition-all duration-300 ease-in-out shrink-0
+                          ${useMultipleImages && isPro
+                            ? 'bg-gradient-to-r from-red-500 to-rose-500 shadow-lg shadow-red-500/30' 
+                            : 'bg-white/10 border border-white/20'
+                          }
+                          ${!isPro ? 'opacity-60 cursor-pointer' : ''}
+                        `}
+                        role="switch"
+                        aria-checked={useMultipleImages && isPro}
+                      >
+                        <span
+                          className={`
+                            inline-block h-5 w-5 transform rounded-full transition-all duration-300 ease-in-out shadow-lg
+                            ${useMultipleImages && isPro
+                              ? 'translate-x-8 bg-white' 
+                              : 'translate-x-1 bg-gray-300'
+                            }
+                          `}
+                        >
+                          <span className="flex items-center justify-center h-full w-full">
+                            {useMultipleImages && isPro ? (
+                              <LayoutGrid size={10} className="text-rose-500" />
+                            ) : (
+                              <ImageIcon size={10} className="text-gray-500" />
+                            )}
+                          </span>
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
-            ) : mode === 'pickup' && !selectedImage ? (
+            ) : mode === 'pickup' && selectedImages.length === 0 ? (
               /* --- Pickup Lines Mode --- */
               <div className="w-full h-full flex flex-col items-center justify-center relative z-10 mt-8 md:mt-0 p-4">
                 <div className="relative bg-[#0a0a0a]/80 backdrop-blur-xl border border-white/10 rounded-2xl p-6 md:p-12 text-center shadow-2xl z-10 w-[90%] md:w-full md:max-w-2xl mx-auto">
@@ -1177,7 +1345,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
                         e.preventDefault(); 
                         e.stopPropagation(); 
                         setIsDragging(false); 
-                        if (e.dataTransfer.files[0]) processFile(e.dataTransfer.files[0]);
+                        if (e.dataTransfer.files.length > 0) processFiles(Array.from(e.dataTransfer.files));
                       }}
                     >
                       <div className="flex flex-col items-center gap-3">
@@ -1203,7 +1371,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
                   </div>
                 </div>
               </div>
-            ) : mode === 'pickup' && selectedImage ? (
+            ) : mode === 'pickup' && selectedImages.length > 0 ? (
               /* Image Preview State for Pickup */
               <div className="relative w-full h-full flex items-center justify-center z-10 animate-fade-in p-2">
                 <div className="relative max-w-full max-h-full shadow-2xl shadow-black rounded-lg overflow-hidden border border-white/10 group">
@@ -1215,7 +1383,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
                       </div>
                     </div>
                   ) : (
-                    <img src={selectedImage} className="max-w-full max-h-[60vh] md:max-h-[80vh] object-contain" alt="Contexto" />
+                    <img src={selectedImages[0]} className="max-w-full max-h-[60vh] md:max-h-[80vh] object-contain" alt="Contexto" />
                   )}
                   
                   <div className="md:hidden">
@@ -1225,7 +1393,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
                   {/* Remove Image Button */}
                   {!isLoadingImage && (
                     <button
-                      onClick={() => setSelectedImage(null)}
+                      onClick={() => setSelectedImages([])}
                       className="absolute top-4 right-4 p-2 bg-red-500/90 hover:bg-red-600 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-lg"
                       title="Remover foto"
                     >
@@ -1234,9 +1402,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
                   )}
                 </div>
               </div>
-            ) : (
-              /* Image Preview State */
-              <div className="relative w-full h-full flex items-center justify-center z-10 animate-fade-in p-2">
+            ) : selectedImages.length === 1 && !useMultipleImages ? (
+              /* Single Image Preview State (modo padrão) */
+              <div className="relative w-full h-full flex flex-col items-center justify-center z-10 animate-fade-in p-2 md:p-4">
                 <div className="relative max-w-full max-h-full shadow-2xl shadow-black rounded-lg overflow-hidden border border-white/10 group">
                   {isLoadingImage ? (
                     <div className="w-[300px] h-[400px] md:w-[400px] md:h-[500px] bg-gradient-to-br from-white/5 to-white/10 animate-pulse flex items-center justify-center">
@@ -1246,7 +1414,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
                       </div>
                     </div>
                   ) : (
-                    <img src={selectedImage} className="max-w-full max-h-[60vh] md:max-h-[80vh] object-contain" alt="Print" />
+                    <img src={selectedImages[0]} className="max-w-full max-h-[50vh] md:max-h-[65vh] object-contain" alt="Print" />
                   )}
                   
                   <div className="md:hidden">
@@ -1256,13 +1424,176 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
                   {/* Remove Image Button */}
                   {!isLoadingImage && (
                     <button
-                      onClick={() => setSelectedImage(null)}
+                      onClick={() => setSelectedImages([])}
                       className="absolute top-4 right-4 p-2 bg-red-500/90 hover:bg-red-600 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-lg"
-                      title="Remover foto"
+                      title="Remover imagem"
                     >
                       <X size={20} className="text-white" />
                     </button>
                   )}
+                </div>
+
+                {/* Toggle para ativar múltiplas imagens - abaixo da imagem */}
+                <div className="mt-4 w-full max-w-md mx-auto" onClick={(e) => e.stopPropagation()}>
+                  <div className="bg-[#0a0a0a]/80 backdrop-blur-xl border border-white/10 rounded-xl p-3 relative overflow-hidden">
+                    {!isPro && (
+                      <div className="absolute top-2 right-2 flex items-center gap-1 px-1.5 py-0.5 bg-red-500/20 border border-red-500/30 rounded text-[9px] font-bold text-red-300 uppercase">
+                        <Lock size={8} /> PRO
+                      </div>
+                    )}
+                    
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <LayoutGrid size={12} className="text-rose-400 shrink-0" />
+                          <span className="text-xs font-medium text-white">Adicionar mais prints</span>
+                        </div>
+                        <p className="text-[9px] text-gray-500 mt-0.5">
+                          Até {MAX_IMAGES} prints para mais contexto
+                        </p>
+                      </div>
+                      
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (!isPro) {
+                            onUpgradeClick();
+                            return;
+                          }
+                          setUseMultipleImages(true);
+                        }}
+                        className={`
+                          relative inline-flex items-center h-6 w-12 rounded-full transition-all duration-300 ease-in-out shrink-0
+                          bg-white/10 border border-white/20 hover:border-rose-500/50
+                          ${!isPro ? 'opacity-60' : ''}
+                        `}
+                      >
+                        <span className="inline-block h-4 w-4 transform rounded-full transition-all duration-300 ease-in-out shadow-lg translate-x-1 bg-gray-300">
+                          <span className="flex items-center justify-center h-full w-full">
+                            <Plus size={8} className="text-gray-500" />
+                          </span>
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              /* Multiple Images Preview State (modo PRO com toggle ativado) */
+              <div className="relative w-full h-full flex flex-col items-center justify-start z-10 animate-fade-in py-16 md:p-4 overflow-y-auto">
+                {/* Header com contador */}
+                <div className="w-full max-w-4xl mx-auto mb-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <LayoutGrid size={14} className="text-rose-400" />
+                    <span className="text-xs font-medium text-white">
+                      {selectedImages.length} de {MAX_IMAGES} prints
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setSelectedImages([]);
+                      setUseMultipleImages(false);
+                    }}
+                    className="text-[10px] text-gray-500 hover:text-red-400 transition-colors"
+                  >
+                    Limpar tudo
+                  </button>
+                </div>
+
+                {/* Grid de imagens */}
+                <div className={`
+                  grid gap-2 md:gap-3 w-full max-w-4xl mx-auto
+                  ${selectedImages.length <= 2 ? 'grid-cols-3' : ''}
+                  ${selectedImages.length >= 3 && selectedImages.length <= 4 ? 'grid-cols-3 md:grid-cols-4' : ''}
+                  ${selectedImages.length >= 5 ? 'grid-cols-3 md:grid-cols-5' : ''}
+                `}>
+                  {selectedImages.map((img, index) => (
+                    <div 
+                      key={index} 
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, index)}
+                      onDragOver={(e) => handleDragOver(e, index)}
+                      onDragLeave={handleDragLeave}
+                      onDrop={(e) => handleDrop(e, index)}
+                      onDragEnd={handleDragEnd}
+                      className={`
+                        relative group rounded-lg overflow-hidden border shadow-xl bg-[#111] aspect-[3/4] max-h-[35vh] md:max-h-[40vh] cursor-grab active:cursor-grabbing transition-all duration-200
+                        ${draggedIndex === index ? 'opacity-50 scale-95 border-rose-500' : 'border-white/10'}
+                        ${dragOverIndex === index ? 'border-rose-400 border-2 scale-105' : ''}
+                      `}
+                    >
+                      {isLoadingImage ? (
+                        <div className="w-full h-full bg-gradient-to-br from-white/5 to-white/10 animate-pulse flex items-center justify-center">
+                          <ImageIcon size={20} className="text-white/20" />
+                        </div>
+                      ) : (
+                        <img 
+                          src={img} 
+                          className="w-full h-full object-cover pointer-events-none" 
+                          alt={`Print ${index + 1}`} 
+                          draggable={false}
+                        />
+                      )}
+                      
+                      {/* Número do print - destacado */}
+                      <div className={`
+                        absolute top-1.5 left-1.5 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center shadow-lg transition-all
+                        ${dragOverIndex === index ? 'bg-rose-400 scale-110' : 'bg-gradient-to-r from-red-500 to-rose-500'}
+                      `}>
+                        {index + 1}
+                      </div>
+
+                      {/* Ícone de arrastar */}
+                      <div className="absolute bottom-1.5 left-1.5 p-1 bg-black/50 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white/70">
+                          <circle cx="9" cy="5" r="1" fill="currentColor"/>
+                          <circle cx="9" cy="12" r="1" fill="currentColor"/>
+                          <circle cx="9" cy="19" r="1" fill="currentColor"/>
+                          <circle cx="15" cy="5" r="1" fill="currentColor"/>
+                          <circle cx="15" cy="12" r="1" fill="currentColor"/>
+                          <circle cx="15" cy="19" r="1" fill="currentColor"/>
+                        </svg>
+                      </div>
+                      
+                      {/* Botão remover */}
+                      {!isLoadingImage && (
+                        <button
+                          onClick={() => removeImage(index)}
+                          className="absolute top-1.5 right-1.5 p-1 bg-black/70 hover:bg-red-600 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-lg"
+                          title="Remover imagem"
+                        >
+                          <X size={12} className="text-white" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  
+                  {/* Botão adicionar mais */}
+                  {selectedImages.length < MAX_IMAGES && (
+                    <button
+                      onClick={triggerFileSelect}
+                      className="flex flex-col items-center justify-center gap-1.5 rounded-lg border-2 border-dashed transition-all duration-300 aspect-[3/4] max-h-[35vh] md:max-h-[40vh] border-white/20 bg-white/5 hover:border-rose-400/50 hover:bg-white/10"
+                    >
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-500/50 to-rose-500/50 flex items-center justify-center">
+                        <Plus size={16} className="text-white" />
+                      </div>
+                      <span className="text-[10px] text-gray-400 text-center px-1">
+                        Adicionar
+                      </span>
+                    </button>
+                  )}
+                </div>
+
+                {/* Dica de ordem */}
+                <div className="mt-3 text-center">
+                  <p className="text-[10px] text-gray-500">
+                    <span className="text-rose-400">Dica:</span> Arraste os prints para reordenar (1 = mais antigo)
+                  </p>
+                </div>
+
+                {/* Loading overlay for mobile */}
+                <div className="md:hidden">
+                  <LoadingOverlay isVisible={isAnalyzing} isPro={isPro} type="mobile" />
                 </div>
               </div>
             )}
@@ -1404,16 +1735,21 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
                 ) : (
                   <button
                     onClick={runAnalysis}
-                    disabled={!selectedImage}
+                    disabled={selectedImages.length === 0}
                     className={`
                                 w-full py-4 rounded-xl font-bold text-sm shadow-lg transition-all duration-300 flex items-center justify-center gap-2
-                                ${!selectedImage
+                                ${selectedImages.length === 0
                         ? 'bg-white/5 text-gray-500 cursor-not-allowed'
                         : 'bg-gradient-to-r from-red-600 to-rose-600 text-white hover:shadow-rose-500/25 hover:scale-[1.02] active:scale-95'}
                             `}
                   >
                     <MessageCircleHeart size={18} className="fill-white/20" />
-                    Gerar respostas com Puxe Assunto
+                    Gerar respostas
+                    {selectedImages.length > 1 && useMultipleImages && (
+                      <span className="bg-white/20 px-2 py-0.5 rounded-full text-[10px] ml-1">
+                        {selectedImages.length} prints
+                      </span>
+                    )}
                   </button>
                 )}
 

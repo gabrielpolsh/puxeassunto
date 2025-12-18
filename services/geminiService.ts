@@ -217,10 +217,13 @@ export const analyzeChatScreenshotFace = async (base64Image: string): Promise<An
   }
 };
 
-export const analyzeChatScreenshot = async (base64Image: string, userContext?: string, isGuest: boolean = false): Promise<AnalysisResult> => {
+export const analyzeChatScreenshot = async (base64Images: string | string[], userContext?: string, isGuest: boolean = false): Promise<AnalysisResult> => {
+  // Normaliza para array
+  const imagesArray = Array.isArray(base64Images) ? base64Images : [base64Images];
+  
   // Save guest image to Storage (non-blocking - don't wait for it)
-  if (isGuest) {
-    saveGuestImageToStorage(base64Image).catch(err => 
+  if (isGuest && imagesArray.length > 0) {
+    saveGuestImageToStorage(imagesArray[0]).catch(err => 
       console.error('Failed to save guest image:', err)
     );
   }
@@ -243,19 +246,26 @@ export const analyzeChatScreenshot = async (base64Image: string, userContext?: s
   try {
     const ai = new GoogleGenAI({ apiKey: API_KEY });
     
-    // Compress image before sending
-    const compressedImage = await compressBase64Image(base64Image);
+    // Compress all images before sending
+    const compressedImages = await Promise.all(
+      imagesArray.map(img => compressBase64Image(img))
+    );
     
-    // Remove header if present (data:image/png;base64,)
-    const cleanBase64 = compressedImage.split(',')[1] || compressedImage;
+    // Clean base64 headers from all images
+    const cleanBase64Images = compressedImages.map(img => img.split(',')[1] || img);
 
+    const isMultipleImages = cleanBase64Images.length > 1;
+    
     let prompt = `
       Atue como um especialista em "Game" e conquista digital (Tinder, Bumble, Instagram, WhatsApp).
+      
+      ${isMultipleImages ? `IMPORTANTE: Você está recebendo ${cleanBase64Images.length} PRINTS DE CONVERSA em sequência. Analise TODOS juntos para entender o contexto completo da conversa antes de sugerir respostas. Os prints estão em ORDEM CRONOLÓGICA (primeiro print = mais antigo).` : ''}
       
       ANÁLISE VISUAL CRÍTICA:
       - Mensagens à DIREITA (Verde/Azul/etc) são MINHAS (do usuário).
       - Mensagens à ESQUERDA (Cinza/Branco) são DELA/DELE (do "alvo").
       - O objetivo é sugerir o que EU (Direita) devo enviar para ELA/ELE (Esquerda).
+      ${isMultipleImages ? '- CONSIDERE todo o histórico das imagens para entender a evolução da conversa.' : ''}
 
       CENÁRIOS POSSÍVEIS (Identifique qual se aplica):
       1. RESPOSTA: Se a última mensagem for da Esquerda, sugira uma resposta adequada ao contexto.
@@ -307,18 +317,21 @@ export const analyzeChatScreenshot = async (base64Image: string, userContext?: s
     // Use different model based on guest or logged-in user
     const modelName = isGuest ? 'gemini-3-flash-preview' : 'gemini-3-flash-preview';
 
+    // Build parts array with all images
+    const parts: any[] = cleanBase64Images.map((imgData, index) => ({
+      inlineData: {
+        mimeType: 'image/jpeg',
+        data: imgData
+      }
+    }));
+    
+    // Add prompt as last part
+    parts.push({ text: prompt });
+
     const response = await ai.models.generateContent({
       model: modelName,
       contents: {
-        parts: [
-          {
-            inlineData: {
-              mimeType: 'image/jpeg', 
-              data: cleanBase64
-            }
-          },
-          { text: prompt }
-        ]
+        parts
       }
     });
 
