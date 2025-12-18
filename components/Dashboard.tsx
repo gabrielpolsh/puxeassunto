@@ -1215,7 +1215,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
                           <span className="text-sm font-medium text-white">Mais contexto</span>
                         </div>
                         <p className="text-[10px] md:text-xs text-gray-500">
-                          Envie até {MAX_IMAGES} prints para a IA entender melhor a conversa
+                          Envie até {MAX_IMAGES} prints para o Puxe Assunto entender melhor a conversa
                         </p>
                       </div>
                       
