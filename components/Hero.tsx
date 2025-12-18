@@ -19,19 +19,18 @@ const SCENARIOS = [
       { text: "Sério.", isMe: false }
     ],
     wrong: "Que exagero.",
-    suggestion: "Meu bem, eu sei que você tá muito irritada. O que eu fiz agora pra te deixar assim?",
+    suggestion: "Meu bem, eu sei que você tá muito irritada. Calma, vamos conversar. O que eu fiz agora pra te deixar assim?",
     color: "text-red-400"
   },
   {
-    name: "Ficante com Tesão 🔥",
-    avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&h=150&fit=crop&crop=faces",
+    name: "Crush❤️",
+    avatar: "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=150&h=150&fit=crop&crop=faces",
     messages: [
-      { text: "Não consigo parar de pensar em ontem.", isMe: false },
-      { text: "Tô com muito tesão.", isMe: false }
+      { text: "A gente precisa se ver qualquer dia.", isMe: false }
     ],
-    wrong: "👀😏",
-    suggestion: "Então não sou só eu… ontem não saiu da minha cabeça também.",
-    color: "text-pink-500"
+    wrong: "Vamos sim",
+    suggestion: "Concordo. Que tal um café essa semana, quarta ou quinta?",
+    color: "text-blue-400"
   },
   {
     name: "Bianca",
@@ -55,15 +54,15 @@ const SCENARIOS = [
     color: "text-amber-400"
   },
   {
-    name: "Confusa 🤯",
-    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&crop=faces",
+    name: "Luiza",
+    avatar: "https://images.unsplash.com/photo-1520813792240-56fc4a3765a7?w=150&h=150&fit=crop&crop=faces",
     messages: [
-      { text: "Eu nem sei o que eu tô sentindo.", isMe: false }
+      { text: "Hoje foi um dia péssimo.", isMe: false }
     ],
-    wrong: "Relaxa.",
-    suggestion: "Júlia, a gente não precisa resolver agora. Quer só falar e eu escuto?",
-    color: "text-indigo-400"
-  }
+    wrong: "Todo dia é.",
+    suggestion: "Poxa… quer desabafar um pouco? O que aconteceu hoje?",
+    color: "text-emerald-400"
+  },
 ];
 
 const TESTIMONIALS_DATA = [
