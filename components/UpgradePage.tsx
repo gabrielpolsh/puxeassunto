@@ -60,9 +60,15 @@ export const UpgradePage: React.FC<UpgradePageProps> = ({ onBack, user }) => {
                     </button>
                     
                     {/* Users Online Badge */}
-                    <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-green-500/10 border border-green-500/20 rounded-full">
-                        <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                        <span className="text-xs text-green-400 font-medium">23 pessoas online agora</span>
+                    <div className="hidden md:flex items-center gap-4">
+                        <div className="flex items-center gap-2 px-3 py-1.5 bg-green-500/10 border border-green-500/20 rounded-full">
+                            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                            <span className="text-xs text-green-400 font-medium">23 pessoas online agora</span>
+                        </div>
+                        <div className="flex items-center gap-2 px-3 py-1.5 bg-red-500/10 border border-red-500/20 rounded-full">
+                            <Users size={14} className="text-red-400" />
+                            <span className="text-xs text-red-400 font-bold">12 vagas restantes</span>
+                        </div>
                     </div>
                 </header>
 
@@ -296,6 +302,9 @@ export const UpgradePage: React.FC<UpgradePageProps> = ({ onBack, user }) => {
                         <Heart size={20} className="fill-white/30" />
                         Desbloquear PRO por R$ 15,00
                     </button>
+                    <p className="text-xs text-red-500 font-bold mb-4 animate-pulse">
+                        ⚠️ Restam apenas 12 vagas com 50% de desconto
+                    </p>
                     <p className="text-xs text-gray-600">
                         Junte-se a 2.847+ pessoas que nunca mais ficaram no vácuo
                     </p>

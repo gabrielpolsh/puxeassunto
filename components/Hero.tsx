@@ -43,14 +43,38 @@ const SCENARIOS = [
   }
 ];
 
+const TESTIMONIALS_DATA = [
+  {
+    image: '/depoimentos/depomento1.png',
+    text: 'Você nunca mais vai ficar sem saber o que dizer'
+  },
+  {
+    image: '/depoimentos/depomento2.png',
+    text: 'Faça a conversa fluir sozinha. 💬'
+  },
+  {
+    image: '/depoimentos/depoimento4.png',
+    text: '"Crie assuntos que prendem a atenção. 😏'
+  },
+  {
+    image: '/depoimentos/depomento3.png',
+    text: 'Pare de ser ignorado agora mesmo💀'
+  },
+  {
+    image: '/depoimentos/depomento5.png',
+    text: 'Crie Respostas que geram curiosidade e desejo😏'
+  }
+];
+
 // --- Components ---
 
 // Typewriter Animation for Hero Title
 const TITLE_PHRASES = [
   "Travou no meio da conversa?",
-  "Ela te respondeu seco?",
+  "Ela visualizou e não respondeu?",
   "Não sabe puxar assunto?",
   "A conversa esfriou?",
+  "Ela te respondeu seco?",
   "Quer deixar ela curiosa?",
 ];
 
@@ -155,6 +179,177 @@ const ChatAnimation: React.FC = () => {
           </div>
         </div>
       </div>
+    </div>
+  );
+};
+
+const TinderCarousel: React.FC<{ onAction?: () => void }> = ({ onAction }) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [direction, setDirection] = useState<'left' | 'right' | null>(null);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [dragStart, setDragStart] = useState<number | null>(null);
+  const [dragOffset, setDragOffset] = useState(0);
+
+  // Stable underneath index to prevent jumping
+  const underneathIndex = (currentIndex + 1) % TESTIMONIALS_DATA.length;
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (!isAnimating && dragStart === null) {
+        setDirection('left');
+        setIsAnimating(true);
+        setTimeout(() => {
+          setCurrentIndex((prev) => (prev + 1) % TESTIMONIALS_DATA.length);
+          setIsAnimating(false);
+          setDirection(null);
+        }, 400);
+      }
+    }, 7000);
+
+    return () => clearInterval(interval);
+  }, [isAnimating, dragStart]);
+
+  const handleDragStart = (e: React.MouseEvent | React.TouchEvent) => {
+    if (isAnimating) return;
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    setDragStart(clientX);
+  };
+
+  const handleDragMove = (e: React.MouseEvent | React.TouchEvent) => {
+    if (dragStart === null || isAnimating) return;
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    setDragOffset(clientX - dragStart);
+  };
+
+  const handleDragEnd = () => {
+    if (dragStart === null || isAnimating) return;
+    
+    const threshold = 100;
+    if (Math.abs(dragOffset) > threshold) {
+      // Swipe Left or Right (Both go to Next in a testimonial stack)
+      setDirection(dragOffset > 0 ? 'right' : 'left');
+      setIsAnimating(true);
+      setTimeout(() => {
+        setCurrentIndex((prev) => (prev + 1) % TESTIMONIALS_DATA.length);
+        setIsAnimating(false);
+        setDirection(null);
+        setDragOffset(0);
+      }, 400);
+    } else {
+      setDragOffset(0);
+    }
+    setDragStart(null);
+  };
+
+  const rotation = dragOffset / 10;
+  const opacity = Math.min(Math.abs(dragOffset) / 200, 1);
+
+  return (
+    <div className="relative w-full max-w-[340px] md:max-w-[400px] mx-auto select-none">
+      {/* Card Stack Effect */}
+      <div 
+        className="relative aspect-square cursor-grab active:cursor-grabbing"
+        onMouseDown={handleDragStart}
+        onMouseMove={handleDragMove}
+        onMouseUp={handleDragEnd}
+        onMouseLeave={handleDragEnd}
+        onTouchStart={handleDragStart}
+        onTouchMove={handleDragMove}
+        onTouchEnd={handleDragEnd}
+      >
+        {/* Background card (Visual depth only) */}
+        <div className="absolute inset-0 bg-red-600/5 rounded-[2rem] transform rotate-6 scale-[0.92] translate-y-6 border border-red-500/5"></div>
+        
+        {/* Next Card (Visible underneath) */}
+        <div 
+          className="absolute inset-0 bg-[#0a0a0a] rounded-[2rem] overflow-hidden shadow-xl border border-white/5"
+          style={{
+            transform: `scale(${0.96 + (Math.abs(dragOffset) / 2500)}) rotate(${-3 + (dragOffset / 200)}deg) translateY(${4 - (Math.abs(dragOffset) / 100)}px)`,
+            opacity: 0.3 + (Math.abs(dragOffset) / 400),
+            transition: dragStart !== null ? 'none' : 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.4s ease'
+          }}
+        >
+          <img 
+            src={TESTIMONIALS_DATA[underneathIndex].image} 
+            alt="Próximo depoimento"
+            className="w-full h-full object-cover object-[center_15%]"
+          />
+          <div className="absolute inset-0 bg-black/40"></div>
+        </div>
+        
+        {/* Main Card */}
+        <div 
+          className={`
+            absolute inset-0 bg-[#0a0a0a] rounded-[2rem] overflow-hidden shadow-2xl border border-white/10
+            z-10
+            ${isAnimating && direction === 'left' ? 'translate-x-[-150%] rotate-[-20deg] opacity-0' : ''}
+            ${isAnimating && direction === 'right' ? 'translate-x-[150%] rotate-[20deg] opacity-0' : ''}
+            ${!isAnimating ? 'translate-x-0 rotate-0 opacity-100' : ''}
+          `}
+          style={!isAnimating ? { 
+            transform: `translateX(${dragOffset}px) rotate(${rotation}deg)`,
+            transition: dragStart !== null ? 'none' : 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+          } : {
+            transition: 'all 0.4s ease-in'
+          }}
+        >
+          <img 
+            src={TESTIMONIALS_DATA[currentIndex].image} 
+            alt={`Depoimento ${currentIndex + 1}`}
+            className="w-full h-full object-cover object-[center_15%] pointer-events-none"
+          />
+          
+          {/* Swipe Indicators (Stamps) */}
+          <div 
+            className="absolute top-8 left-8 border-4 border-red-500 text-red-500 font-black text-3xl px-4 py-1 rounded-xl uppercase tracking-tighter rotate-[-15deg] pointer-events-none transition-opacity"
+            style={{ opacity: dragOffset > 20 ? opacity : 0 }}
+          >
+            NOPE
+          </div>
+          <div 
+            className="absolute top-8 right-8 border-4 border-green-500 text-green-500 font-black text-3xl px-4 py-1 rounded-xl uppercase tracking-tighter rotate-[15deg] pointer-events-none transition-opacity"
+            style={{ opacity: dragOffset < -20 ? opacity : 0 }}
+          >
+            LIKE
+          </div>
+
+          {/* Gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none"></div>
+          
+          {/* Info Overlay */}
+          <div className="absolute bottom-6 left-6 right-6 pointer-events-none">
+            <p className="text-white text-sm font-bold leading-tight drop-shadow-lg mb-1">
+              {TESTIMONIALS_DATA[currentIndex].text}
+            </p>
+            <div className="flex items-center gap-2">
+              <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
+              <p className="text-white/50 text-[10px] uppercase tracking-widest font-medium">Arraste para ver mais</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Dots Indicator */}
+      <div className="flex justify-center gap-2 mt-8">
+        {TESTIMONIALS_DATA.map((_, idx) => (
+          <button
+            key={idx}
+            className={`h-1.5 rounded-full transition-all duration-300 ${idx === currentIndex ? 'bg-red-500 w-8' : 'bg-white/10 w-2'}`}
+          />
+        ))}
+      </div>
+
+      {/* CTA Button */}
+      {onAction && (
+        <button
+          onClick={onAction}
+          className="mt-12 w-full bg-gradient-to-r from-red-600 to-rose-500 hover:from-red-500 hover:to-rose-400 text-white font-bold py-4 px-6 rounded-full transition-all duration-300 transform hover:scale-[1.02] shadow-lg shadow-red-900/30 flex items-center justify-center gap-2 group"
+        >
+          <MessageCircleHeart className="w-5 h-5 group-hover:scale-110 transition-transform" />
+          Começar Agora
+          <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+        </button>
+      )}
     </div>
   );
 };
@@ -385,7 +580,7 @@ export const Hero: React.FC<HeroProps> = ({ onAction, user }) => {
       />
 
       {/* Grid Container */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-y-6 lg:gap-y-0 lg:gap-x-20 items-center">
+      <div className="grid grid-cols-1 lg:grid-cols-12 lg:gap-y-0 lg:gap-x-20 items-center">
 
         {/* 1. Title Block (Badge + H1) */}
         <div className="lg:col-span-7 text-center lg:text-left z-10 lg:self-center">
@@ -404,9 +599,11 @@ export const Hero: React.FC<HeroProps> = ({ onAction, user }) => {
             Chega de ficar no vácuo. Envie o print da conversa e o <span className="text-rose-400 font-medium">Puxe Assunto</span> vai analisar o contexto e criar a resposta perfeita pra qualquer tipo de conversa.
           </p>
 
-          {/* Desktop: Chat Animation visible here */}
-          <div className="hidden lg:block mt-12">
-            <ChatAnimation />
+          {/* Chat Animation moved here */}
+          <div className="flex justify-center lg:justify-start">
+            <div className="w-full max-w-[400px] scale-90 lg:scale-100 origin-left">
+              <ChatAnimation />
+            </div>
           </div>
         </div>
 
@@ -418,7 +615,14 @@ export const Hero: React.FC<HeroProps> = ({ onAction, user }) => {
           onDragLeave={handleDragLeave}
         >
 
-          {/* State 1: Upload Widget + Text + Animation */}
+          {/* State 1: Tinder Carousel (Replaces Chat Animation) */}
+          {!guestImage && !isAnalyzing && !showUpsell && (
+            <div className="animate-fade-in w-full flex flex-col items-center">
+              <TinderCarousel onAction={onAction} />
+            </div>
+          )}
+
+          {/* CARD DE TESTE GRÁTIS COMENTADO - Descomentar se quisermos voltar
           {!guestImage && !isAnalyzing && !showUpsell && (
             <div className="animate-fade-in w-full flex flex-col items-center">
               <UploadWidget onUpload={() => fileInputRef.current?.click()} isDragging={isDragging} />
@@ -428,6 +632,7 @@ export const Hero: React.FC<HeroProps> = ({ onAction, user }) => {
               </div>
             </div>
           )}
+          */}
 
           {/* State 2: Results / Analysis (Phone UI) */}
           {(guestImage || isAnalyzing) && !showUpsell && (

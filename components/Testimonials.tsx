@@ -1,5 +1,5 @@
 import React from 'react';
-import { Star, Quote, BadgeCheck } from 'lucide-react';
+import { Star, Quote, BadgeCheck, MessageCircleHeart, ArrowRight } from 'lucide-react';
 
 const testimonials = [
   {
@@ -46,7 +46,11 @@ const testimonials = [
   }
 ];
 
-export const Testimonials: React.FC = () => {
+interface TestimonialsProps {
+  onAction?: () => void;
+}
+
+export const Testimonials: React.FC<TestimonialsProps> = ({ onAction }) => {
   return (
     <section id="depoimentos" className="py-16 relative overflow-hidden bg-transparent scroll-mt-32">
       {/* Content */}
@@ -90,6 +94,20 @@ export const Testimonials: React.FC = () => {
 
         </div>
       </div>
+
+      {/* CTA Button */}
+      {onAction && (
+        <div className="flex justify-center mt-12">
+          <button
+            onClick={onAction}
+            className="bg-gradient-to-r from-red-600 to-rose-500 hover:from-red-500 hover:to-rose-400 text-white font-bold py-4 px-8 rounded-full transition-all duration-300 transform hover:scale-[1.02] shadow-lg shadow-red-900/30 flex items-center justify-center gap-2 group"
+          >
+            <MessageCircleHeart className="w-5 h-5 group-hover:scale-110 transition-transform" />
+            Começar Agora
+            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+          </button>
+        </div>
+      )}
     </section>
   );
 };

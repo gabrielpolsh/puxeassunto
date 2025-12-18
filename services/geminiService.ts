@@ -184,7 +184,7 @@ export const analyzeChatScreenshotFace = async (base64Image: string): Promise<An
     `;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-pro',
+      model: 'gemini-3-flash-preview',
       contents: {
         parts: [
           {
@@ -273,14 +273,23 @@ export const analyzeChatScreenshot = async (base64Image: string, userContext?: s
       - Conversa Divertida? Use tons como: "Engraçado", "Provocativo", "Ousado".
       * O importante é o tom ser coerente com o sentimento da conversa.
 
+      REGRAS PROIBIDAS (NUNCA FAÇA ISSO):
+      - NÃO sugira encerrar, pausar, "esfriar a cabeça" ou fugir da conversa.
+      - NÃO sugira conversa pessoalmente OU fora do chat SE o clima for tenso, triste ou conflituoso.
+      - Conversa fora do chat só é permitida se o clima for positivo, leve e recíproco.
+      - NUNCA use pedidos de desculpa condicionais ("se eu te magoei", "caso tenha soado", "não foi minha intenção").
+      - Quando pedir desculpas, ASSUMA responsabilidade direta.
+      - Demonstre interesse e empatia SEM parecer carente, dependente ou suplicante.
+      - NUNCA implore por resposta ou validação.
+      - Foque em respostas que MANTÊM o diálogo ativo e interessante.
+
       Diretrizes de Estilo:
-      - EXTREMAMENTE CONCISO: Mensagens curtas (1-2 frases).
       - NATURALIDADE: Use gírias leves, sem pontuação excessiva, pareça humano.
       - ZERO GENÉRICO: Proibido "Oi tudo bem". Use detalhes específicos da imagem.
       
       Tarefas:
       1. Crie um TÍTULO curto (max 4 palavras) resumindo o contexto.
-      2. Gere 5 sugestões de resposta com tons variados ADAPTADOS AO SENTIMENTO IDENTIFICADO.
+      2. Gere 5 sugestões de resposta com TONS e ESTRATÉGIAS DIFERENTES (ex: validação emocional, leve provocação, clarificação direta, humor sutil, reconexão afetiva), todas ADAPTADAS AO SENTIMENTO IDENTIFICADO.
       
       Retorne APENAS um JSON válido com o seguinte formato (sem markdown):
       {
@@ -296,7 +305,7 @@ export const analyzeChatScreenshot = async (base64Image: string, userContext?: s
     }
 
     // Use different model based on guest or logged-in user
-    const modelName = isGuest ? 'gemini-2.5-flash-lite' : 'gemini-2.5-pro';
+    const modelName = isGuest ? 'gemini-3-flash-preview' : 'gemini-3-flash-preview';
 
     const response = await ai.models.generateContent({
       model: modelName,
