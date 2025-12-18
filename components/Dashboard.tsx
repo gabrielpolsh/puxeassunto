@@ -1466,7 +1466,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
                           <span className="text-xs font-medium text-white">Adicionar mais prints?</span>
                         </div>
                         <p className="text-[9px] text-gray-500 mt-0.5">
-                          Ative essa opção e envie até {MAX_IMAGES} prints para o Puxe Assunto entender melhor a conversa.
+                          Ative esta opção se a conversa não couber em um único print. Envie até {MAX_IMAGES} imagens.
                         </p>
                       </div>
                       
