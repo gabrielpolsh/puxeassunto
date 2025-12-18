@@ -12,34 +12,57 @@ interface HeroProps {
 // Scenarios for the dynamic chat animation
 const SCENARIOS = [
   {
-    name: "Crush ❤️",
-    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&crop=faces",
+    name: "Beatriz",
+    avatar: "https://images.unsplash.com/photo-1488716820095-cbe80883c496?w=150&h=150&fit=crop&crop=faces",
     messages: [
-      { text: "Tô entediada aqui em casa...", isMe: false },
-      { text: "O que você tá fazendo? 👀", isMe: false }
+      { text: "Tô muito puta com você.", isMe: false },
+      { text: "Sério.", isMe: false }
     ],
-    suggestion: "Pensando em você, coincidentemente 😏 Quer uma companhia pra curar esse tédio?",
-    color: "text-rose-400"
+    wrong: "Que exagero.",
+    suggestion: "Meu bem, eu sei que você tá muito irritada. O que eu fiz agora pra te deixar assim?",
+    color: "text-red-400"
   },
   {
-    name: "Match Tinder 🔥",
-    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&crop=faces",
-    messages: [
-      { text: "Deu match! 😉", isMe: false },
-      { text: "Adorei suas fotos!", isMe: false }
-    ],
-    suggestion: "Suas fotos são lindas, mas aposto que pessoalmente é ainda melhor... Quando vou descobrir? 😏",
-    color: "text-rose-400"
-  },
-  {
-    name: "Ficante 🌙",
+    name: "Ficante com Tesão 🔥",
     avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&h=150&fit=crop&crop=faces",
     messages: [
-      { text: "Ontem foi bom hein...", isMe: false },
-      { text: "Quero repetir 😈", isMe: false }
+      { text: "Não consigo parar de pensar em ontem.", isMe: false },
+      { text: "Tô com muito tesão.", isMe: false }
     ],
-    suggestion: "Bom? Foi incrível 🔥 Mas acho que a gente pode fazer ainda melhor... Hoje você tá livre?",
-    color: "text-red-400"
+    wrong: "👀😏",
+    suggestion: "Então não sou só eu… ontem não saiu da minha cabeça também.",
+    color: "text-pink-500"
+  },
+  {
+    name: "Bianca",
+    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&crop=faces",
+    messages: [
+      { text: "Não começa.", isMe: false },
+      { text: "Eu não tô no clima.", isMe: false }
+    ],
+    wrong: "Tá bom então.",
+    suggestion: "Tudo bem, Bianca. Quando você quiser falar, eu tô aqui, sem briga.",
+    color: "text-gray-400"
+  },
+  {
+    name: "Namorada Fria 🧊",
+    avatar: "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=150&h=150&fit=crop&crop=faces",
+    messages: [
+      { text: "aham", isMe: false }
+    ],
+    wrong: "kk",
+    suggestion: "Meu bem, você tá estranha comigo. Aconteceu algo ou eu fiz merda?",
+    color: "text-amber-400"
+  },
+  {
+    name: "Confusa 🤯",
+    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&crop=faces",
+    messages: [
+      { text: "Eu nem sei o que eu tô sentindo.", isMe: false }
+    ],
+    wrong: "Relaxa.",
+    suggestion: "Júlia, a gente não precisa resolver agora. Quer só falar e eu escuto?",
+    color: "text-indigo-400"
   }
 ];
 
@@ -63,6 +86,10 @@ const TESTIMONIALS_DATA = [
   {
     image: '/depoimentos/depomento5.png',
     text: 'Crie Respostas que geram curiosidade e desejo😏'
+  },
+  {
+    image: '/depoimentos/depoimento6.png',
+    text: 'Nunca mais fique sem assunto 🔥'
   }
 ];
 
@@ -119,9 +146,9 @@ const ChatAnimation: React.FC = () => {
 
   useEffect(() => {
     let timeout: ReturnType<typeof setTimeout>;
-    if (step === 0) timeout = setTimeout(() => setStep(1), 2000);
-    else if (step === 1) timeout = setTimeout(() => setStep(2), 1500);
-    else if (step === 2) timeout = setTimeout(() => {
+    if (step === 0) timeout = setTimeout(() => setStep(1), 1800); // Mostra msgs dela
+    else if (step === 1) timeout = setTimeout(() => setStep(2), 1500); // Mostra loading
+    else if (step === 2) timeout = setTimeout(() => { // Mostra errada + sugestão juntas
       setStep(0);
       setScenarioIndex((prev) => (prev + 1) % SCENARIOS.length);
     }, 5000);
@@ -131,11 +158,11 @@ const ChatAnimation: React.FC = () => {
   const currentScenario = SCENARIOS[scenarioIndex];
 
   return (
-    <div className="relative w-full max-w-[380px] lg:max-w-[420px] mx-auto lg:mx-0 origin-top">
+    <div className="relative w-full max-w-[380px] lg:max-w-[420px] mx-auto origin-top">
       {/* Floating Container */}
       <div className="relative w-full animate-float">
         {/* Contact Badge */}
-        <div className="absolute -top-10 left-0 right-0 flex justify-center z-20">
+        <div className="absolute -top-14 left-0 right-0 flex justify-center z-20">
           <div className="bg-[#1a1a1a]/80 backdrop-blur-xl border border-white/10 pl-2 pr-4 py-1.5 rounded-full flex items-center gap-2 shadow-xl">
             <img src={currentScenario.avatar} alt="Avatar" className="w-6 h-6 rounded-full object-cover border border-black" />
             <span className="text-white font-bold text-xs">{currentScenario.name}</span>
@@ -149,16 +176,18 @@ const ChatAnimation: React.FC = () => {
             {currentScenario.messages.map((msg, idx) => (
               <div key={`${scenarioIndex}-${idx}`} className="self-start max-w-[85%] animate-message-in origin-left" style={{ animationDelay: `${idx * 200}ms` }}>
                 <div className="bg-[#111] border border-white/10 text-gray-200 px-3 py-2 rounded-xl rounded-tl-none shadow-lg backdrop-blur-sm">
-                  <p className="text-xs leading-relaxed">{msg.text}</p>
+                  <p className="text-sm md:text-xs leading-relaxed">{msg.text}</p>
                 </div>
               </div>
             ))}
           </div>
 
           {/* Interaction Area */}
-          <div className="h-16 relative mt-2">
+          <div className="min-h-[140px] relative mt-2">
+            {/* Step 1: Puxe Assunto pensando */}
             {step === 1 && (
-              <div className="absolute right-0 top-0 self-end animate-fade-in">
+              <div className="absolute right-0 top-0 self-end animate-fade-in flex flex-col items-end gap-1">
+                <span className="text-[10px] text-gray-400 font-medium italic mr-1">Puxe Assunto pensando...</span>
                 <div className="bg-white/5 border border-white/5 p-2 rounded-xl rounded-tr-none">
                   <div className="flex gap-1">
                     <div className="w-1.5 h-1.5 bg-red-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
@@ -168,11 +197,25 @@ const ChatAnimation: React.FC = () => {
                 </div>
               </div>
             )}
+
+            {/* Step 2: Mostra resposta errada + sugestão juntas */}
             {step === 2 && (
-              <div className="absolute right-0 top-0 w-full flex flex-col items-end animate-slide-up">
-                <div className="relative bg-[#0a0a0a] border border-white/10 text-white px-4 py-3 rounded-xl rounded-tr-none shadow-xl flex items-start gap-3">
-                  <p className="text-xs leading-relaxed font-medium">{currentScenario.suggestion}</p>
-                  <MessageCircle size={12} className="text-red-400 shrink-0 mt-0.5" />
+              <div className="flex flex-col gap-3 animate-slide-up">
+                {/* Resposta Errada */}
+                <div className="flex flex-col items-end gap-1">
+                  <span className="text-[10px] text-red-400/70 font-medium mr-1">❌ Você responderia:</span>
+                  <div className="bg-red-900/20 border border-red-500/30 text-red-200 px-3 py-2 rounded-xl rounded-tr-none">
+                    <p className="text-sm md:text-xs leading-relaxed">{currentScenario.wrong}</p>
+                  </div>
+                </div>
+
+                {/* Sugestão do Puxe Assunto */}
+                <div className="flex flex-col items-end gap-1">
+                  <span className="text-[10px] text-green-400/70 font-medium mr-1">✨ Responda assim:</span>
+                  <div className="relative bg-[#0a0a0a] border border-green-500/30 text-white px-4 py-3 rounded-xl rounded-tr-none shadow-xl flex items-start gap-3">
+                    <p className="text-sm md:text-xs leading-relaxed font-medium">{currentScenario.suggestion}</p>
+                    <MessageCircle size={12} className="text-green-400 shrink-0 mt-0.5" />
+                  </div>
                 </div>
               </div>
             )}
@@ -223,7 +266,7 @@ const TinderCarousel: React.FC<{ onAction?: () => void }> = ({ onAction }) => {
 
   const handleDragEnd = () => {
     if (dragStart === null || isAnimating) return;
-    
+
     const threshold = 100;
     if (Math.abs(dragOffset) > threshold) {
       // Swipe Left or Right (Both go to Next in a testimonial stack)
@@ -247,7 +290,7 @@ const TinderCarousel: React.FC<{ onAction?: () => void }> = ({ onAction }) => {
   return (
     <div className="relative w-full max-w-[340px] md:max-w-[400px] mx-auto select-none">
       {/* Card Stack Effect */}
-      <div 
+      <div
         className="relative aspect-square cursor-grab active:cursor-grabbing"
         onMouseDown={handleDragStart}
         onMouseMove={handleDragMove}
@@ -259,9 +302,9 @@ const TinderCarousel: React.FC<{ onAction?: () => void }> = ({ onAction }) => {
       >
         {/* Background card (Visual depth only) */}
         <div className="absolute inset-0 bg-red-600/5 rounded-[2rem] transform rotate-6 scale-[0.92] translate-y-6 border border-red-500/5"></div>
-        
+
         {/* Next Card (Visible underneath) */}
-        <div 
+        <div
           className="absolute inset-0 bg-[#0a0a0a] rounded-[2rem] overflow-hidden shadow-xl border border-white/5"
           style={{
             transform: `scale(${0.96 + (Math.abs(dragOffset) / 2500)}) rotate(${-3 + (dragOffset / 200)}deg) translateY(${4 - (Math.abs(dragOffset) / 100)}px)`,
@@ -269,16 +312,16 @@ const TinderCarousel: React.FC<{ onAction?: () => void }> = ({ onAction }) => {
             transition: dragStart !== null ? 'none' : 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.4s ease'
           }}
         >
-          <img 
-            src={TESTIMONIALS_DATA[underneathIndex].image} 
+          <img
+            src={TESTIMONIALS_DATA[underneathIndex].image}
             alt="Próximo depoimento"
             className="w-full h-full object-cover object-[center_15%]"
           />
           <div className="absolute inset-0 bg-black/40"></div>
         </div>
-        
+
         {/* Main Card */}
-        <div 
+        <div
           className={`
             absolute inset-0 bg-[#0a0a0a] rounded-[2rem] overflow-hidden shadow-2xl border border-white/10
             z-10
@@ -286,27 +329,27 @@ const TinderCarousel: React.FC<{ onAction?: () => void }> = ({ onAction }) => {
             ${isAnimating && direction === 'right' ? 'translate-x-[150%] rotate-[20deg] opacity-0' : ''}
             ${!isAnimating ? 'translate-x-0 rotate-0 opacity-100' : ''}
           `}
-          style={!isAnimating ? { 
+          style={!isAnimating ? {
             transform: `translateX(${dragOffset}px) rotate(${rotation}deg)`,
             transition: dragStart !== null ? 'none' : 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
           } : {
             transition: 'all 0.4s ease-in'
           }}
         >
-          <img 
-            src={TESTIMONIALS_DATA[currentIndex].image} 
+          <img
+            src={TESTIMONIALS_DATA[currentIndex].image}
             alt={`Depoimento ${currentIndex + 1}`}
             className="w-full h-full object-cover object-[center_15%] pointer-events-none"
           />
-          
+
           {/* Swipe Indicators (Stamps) */}
-          <div 
+          <div
             className="absolute top-8 left-8 border-4 border-red-500 text-red-500 font-black text-3xl px-4 py-1 rounded-xl uppercase tracking-tighter rotate-[-15deg] pointer-events-none transition-opacity"
             style={{ opacity: dragOffset > 20 ? opacity : 0 }}
           >
             NOPE
           </div>
-          <div 
+          <div
             className="absolute top-8 right-8 border-4 border-green-500 text-green-500 font-black text-3xl px-4 py-1 rounded-xl uppercase tracking-tighter rotate-[15deg] pointer-events-none transition-opacity"
             style={{ opacity: dragOffset < -20 ? opacity : 0 }}
           >
@@ -315,7 +358,7 @@ const TinderCarousel: React.FC<{ onAction?: () => void }> = ({ onAction }) => {
 
           {/* Gradient overlay */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none"></div>
-          
+
           {/* Info Overlay */}
           <div className="absolute bottom-6 left-6 right-6 pointer-events-none">
             <p className="text-white text-sm font-bold leading-tight drop-shadow-lg mb-1">
@@ -601,7 +644,7 @@ export const Hero: React.FC<HeroProps> = ({ onAction, user }) => {
 
           {/* Chat Animation moved here */}
           <div className="flex justify-center lg:justify-start">
-            <div className="w-full max-w-[400px] scale-90 lg:scale-100 origin-left">
+            <div className="w-full max-w-[400px] scale-90 lg:scale-100 origin-center lg:origin-left mx-auto lg:mx-0">
               <ChatAnimation />
             </div>
           </div>
@@ -671,10 +714,10 @@ export const Hero: React.FC<HeroProps> = ({ onAction, user }) => {
                 {!isAnalyzing && guestResults.slice(0, 5).map((res, idx) => (
                   <div key={idx} className="flex justify-start animate-slide-up" style={{ animationDelay: `${idx * 150}ms` }}>
                     <div className="max-w-[95%]">
-                      <HeroResultCard 
-                        suggestion={res} 
-                        index={idx} 
-                        isLocked={true} 
+                      <HeroResultCard
+                        suggestion={res}
+                        index={idx}
+                        isLocked={true}
                         onUnlock={() => {
                           setUpsellType('unlock');
                           setShowUpsell(true);
