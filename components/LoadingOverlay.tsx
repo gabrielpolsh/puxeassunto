@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Sparkles, Zap, Heart, MessageCircleHeart, Lock, Star, ScanLine } from 'lucide-react';
+import React from 'react';
+import { MessageCircleHeart } from 'lucide-react';
 
 interface LoadingOverlayProps {
   isVisible: boolean;
@@ -8,48 +8,7 @@ interface LoadingOverlayProps {
 }
 
 export const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ isVisible, isPro, type = 'desktop' }) => {
-  const [tipIndex, setTipIndex] = useState(0);
-  
-  const tips = [
-    { 
-      icon: Zap, 
-      title: "OFERTA RELÂMPAGO",
-      text: "Seja PRO por apenas R$ 10,00 hoje!",
-      color: "text-yellow-400",
-      bg: "bg-yellow-400/10",
-      border: "border-yellow-400/20"
-    },
-    { 
-      icon: Lock, 
-      title: "DESBLOQUEIE TUDO",
-      text: "Tenha acesso a respostas ilimitadas.",
-      color: "text-purple-400",
-      bg: "bg-purple-400/10",
-      border: "border-purple-400/20"
-    },
-    { 
-      icon: Star, 
-      title: "SEJA IRRESISTÍVEL",
-      text: "As melhores cantadas estão no PRO.",
-      color: "text-pink-400",
-      bg: "bg-pink-400/10",
-      border: "border-pink-400/20"
-    }
-  ];
-
-  useEffect(() => {
-    if (isVisible && !isPro) {
-      const interval = setInterval(() => {
-        setTipIndex((prev) => (prev + 1) % tips.length);
-      }, 3000);
-      return () => clearInterval(interval);
-    }
-  }, [isVisible, isPro]);
-
   if (!isVisible) return null;
-
-  const currentTip = tips[tipIndex];
-  const CurrentIcon = currentTip.icon;
 
   // --- MOBILE OVERLAY (Image Context) ---
   if (type === 'mobile') {
@@ -100,34 +59,9 @@ export const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ isVisible, isPro
       <h3 className="text-xl font-bold text-white mb-2 tracking-tight">
         Criando Resposta...
       </h3>
-      <p className="text-sm text-gray-500 text-center max-w-[200px] mb-8">
+      <p className="text-sm text-gray-500 text-center max-w-[200px]">
         A inteligência artificial está analisando o contexto e o tom da conversa.
       </p>
-
-      {/* Desktop Pro Tip */}
-      {!isPro && (
-        <div className="w-full max-w-xs bg-[#111] border border-white/10 rounded-2xl p-5 relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-purple-500 to-pink-500"></div>
-          
-          <div className="flex flex-col gap-3">
-            <div className="flex items-center justify-between">
-              <div className={`flex items-center gap-2 ${currentTip.color}`}>
-                <CurrentIcon size={16} />
-                <span className="text-xs font-bold uppercase tracking-wider">{currentTip.title}</span>
-              </div>
-              <span className="text-[10px] text-gray-600 font-mono">0{tipIndex + 1}/03</span>
-            </div>
-            
-            <p className="text-sm text-gray-300 font-medium leading-relaxed pl-1">
-              "{currentTip.text}"
-            </p>
-            
-            <div className="w-full h-1 bg-white/5 rounded-full mt-1 overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-[3000ms] ease-linear" key={tipIndex} style={{ width: '100%' }}></div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { analyzeChatScreenshot, generatePickupLines, Suggestion } from '../services/geminiService';
+import { metaService } from '../services/metaService';
 import { SettingsModal } from './SettingsModal';
 import { LoadingOverlay } from './LoadingOverlay';
 
@@ -843,36 +844,41 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
         }
       });
 
-      // 2. Persist
-      let sessionId = currentSessionId;
-      if (!sessionId) {
-        // Create new session title based on AI Analysis or fallback
-        const title = aiTitle || userContext.slice(0, 25) || `Análise ${new Date().toLocaleTimeString()}`;
-        sessionId = await createSession(title);
-        setCurrentSessionId(sessionId);
-      }
-
-      if (sessionId) {
-        // Upload all images to storage
-        const uploadedPaths: string[] = [];
-        const uploadedSignedUrls: string[] = [];
-        
-        for (const img of selectedImages) {
-          const uploadResult = await uploadImage(img, user.id);
-          if (uploadResult) {
-            uploadedPaths.push(uploadResult.path);
-            uploadedSignedUrls.push(uploadResult.signedUrl);
-          } else {
-            console.warn('Image upload failed for one image');
-            uploadedPaths.push(img); // fallback to base64
-            uploadedSignedUrls.push(img);
-          }
+      // 2. Persist (em background, não bloqueia o usuário)
+      try {
+        let sessionId = currentSessionId;
+        if (!sessionId) {
+          // Create new session title based on AI Analysis or fallback
+          const title = aiTitle || userContext.slice(0, 25) || `Análise ${new Date().toLocaleTimeString()}`;
+          sessionId = await createSession(title);
+          setCurrentSessionId(sessionId);
         }
-        
-        // Update local state to use signed URLs for immediate display
-        setSelectedImages(uploadedSignedUrls);
-        // Save paths (not signed URLs) to database - join with comma for multiple
-        await saveInteraction(sessionId, uploadedPaths.join(','), userContext, suggestions);
+
+        if (sessionId) {
+          // Upload all images to storage
+          const uploadedPaths: string[] = [];
+          const uploadedSignedUrls: string[] = [];
+          
+          for (const img of selectedImages) {
+            const uploadResult = await uploadImage(img, user.id);
+            if (uploadResult) {
+              uploadedPaths.push(uploadResult.path);
+              uploadedSignedUrls.push(uploadResult.signedUrl);
+            } else {
+              console.warn('Image upload failed for one image');
+              uploadedPaths.push(img); // fallback to base64
+              uploadedSignedUrls.push(img);
+            }
+          }
+          
+          // Update local state to use signed URLs for immediate display
+          setSelectedImages(uploadedSignedUrls);
+          // Save paths (not signed URLs) to database - join with comma for multiple
+          await saveInteraction(sessionId, uploadedPaths.join(','), userContext, suggestions);
+        }
+      } catch (persistError) {
+        // Erro ao salvar não impede o usuário de ver as respostas
+        console.error('Erro ao salvar (respostas já exibidas):', persistError);
       }
 
     } catch (err) {
