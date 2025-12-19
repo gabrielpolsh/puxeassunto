@@ -54,18 +54,18 @@ export const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ isVisible, isPro
   // --- MOBILE OVERLAY (Image Context) ---
   if (type === 'mobile') {
     return (
-      <div className="absolute inset-0 z-50 overflow-hidden rounded-lg">
+      <div className="absolute inset-0 z-50 overflow-hidden rounded-lg will-change-transform">
         {/* Dark Overlay */}
-        <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] animate-fade-in" />
+        <div className="absolute inset-0 bg-black/70 animate-fade-in" style={{ WebkitBackfaceVisibility: 'hidden' }} />
         
-        {/* Scanning Effect */}
-        <div className="absolute inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-purple-500 to-transparent shadow-[0_0_15px_rgba(168,85,247,0.8)] animate-scan z-10" />
+        {/* Scanning Effect - Otimizado */}
+        <div className="absolute inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-purple-500 to-transparent animate-scan-fast z-10" style={{ willChange: 'transform' }} />
         
         {/* Content Container */}
         <div className="absolute inset-0 flex flex-col items-center justify-center p-4 z-20">
           
           {/* Status Pill */}
-          <div className="flex items-center gap-2 px-4 py-2 bg-black/60 backdrop-blur-md border border-white/10 rounded-full shadow-lg animate-bounce-slow whitespace-nowrap">
+          <div className="flex items-center gap-2 px-4 py-2 bg-black/80 border border-white/10 rounded-full shadow-lg animate-pulse-gentle whitespace-nowrap" style={{ WebkitBackfaceVisibility: 'hidden' }}>
             <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse shrink-0" />
             <span className="text-[10px] sm:text-xs font-bold text-white tracking-wide">ANALISANDO CONVERSA...</span>
           </div>

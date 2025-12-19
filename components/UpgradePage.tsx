@@ -12,6 +12,17 @@ export const UpgradePage: React.FC<UpgradePageProps> = ({ onBack, user }) => {
     const [timeLeft, setTimeLeft] = useState({ hours: 2, minutes: 47, seconds: 33 });
 
     useEffect(() => {
+        // Track AddToCart - Usuario entrou na pagina de upgrade (interesse alto)
+        metaService.trackEvent({
+            eventName: 'AddToCart',
+            contentName: 'Plano PRO Ilimitado',
+            value: 15.00,
+            currency: 'BRL',
+            contentType: 'product'
+        });
+    }, []);
+
+    useEffect(() => {
         const timer = setInterval(() => {
             setTimeLeft(prev => {
                 let { hours, minutes, seconds } = prev;

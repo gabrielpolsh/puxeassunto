@@ -28,6 +28,15 @@ export const ThankYouPage: React.FC<ThankYouPageProps> = ({ onGoToDashboard }) =
                 contentName: 'Plano PRO Ilimitado',
                 contentType: 'product'
             });
+            
+            // Track Subscribe - Assinatura ativada
+            metaService.trackEvent({
+                eventName: 'Subscribe',
+                value: 10.00,
+                currency: 'BRL',
+                contentName: 'Plano PRO Ilimitado',
+                contentType: 'subscription'
+            });
 
             // Optional: Clear state to prevent re-tracking on reload?
             // Actually, replacing state here might be good practice

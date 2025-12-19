@@ -815,6 +815,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
 
     // CHECK LIMITS
     if (!isPro && dailyCount >= 5) {
+      // Track evento customizado - Usuario bateu no limite (sinal de engajamento)
+      metaService.trackEvent({
+        eventName: 'FreeLimitReached',
+        contentName: 'Analise de Conversa',
+        customData: { action: 'hit_daily_limit' }
+      });
+      
       onUpgradeClick();
       return;
     }
@@ -825,6 +832,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
       // 1. Analyze (Returns { title, suggestions })
       const { title: aiTitle, suggestions } = await analyzeChatScreenshot(selectedImages, userContext);
       setResults(suggestions);
+      
+      // Track evento customizado - Usuario gerou resposta (engajamento)
+      metaService.trackEvent({
+        eventName: 'GenerateResponse',
+        contentName: 'Analise de Conversa',
+        customData: { 
+          type: 'chat_analysis',
+          is_pro: isPro 
+        }
+      });
 
       // 2. Persist
       let sessionId = currentSessionId;
@@ -871,6 +888,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
 
     // CHECK LIMITS
     if (!isPro && dailyCount >= 5) {
+      // Track evento customizado - Usuario bateu no limite
+      metaService.trackEvent({
+        eventName: 'FreeLimitReached',
+        contentName: 'Cantadas',
+        customData: { action: 'hit_daily_limit' }
+      });
+      
       onUpgradeClick();
       return;
     }
@@ -881,6 +905,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
       const image = usePhotoForPickup && selectedImages.length > 0 ? selectedImages[0] : undefined;
       const { title: aiTitle, suggestions } = await generatePickupLines(pickupContext, image);
       setResults(suggestions);
+      
+      // Track evento customizado - Usuario gerou cantadas
+      metaService.trackEvent({
+        eventName: 'GenerateResponse',
+        contentName: 'Cantadas',
+        customData: { 
+          type: 'pickup_lines',
+          with_photo: !!image,
+          is_pro: isPro 
+        }
+      });
       
       // 2. Persist to database
       let sessionId = currentSessionId;
@@ -1400,7 +1435,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
                       </div>
                     </div>
                   ) : (
-                    <img src={selectedImages[0]} className="max-w-full max-h-[60vh] md:max-h-[80vh] object-contain" alt="Contexto" />
+                    <img 
+                      src={selectedImages[0]} 
+                      className="max-w-full max-h-[60vh] md:max-h-[80vh] object-contain" 
+                      alt="Contexto"
+                      style={{ WebkitBackfaceVisibility: 'hidden', backfaceVisibility: 'hidden' }}
+                    />
                   )}
                   
                   <div className="md:hidden">
@@ -1431,7 +1471,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
                       </div>
                     </div>
                   ) : (
-                    <img src={selectedImages[0]} className="max-w-full max-h-[50vh] md:max-h-[65vh] object-contain" alt="Print" />
+                    <img 
+                      src={selectedImages[0]} 
+                      className="max-w-full max-h-[50vh] md:max-h-[65vh] object-contain" 
+                      alt="Print"
+                      style={{ WebkitBackfaceVisibility: 'hidden', backfaceVisibility: 'hidden' }}
+                    />
                   )}
                   
                   <div className="md:hidden">
@@ -1466,7 +1511,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
                           <span className="text-xs font-medium text-white">Adicionar mais prints?</span>
                         </div>
                         <p className="text-[9px] text-gray-500 mt-0.5">
-                          Ative esta opção se a conversa não couber em um único print. Envie até {MAX_IMAGES} imagens.
+                          Ative esta opção caso a conversa não caiba em um único print. Você pode enviar até {MAX_IMAGES} imagens.
                         </p>
                       </div>
                       
@@ -1553,6 +1598,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
                         ${draggedIndex === index ? 'opacity-50 scale-95 border-rose-500' : 'border-white/10'}
                         ${dragOverIndex === index ? 'border-rose-400 border-2 scale-105' : ''}
                       `}
+                      style={{ willChange: 'transform, opacity' }}
                     >
                       {isLoadingImage ? (
                         <div className="w-full h-full bg-gradient-to-br from-white/5 to-white/10 animate-pulse flex items-center justify-center">
@@ -1564,6 +1610,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
                           className="w-full h-full object-cover pointer-events-none" 
                           alt={`Print ${index + 1}`} 
                           draggable={false}
+                          loading="lazy"
+                          style={{ WebkitBackfaceVisibility: 'hidden' }}
                         />
                       )}
                       
@@ -1678,9 +1726,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
                 </div>
 
                 {/* Loading overlay for mobile */}
-                <div className="md:hidden">
-                  <LoadingOverlay isVisible={isAnalyzing} isPro={isPro} type="mobile" />
-                </div>
+                {isAnalyzing && (
+                  <div className="md:hidden fixed inset-0 z-[100] flex items-center justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.8)', WebkitBackfaceVisibility: 'hidden' }}>
+                    <div className="flex items-center gap-2 px-4 py-2 bg-black/80 border border-white/10 rounded-full shadow-lg animate-pulse-gentle whitespace-nowrap" style={{ WebkitBackfaceVisibility: 'hidden' }}>
+                      <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse shrink-0" />
+                      <span className="text-xs font-bold text-white tracking-wide">ANALISANDO CONVERSA...</span>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
