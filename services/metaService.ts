@@ -73,12 +73,23 @@ export const metaService = {
     try {
       const fbp = metaService.getCookie('_fbp');
       const fbc = metaService.getCookie('_fbc');
+      
+      // Verificar se temos dados mínimos para identificação
+      // Meta exige pelo menos um: fbp, fbc, email, telefone ou external_id
+      const hasMinimumData = fbp || fbc || (emails && emails.length > 0) || (phones && phones.length > 0);
+      
+      if (!hasMinimumData) {
+        console.log('CAPI: Ignorando evento - dados insuficientes para identificação do usuário');
+        return; // Não envia para CAPI, mas o pixel do browser já foi disparado
+      }
 
       const userData: any = {
-        fbp,
-        fbc,
         client_user_agent: navigator.userAgent,
       };
+      
+      // Só adicionar fbp/fbc se existirem
+      if (fbp) userData.fbp = fbp;
+      if (fbc) userData.fbc = fbc;
 
       if (emails && emails.length > 0) userData.em = emails;
       if (phones && phones.length > 0) userData.ph = phones;
