@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Check, ArrowLeft, Sparkles, MessageCircleHeart, CheckCircle2, Zap, Shield, Clock, Heart, Star, Users, TrendingUp, Lock } from 'lucide-react';
 import { metaService } from '../services/metaService';
+import { ExitIntentPopup } from './ExitIntentPopup';
+import { NotificacoesCompra } from './NotificacoesCompra';
 
 interface UpgradePageProps {
     onBack: () => void;
@@ -10,6 +12,8 @@ interface UpgradePageProps {
 export const UpgradePage: React.FC<UpgradePageProps> = ({ onBack, user }) => {
     // Urgency countdown
     const [timeLeft, setTimeLeft] = useState({ hours: 2, minutes: 47, seconds: 33 });
+    const [showExitPopup, setShowExitPopup] = useState(false);
+    const [exitPopupShown, setExitPopupShown] = useState(false);
 
     useEffect(() => {
         // Track AddToCart - Usuario entrou na pagina de upgrade (interesse alto)
@@ -21,6 +25,58 @@ export const UpgradePage: React.FC<UpgradePageProps> = ({ onBack, user }) => {
             contentType: 'product'
         });
     }, []);
+
+    // Exit Intent Detection
+    useEffect(() => {
+        const handleMouseLeave = (e: MouseEvent) => {
+            // Detecta quando o mouse sai pela parte de cima da página (intenção de fechar)
+            if (e.clientY <= 0 && !exitPopupShown) {
+                setShowExitPopup(true);
+                setExitPopupShown(true);
+                
+                // Track exit intent
+                metaService.trackEvent({
+                    eventName: 'ExitIntentShown',
+                    contentName: 'Upgrade Page',
+                    customData: { action: 'exit_intent_triggered' }
+                });
+            }
+        };
+
+        // Também detectar quando usuário tenta usar atalho de teclado para sair
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if ((e.key === 'Escape' || (e.altKey && e.key === 'F4')) && !exitPopupShown) {
+                e.preventDefault();
+                setShowExitPopup(true);
+                setExitPopupShown(true);
+            }
+        };
+
+        document.addEventListener('mouseleave', handleMouseLeave);
+        document.addEventListener('keydown', handleKeyDown);
+
+        return () => {
+            document.removeEventListener('mouseleave', handleMouseLeave);
+            document.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [exitPopupShown]);
+
+    // Handler para botão Voltar - mostra popup na primeira vez
+    const handleBackClick = () => {
+        if (!exitPopupShown) {
+            setShowExitPopup(true);
+            setExitPopupShown(true);
+            
+            metaService.trackEvent({
+                eventName: 'ExitIntentShown',
+                contentName: 'Upgrade Page',
+                customData: { action: 'back_button_clicked' }
+            });
+        } else {
+            // Segunda vez, deixa voltar normalmente
+            onBack();
+        }
+    };
 
     useEffect(() => {
         const timer = setInterval(() => {
@@ -54,6 +110,20 @@ export const UpgradePage: React.FC<UpgradePageProps> = ({ onBack, user }) => {
 
     return (
         <div className="min-h-screen bg-[#050505] text-white font-sans selection:bg-rose-500/30 relative overflow-x-hidden">
+            {/* Exit Intent Popup */}
+            {showExitPopup && (
+                <ExitIntentPopup 
+                    onClose={() => setShowExitPopup(false)}
+                    onAccept={() => {
+                        setShowExitPopup(false);
+                        handleUpgrade();
+                    }}
+                />
+            )}
+            
+            {/* Notificações de Compra (Prova Social) */}
+            <NotificacoesCompra />
+            
             {/* Background Effects - Red Theme */}
             <div className="fixed top-0 left-1/2 -translate-x-1/2 w-full h-[500px] bg-gradient-to-b from-red-900/20 to-transparent pointer-events-none z-0" />
             <div className="fixed bottom-0 left-0 w-[500px] h-[500px] bg-rose-600/10 rounded-full blur-[120px] pointer-events-none z-0" />
@@ -63,7 +133,7 @@ export const UpgradePage: React.FC<UpgradePageProps> = ({ onBack, user }) => {
                 {/* Header */}
                 <header className="flex items-center justify-between mb-8 md:mb-12">
                     <button
-                        onClick={onBack}
+                        onClick={handleBackClick}
                         className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors group px-4 py-2 rounded-full hover:bg-white/5"
                     >
                         <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
