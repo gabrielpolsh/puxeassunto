@@ -13,6 +13,7 @@ interface MetaEventData {
   phones?: string[];
   firstName?: string;
   lastName?: string;
+  externalId?: string; // ID do usuário no sistema
   value?: number;
   currency?: string;
   contentName?: string;
@@ -25,6 +26,12 @@ export const metaService = {
   // Generate a unique Event ID
   generateEventId: () => {
     return 'evt_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+  },
+  
+  // Pegar dados do usuário logado automaticamente
+  getCurrentUser: async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    return user;
   },
 
   // Get FBP and FBC cookies
@@ -43,6 +50,7 @@ export const metaService = {
     phones,
     firstName,
     lastName,
+    externalId,
     value,
     currency,
     contentName,
@@ -51,6 +59,26 @@ export const metaService = {
     customData
   }: MetaEventData) => {
     const finalEventId = eventId || metaService.generateEventId();
+    
+    // Tentar pegar dados do usuário logado automaticamente
+    let userEmails = emails;
+    let userId = externalId;
+    
+    if (!userEmails || userEmails.length === 0 || !userId) {
+      try {
+        const currentUser = await metaService.getCurrentUser();
+        if (currentUser) {
+          if (!userEmails || userEmails.length === 0) {
+            userEmails = currentUser.email ? [currentUser.email] : undefined;
+          }
+          if (!userId) {
+            userId = currentUser.id;
+          }
+        }
+      } catch (e) {
+        // Ignorar erros ao pegar usuário
+      }
+    }
     
     // 1. Track via Browser Pixel (Client-side)
     if (typeof window !== 'undefined' && window.fbq) {
@@ -76,7 +104,7 @@ export const metaService = {
       
       // Verificar se temos dados mínimos para identificação
       // Meta exige pelo menos um: fbp, fbc, email, telefone ou external_id
-      const hasMinimumData = fbp || fbc || (emails && emails.length > 0) || (phones && phones.length > 0);
+      const hasMinimumData = fbp || fbc || (userEmails && userEmails.length > 0) || (phones && phones.length > 0) || userId;
       
       if (!hasMinimumData) {
         console.log('CAPI: Ignorando evento - dados insuficientes para identificação do usuário');
@@ -91,8 +119,9 @@ export const metaService = {
       if (fbp) userData.fbp = fbp;
       if (fbc) userData.fbc = fbc;
 
-      if (emails && emails.length > 0) userData.em = emails;
+      if (userEmails && userEmails.length > 0) userData.em = userEmails;
       if (phones && phones.length > 0) userData.ph = phones;
+      if (userId) userData.external_id = userId;
       // Note: First/Last name should ideally be hashed, but our Edge Function handles hashing for em/ph.
       // For fn/ln, we'll pass them as is and let the Edge Function handle or ignore (currently ignores hashing for fn/ln but passes them).
       // To be safe and compliant, we should probably hash them here or in the edge function.

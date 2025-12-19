@@ -23,7 +23,7 @@ export const ThankYouPage: React.FC<ThankYouPageProps> = ({ onGoToDashboard }) =
             // Track Purchase
             metaService.trackEvent({
                 eventName: 'Purchase',
-                value: 10.00,
+                value: 15.00,
                 currency: 'BRL',
                 contentName: 'Plano PRO Ilimitado',
                 contentType: 'product'
@@ -32,7 +32,7 @@ export const ThankYouPage: React.FC<ThankYouPageProps> = ({ onGoToDashboard }) =
             // Track Subscribe - Assinatura ativada
             metaService.trackEvent({
                 eventName: 'Subscribe',
-                value: 10.00,
+                value: 15.00,
                 currency: 'BRL',
                 contentName: 'Plano PRO Ilimitado',
                 contentType: 'subscription'

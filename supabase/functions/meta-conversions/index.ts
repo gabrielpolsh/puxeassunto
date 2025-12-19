@@ -64,7 +64,15 @@ serve(async (req) => {
         if (user_data.fbp) hashedUserData.fbp = user_data.fbp;
         if (user_data.fn) hashedUserData.fn = user_data.fn;
         if (user_data.ln) hashedUserData.ln = user_data.ln;
-        if (user_data.external_id) hashedUserData.external_id = user_data.external_id;
+        
+        // External ID deve ser hasheado
+        if (user_data.external_id) {
+          if (user_data.external_id.match(/^[a-f0-9]{64}$/)) {
+            hashedUserData.external_id = user_data.external_id;
+          } else {
+            hashedUserData.external_id = await sha256(user_data.external_id.toLowerCase().trim());
+          }
+        }
     }
     
     // SEMPRE adicionar IP do cliente (obrigatorio pelo Facebook)
