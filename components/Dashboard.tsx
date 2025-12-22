@@ -830,8 +830,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
     setIsAnalyzing(true);
 
     try {
-      // 1. Analyze (Returns { title, suggestions })
-      const { title: aiTitle, suggestions } = await analyzeChatScreenshot(selectedImages, userContext);
+      // 1. Analyze (Returns { title, suggestions }) with timeout
+      const analysisPromise = analyzeChatScreenshot(selectedImages, userContext);
+      const timeoutPromise = new Promise<never>((_, reject) => 
+        setTimeout(() => reject(new Error('Tempo limite excedido. Tente novamente.')), 60000)
+      );
+      
+      const { title: aiTitle, suggestions } = await Promise.race([analysisPromise, timeoutPromise]);
       setResults(suggestions);
       
       // Track evento customizado - Usuario gerou resposta (engajamento)
@@ -909,7 +914,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
 
     try {
       const image = usePhotoForPickup && selectedImages.length > 0 ? selectedImages[0] : undefined;
-      const { title: aiTitle, suggestions } = await generatePickupLines(pickupContext, image);
+      
+      // Generate with timeout
+      const pickupPromise = generatePickupLines(pickupContext, image);
+      const timeoutPromise = new Promise<never>((_, reject) => 
+        setTimeout(() => reject(new Error('Tempo limite excedido. Tente novamente.')), 60000)
+      );
+      
+      const { title: aiTitle, suggestions } = await Promise.race([pickupPromise, timeoutPromise]);
       setResults(suggestions);
       
       // Track evento customizado - Usuario gerou cantadas

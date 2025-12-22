@@ -14,10 +14,41 @@ export interface AnalysisResult {
   suggestions: Suggestion[];
 }
 
+// Helper function to convert URL to base64
+const urlToBase64 = async (url: string): Promise<string> => {
+  try {
+    const response = await fetch(url);
+    const blob = await response.blob();
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  } catch (error) {
+    console.error('Error converting URL to base64:', error);
+    throw error;
+  }
+};
+
 // Helper function to compress base64 image
-const compressBase64Image = async (base64String: string, maxSizeKB: number = 200): Promise<string> => {
+const compressBase64Image = async (imageSource: string, maxSizeKB: number = 200): Promise<string> => {
+  // If it's an HTTP URL, first convert to base64
+  let base64String = imageSource;
+  if (imageSource.startsWith('http')) {
+    try {
+      base64String = await urlToBase64(imageSource);
+    } catch (error) {
+      console.error('Failed to fetch image URL, trying direct load:', error);
+      // Fall through to try loading directly via Image element
+    }
+  }
+  
   return new Promise((resolve, reject) => {
     const img = new Image();
+    // Enable cross-origin for external URLs
+    img.crossOrigin = 'anonymous';
+    
     img.onload = () => {
       const canvas = document.createElement('canvas');
       let width = img.width;
