@@ -1,0 +1,28 @@
+# Robots.txt for Puxe Assunto
+# https://puxeassunto.com
+
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://puxeassunto.com/sitemap.xml
+
+# Bloquear páginas protegidas/privadas
+Disallow: /dashboard
+Disallow: /upgrade
+Disallow: /thankyou
+Disallow: /thankyou2
+
+# Bloquear assets desnecessários para indexação
+Disallow: /favicon/
+
+# Permitir todas as páginas públicas importantes
+Allow: /
+Allow: /login
+Allow: /blog/
+Allow: /privacy
+Allow: /terms
+Allow: /face
+
+# Crawl-delay para evitar sobrecarga (opcional, nem todos os bots respeitam)
+Crawl-delay: 1

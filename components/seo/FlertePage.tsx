@@ -2,6 +2,7 @@ import React from 'react';
 import { ArrowLeft, Heart, Flame, Sparkles, MessageCircle, Zap, Star, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Footer } from '../Footer';
+import { SEOHead } from './SEOHead';
 
 interface FlertePageProps {
   onBack: () => void;
@@ -108,6 +109,16 @@ export const FlertePage: React.FC<FlertePageProps> = ({ onBack, onAction }) => {
 
   return (
     <div className="min-h-screen bg-[#050505] text-white font-sans selection:bg-rose-500/30 relative overflow-hidden">
+      <SEOHead
+        title="Como Flertar pelo WhatsApp: Guia Completo para Conquistar | Puxe Assunto"
+        description="Aprenda a flertar pelo WhatsApp sem parecer desesperado. Técnicas de flerte, exemplos práticos, as 5 fases do flerte e como criar tensão e interesse de forma natural."
+        keywords="como flertar pelo whatsapp, flertar no chat, técnicas de flerte, como conquistar pelo whatsapp, flerte online, como seduzir por mensagem, dicas de flerte, paquera digital"
+        canonicalUrl="https://puxeassunto.com/blog/flerte"
+        ogType="article"
+        articlePublishedTime="2025-01-01T00:00:00Z"
+        articleModifiedTime="2025-12-23T00:00:00Z"
+      />
+      
       {/* Background Effects */}
       <div className="fixed top-[-10%] right-[-10%] w-[50%] h-[50%] bg-pink-600/10 rounded-full blur-[150px] pointer-events-none z-0" />
       <div className="fixed bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-rose-600/10 rounded-full blur-[150px] pointer-events-none z-0" />
