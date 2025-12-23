@@ -15,7 +15,6 @@ import { LegalPage } from './components/LegalPage';
 import { FacePage } from './components/FacePage';
 import { PuxarAssuntoPage, FlertePage, ConversasPage } from './components/seo';
 import { WhatsAppButton } from './components/WhatsAppButton';
-import { NotificacoesCompra } from './components/NotificacoesCompra';
 import { supabase } from './lib/supabase';
 import { metaService } from './services/metaService';
 
@@ -53,9 +52,6 @@ const ProtectedRoute: React.FC<{ children: React.ReactElement; user: any }> = ({
 const LandingPage: React.FC<{ onAction: () => void; user: any }> = ({ onAction, user }) => {
   return (
     <div className="min-h-screen bg-[#050505] text-white selection:bg-rose-500/30 selection:text-rose-200 font-sans overflow-x-hidden relative">
-      {/* Notificações de Compra (Prova Social) */}
-      <NotificacoesCompra />
-      
       {/* Background Light Effects */}
       <div className="fixed top-0 left-1/2 -translate-x-1/2 w-full h-[800px] bg-gradient-to-b from-red-900/10 via-red-900/5 to-transparent pointer-events-none z-0" />
       <div className="fixed top-1/4 right-[-10%] w-[600px] h-[600px] bg-red-600/5 rounded-full blur-[120px] pointer-events-none z-0" />

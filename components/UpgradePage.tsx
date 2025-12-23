@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Check, ArrowLeft, Sparkles, MessageCircleHeart, CheckCircle2, Zap, Shield, Clock, Heart, Star, Users, TrendingUp, Lock } from 'lucide-react';
 import { metaService } from '../services/metaService';
 import { ExitIntentPopup } from './ExitIntentPopup';
-import { NotificacoesCompra } from './NotificacoesCompra';
 
 interface UpgradePageProps {
     onBack: () => void;
@@ -120,9 +119,6 @@ export const UpgradePage: React.FC<UpgradePageProps> = ({ onBack, user }) => {
                     }}
                 />
             )}
-            
-            {/* Notificações de Compra (Prova Social) */}
-            <NotificacoesCompra />
             
             {/* Background Effects - Red Theme */}
             <div className="fixed top-0 left-1/2 -translate-x-1/2 w-full h-[500px] bg-gradient-to-b from-red-900/20 to-transparent pointer-events-none z-0" />
