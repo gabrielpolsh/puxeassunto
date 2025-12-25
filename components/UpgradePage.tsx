@@ -336,7 +336,7 @@ export const UpgradePage: React.FC<UpgradePageProps> = ({ onBack, user }) => {
                 </div>
 
                 {/* Pricing Cards */}
-                <div className="grid md:grid-cols-3 gap-6 md:gap-6 mb-12 px-2 md:px-0">
+                <div className="grid md:grid-cols-3 gap-8 md:gap-6 mb-12 px-2 md:px-0">
                     {plans.map((plan, index) => (
                         <div 
                             key={plan.id}
