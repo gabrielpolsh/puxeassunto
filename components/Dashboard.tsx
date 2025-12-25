@@ -372,6 +372,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
   const [isPro, setIsPro] = useState(false);
   const [dailyCount, setDailyCount] = useState(0);
   const [nextPayment, setNextPayment] = useState<string | null>(null);
+  const [planType, setPlanType] = useState<string | null>(null);
+  const [subscriptionEndDate, setSubscriptionEndDate] = useState<string | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [timeUntilReset, setTimeUntilReset] = useState<string>('');
 
@@ -445,7 +447,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
       // 1. Check PRO status & Subscription
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('is_pro, next_payment_date')
+        .select('is_pro, next_payment_date, plan_type, subscription_end_date')
         .eq('id', user.id)
         .single();
 
@@ -460,6 +462,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
 
       if (profile) {
         setIsPro(profile.is_pro || false);
+        setPlanType(profile.plan_type || null);
+        setSubscriptionEndDate(profile.subscription_end_date || null);
         if (profile.next_payment_date) {
           setNextPayment(new Date(profile.next_payment_date).toLocaleDateString('pt-BR'));
         }
@@ -1004,9 +1008,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onUpgradeClick }) =>
         user={user}
         isPro={isPro}
         nextPayment={nextPayment}
+        planType={planType}
+        subscriptionEndDate={subscriptionEndDate}
         isLoadingProfile={isLoadingProfile}
         dailyCount={dailyCount}
         onUpgradeClick={onUpgradeClick}
+        onLogout={async () => {
+          await supabase.auth.signOut();
+        }}
       />
 
       {/* Ghost Image para Drag no Mobile */}

@@ -31,19 +31,27 @@ function calculateSubscriptionEndDate(planType: string, startDate: Date = new Da
 
 // Helper function to detect plan type from payload
 function detectPlanType(payload: any): { planType: string; durationMonths: number } {
-    // Try to extract product/checkout ID from various payload locations
-    const productId = 
+    // Try to extract product/checkout/offer ID from various payload locations
+    // Kirvano sends offer_id inside products array
+    const offerId = 
+        payload.products?.[0]?.offer_id ||
+        payload.data?.products?.[0]?.offer_id ||
         payload.data?.product?.id ||
         payload.data?.checkout?.id ||
         payload.product_id ||
         payload.checkout_id ||
+        payload.offer_id ||
         payload.data?.product_id ||
         payload.data?.checkout_id ||
+        payload.data?.offer_id ||
         '';
     
+    console.log(`Detecting plan - offer_id: ${offerId}`);
+    
     // Check if we have a matching plan config
-    if (PLAN_CONFIGS[productId]) {
-        return PLAN_CONFIGS[productId];
+    if (PLAN_CONFIGS[offerId]) {
+        console.log(`Found plan config for offer_id ${offerId}: ${PLAN_CONFIGS[offerId].planType}`);
+        return PLAN_CONFIGS[offerId];
     }
     
     // Try to detect from product name or description
