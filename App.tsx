@@ -80,6 +80,9 @@ const AppRouter: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Initialize Meta fbc parameter capture (captures fbclid from URL)
+    metaService.initializeFbc();
+    
     // Check active session
     supabase.auth.getSession().then(({ data: { session }, error }) => {
       if (error) {

@@ -22,6 +22,10 @@ interface MetaEventData {
   customData?: any;
 }
 
+// Storage keys for Meta parameters
+const FBC_STORAGE_KEY = 'meta_fbc';
+const FBCLID_STORAGE_KEY = 'meta_fbclid';
+
 export const metaService = {
   // Generate a unique Event ID
   generateEventId: () => {
@@ -40,6 +44,101 @@ export const metaService = {
     const parts = value.split(`; ${name}=`);
     if (parts.length === 2) return parts.pop()?.split(';').shift();
     return null;
+  },
+
+  // Set cookie with expiration
+  setCookie: (name: string, value: string, days: number = 90) => {
+    if (typeof document === 'undefined') return;
+    const expires = new Date();
+    expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
+    document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/;SameSite=Lax`;
+  },
+
+  // Generate FBC from fbclid in the correct Meta format
+  // Format: fb.{subdomain_index}.{creation_time}.{fbclid}
+  generateFbc: (fbclid: string): string => {
+    const creationTime = Math.floor(Date.now() / 1000);
+    // subdomain_index is 1 for single domain, 2 for subdomain
+    return `fb.1.${creationTime}.${fbclid}`;
+  },
+
+  // Extract fbclid from URL
+  getFbclidFromUrl: (): string | null => {
+    if (typeof window === 'undefined') return null;
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('fbclid');
+  },
+
+  // Get the best available fbc value (cookie > localStorage > generate from stored fbclid)
+  getFbc: (): string | null => {
+    if (typeof window === 'undefined') return null;
+
+    // 1. Try to get from _fbc cookie (set by Meta Pixel)
+    const fbcCookie = metaService.getCookie('_fbc');
+    if (fbcCookie) {
+      // Also save to localStorage as backup
+      try {
+        localStorage.setItem(FBC_STORAGE_KEY, fbcCookie);
+      } catch (e) {}
+      return fbcCookie;
+    }
+
+    // 2. Try to get from localStorage
+    try {
+      const storedFbc = localStorage.getItem(FBC_STORAGE_KEY);
+      if (storedFbc) return storedFbc;
+    } catch (e) {}
+
+    // 3. Check if we have a stored fbclid and generate fbc from it
+    try {
+      const storedFbclid = localStorage.getItem(FBCLID_STORAGE_KEY);
+      if (storedFbclid) {
+        const generatedFbc = metaService.generateFbc(storedFbclid);
+        localStorage.setItem(FBC_STORAGE_KEY, generatedFbc);
+        return generatedFbc;
+      }
+    } catch (e) {}
+
+    return null;
+  },
+
+  // Initialize: capture fbclid from URL and create fbc cookie/storage
+  // Call this on app initialization
+  initializeFbc: () => {
+    if (typeof window === 'undefined') return;
+
+    const fbclid = metaService.getFbclidFromUrl();
+    
+    if (fbclid) {
+      console.log('[Meta] fbclid detected in URL:', fbclid);
+      
+      // Store fbclid for future use
+      try {
+        localStorage.setItem(FBCLID_STORAGE_KEY, fbclid);
+      } catch (e) {}
+
+      // Generate and store fbc
+      const fbc = metaService.generateFbc(fbclid);
+      console.log('[Meta] Generated fbc:', fbc);
+
+      // Set as cookie (Meta Pixel might overwrite this, which is fine)
+      metaService.setCookie('_fbc', fbc, 90);
+
+      // Also store in localStorage as backup
+      try {
+        localStorage.setItem(FBC_STORAGE_KEY, fbc);
+      } catch (e) {}
+    } else {
+      // Even without fbclid in URL, check if we have a stored value
+      const existingFbc = metaService.getFbc();
+      if (existingFbc) {
+        console.log('[Meta] Using stored fbc:', existingFbc);
+        // Ensure cookie is set
+        if (!metaService.getCookie('_fbc')) {
+          metaService.setCookie('_fbc', existingFbc, 90);
+        }
+      }
+    }
   },
 
   // Track event
@@ -100,7 +199,15 @@ export const metaService = {
     // 2. Track via Conversions API (Server-side)
     try {
       const fbp = metaService.getCookie('_fbp');
-      const fbc = metaService.getCookie('_fbc');
+      // Use getFbc() to get fbc from cookie, localStorage, or generated from fbclid
+      const fbc = metaService.getFbc();
+      
+      // Log fbc status for debugging
+      if (fbc) {
+        console.log(`[Meta CAPI] fbc found for ${eventName}:`, fbc);
+      } else {
+        console.log(`[Meta CAPI] No fbc available for ${eventName}`);
+      }
       
       // Verificar se temos dados mínimos para identificação
       // Meta exige pelo menos um: fbp, fbc, email, telefone ou external_id
