@@ -193,7 +193,12 @@ export const UpgradePage: React.FC<UpgradePageProps> = ({ onBack, user }) => {
         return () => clearInterval(timer);
     }, []);
 
-    const handleUpgrade = async (plan: Plan) => {
+    const handleUpgrade = (plan: Plan) => {
+        // Build checkout URL with user email FIRST (sync) - before any async operation
+        // This prevents popup blockers from blocking the window.open
+        const checkoutUrl = metaService.buildCheckoutUrl(plan.checkoutUrl);
+        
+        // Track event (async, but we don't wait for it)
         metaService.trackEvent({
             eventName: 'InitiateCheckout',
             contentName: `Plano PRO ${plan.name}`,
@@ -202,8 +207,7 @@ export const UpgradePage: React.FC<UpgradePageProps> = ({ onBack, user }) => {
             contentType: 'product'
         });
         
-        // Build checkout URL with user email for better conversion + tracking
-        const checkoutUrl = await metaService.buildCheckoutUrl(plan.checkoutUrl);
+        // Open checkout immediately (sync) to avoid popup blocker
         window.open(checkoutUrl, '_blank');
     };
 

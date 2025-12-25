@@ -192,25 +192,12 @@ export const metaService = {
   },
 
   // Build checkout URL with user data (email, fbc) for better tracking and UX
-  buildCheckoutUrl: async (baseUrl: string): Promise<string> => {
+  // SYNC version - uses only localStorage data to avoid popup blockers
+  buildCheckoutUrl: (baseUrl: string): string => {
     const url = new URL(baseUrl);
     
-    // 1. Add email if available (improves checkout conversion + Meta tracking)
-    let email: string | null = null;
-    
-    // Try to get from logged in user
-    try {
-      const currentUser = await metaService.getCurrentUser();
-      if (currentUser?.email) {
-        email = currentUser.email;
-      }
-    } catch (e) {}
-    
-    // Fallback to stored email
-    if (!email) {
-      email = metaService.getStoredEmail();
-    }
-    
+    // 1. Add email if available (from localStorage - sync)
+    const email = metaService.getStoredEmail();
     if (email) {
       url.searchParams.set('email', email);
       console.log('[Meta] Checkout URL with email:', email);
@@ -229,19 +216,8 @@ export const metaService = {
       url.searchParams.set('fbp', fbp);
     }
     
-    // 4. Add external_id (user id) if available
-    let userId: string | null = null;
-    try {
-      const currentUser = await metaService.getCurrentUser();
-      if (currentUser?.id) {
-        userId = currentUser.id;
-      }
-    } catch (e) {}
-    
-    if (!userId) {
-      userId = metaService.getStoredUserId();
-    }
-    
+    // 4. Add external_id (user id) if available (from localStorage - sync)
+    const userId = metaService.getStoredUserId();
     if (userId) {
       url.searchParams.set('external_id', userId);
     }
