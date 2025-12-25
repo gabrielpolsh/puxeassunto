@@ -270,20 +270,20 @@ export const UpgradePage: React.FC<UpgradePageProps> = ({ onBack, user }) => {
                             <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
                             <span className="text-xs text-green-400 font-medium hidden sm:inline">23 online</span>
                         </div>
-                        <div className="flex items-center gap-2 px-3 py-1.5 bg-red-500/10 border border-red-500/20 rounded-full animate-pulse">
-                            <Flame size={14} className="text-red-400" />
-                            <span className="text-xs text-red-400 font-bold">Últimas 12 vagas!</span>
+                        <div className="flex items-center gap-2 px-3 py-1.5 bg-rose-500/10 border border-rose-500/20 rounded-full">
+                            <Flame size={14} className="text-rose-400" />
+                            <span className="text-xs text-rose-400 font-semibold">Últimas 12 vagas!</span>
                         </div>
                     </div>
                 </header>
 
                 {/* MEGA Urgency Banner */}
-                <div className="relative bg-gradient-to-r from-red-600 via-rose-600 to-red-600 rounded-2xl p-4 mb-8 overflow-hidden">
-                    <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48Y2lyY2xlIGN4PSIyMCIgY3k9IjIwIiByPSIxIiBmaWxsPSJ3aGl0ZSIgZmlsbC1vcGFjaXR5PSIwLjEiLz48L3N2Zz4=')] opacity-30"></div>
+                <div className="relative bg-gradient-to-r from-rose-600/90 via-rose-500/90 to-rose-600/90 rounded-2xl p-4 mb-8 overflow-hidden">
+                    <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48Y2lyY2xlIGN4PSIyMCIgY3k9IjIwIiByPSIxIiBmaWxsPSJ3aGl0ZSIgZmlsbC1vcGFjaXR5PSIwLjEiLz48L3N2Zz4=')] opacity-20"></div>
                     <div className="relative flex flex-col md:flex-row items-center justify-center gap-4 text-center">
                         <div className="flex items-center gap-2">
-                            <Timer size={20} className="text-white animate-bounce" />
-                            <span className="text-white font-bold">OFERTA TERMINA EM:</span>
+                            <Timer size={20} className="text-white" />
+                            <span className="text-white font-semibold">OFERTA TERMINA EM:</span>
                         </div>
                         <div className="flex items-center gap-2">
                             <div className="bg-black/30 backdrop-blur px-3 py-2 rounded-lg">
@@ -306,22 +306,22 @@ export const UpgradePage: React.FC<UpgradePageProps> = ({ onBack, user }) => {
 
                 {/* Hero Section */}
                 <div className="text-center max-w-4xl mx-auto mb-10">
-                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-red-500/20 to-rose-500/20 border border-red-500/30 mb-6 animate-bounce">
-                        <Gift size={16} className="text-red-400" />
-                        <span className="text-sm font-bold text-red-300">ATÉ 73% OFF + BÔNUS EXCLUSIVO</span>
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-rose-500/15 to-rose-500/10 border border-rose-500/25 mb-6">
+                        <Gift size={16} className="text-rose-400" />
+                        <span className="text-sm font-semibold text-rose-300">ATÉ 73% OFF + BÔNUS EXCLUSIVO</span>
                     </div>
                     
                     <h1 className="text-4xl md:text-6xl font-black mb-4 tracking-tight leading-[1.1]">
                         Pare de perder conversas<br />
-                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-400 via-rose-400 to-orange-400 animate-gradient">
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-rose-400 via-rose-300 to-amber-400">
                             por respostas ruins
                         </span>
                     </h1>
                     
                     <p className="text-lg md:text-xl text-gray-400 leading-relaxed max-w-2xl mx-auto mb-6">
-                        Desbloqueie o <span className="text-white font-bold">PRO</span> e tenha 
-                        <span className="text-red-400 font-bold"> respostas ilimitadas</span> que fazem 
-                        suas conversas <span className="text-white font-bold">nunca mais travarem</span>
+                        Desbloqueie o <span className="text-white font-semibold">PRO</span> e tenha 
+                        <span className="text-rose-400 font-semibold"> respostas ilimitadas</span> que fazem 
+                        suas conversas <span className="text-white font-semibold">nunca mais travarem</span>
                     </p>
 
                     {/* Social Proof Stats */}
@@ -336,24 +336,24 @@ export const UpgradePage: React.FC<UpgradePageProps> = ({ onBack, user }) => {
                 </div>
 
                 {/* Pricing Cards */}
-                <div className="grid md:grid-cols-3 gap-4 md:gap-6 mb-12">
+                <div className="grid md:grid-cols-3 gap-6 md:gap-6 mb-12 px-2 md:px-0">
                     {plans.map((plan, index) => (
                         <div 
                             key={plan.id}
                             className={`relative rounded-3xl p-6 flex flex-col transition-all duration-500 ${
                                 plan.popular 
-                                    ? 'bg-gradient-to-b from-red-950/80 via-[#0a0a0a] to-[#050505] border-2 border-red-500 shadow-[0_0_60px_-15px_rgba(239,68,68,0.5)] md:scale-[1.05] z-20' 
+                                    ? 'bg-gradient-to-b from-rose-950/50 via-[#0a0a0a] to-[#050505] border border-rose-500/60 shadow-[0_0_40px_-15px_rgba(244,63,94,0.3)] md:scale-[1.03] z-20' 
                                     : plan.bestValue
-                                    ? 'bg-gradient-to-b from-yellow-950/30 to-[#0a0a0a] border-2 border-yellow-500/50 shadow-[0_0_40px_-15px_rgba(234,179,8,0.3)]'
-                                    : 'bg-white/[0.02] border border-white/10 hover:border-white/30 hover:bg-white/[0.04]'
+                                    ? 'bg-gradient-to-b from-amber-950/20 to-[#0a0a0a] border border-amber-500/40 shadow-[0_0_30px_-15px_rgba(245,158,11,0.2)]'
+                                    : 'bg-white/[0.02] border border-white/10 hover:border-white/20 hover:bg-white/[0.03]'
                             }`}
                         >
                             {/* Ribbon/Badge */}
                             {plan.badge && (
-                                <div className={`absolute -top-4 left-1/2 -translate-x-1/2 px-5 py-2 rounded-full text-sm font-bold whitespace-nowrap shadow-lg ${
+                                <div className={`absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap shadow-md ${
                                     plan.popular 
-                                        ? 'bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-red-900/50' 
-                                        : 'bg-gradient-to-r from-yellow-500 to-orange-500 text-black shadow-yellow-900/30'
+                                        ? 'bg-gradient-to-r from-rose-600 to-rose-500 text-white shadow-rose-900/30' 
+                                        : 'bg-gradient-to-r from-amber-500 to-orange-400 text-black shadow-amber-900/20'
                                 }`}>
                                     {plan.badge}
                                 </div>
@@ -362,7 +362,7 @@ export const UpgradePage: React.FC<UpgradePageProps> = ({ onBack, user }) => {
                             {/* Plan Header */}
                             <div className="mt-4 mb-6">
                                 <h3 className={`text-2xl font-bold mb-2 ${
-                                    plan.popular ? 'text-red-400' : plan.bestValue ? 'text-yellow-400' : 'text-gray-300'
+                                    plan.popular ? 'text-rose-400' : plan.bestValue ? 'text-amber-400' : 'text-gray-300'
                                 }`}>
                                     {plan.name}
                                 </h3>
@@ -372,15 +372,15 @@ export const UpgradePage: React.FC<UpgradePageProps> = ({ onBack, user }) => {
                                     <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
                                         <div 
                                             className={`h-full rounded-full transition-all duration-1000 ${
-                                                plan.popular ? 'bg-gradient-to-r from-red-500 to-rose-500' :
-                                                plan.bestValue ? 'bg-gradient-to-r from-yellow-500 to-orange-500' :
-                                                'bg-green-500'
+                                                plan.popular ? 'bg-gradient-to-r from-rose-500 to-rose-400' :
+                                                plan.bestValue ? 'bg-gradient-to-r from-amber-500 to-orange-400' :
+                                                'bg-emerald-500'
                                             }`}
                                             style={{ width: `${plan.savingsPercent}%` }}
                                         />
                                     </div>
-                                    <span className={`text-xs font-bold ${
-                                        plan.popular ? 'text-red-400' : plan.bestValue ? 'text-yellow-400' : 'text-green-400'
+                                    <span className={`text-xs font-semibold ${
+                                        plan.popular ? 'text-rose-400' : plan.bestValue ? 'text-amber-400' : 'text-emerald-400'
                                     }`}>
                                         {plan.savings}
                                     </span>
@@ -393,20 +393,20 @@ export const UpgradePage: React.FC<UpgradePageProps> = ({ onBack, user }) => {
                                 <div className="flex items-baseline gap-1 mb-1">
                                     <span className="text-sm text-gray-400">R$</span>
                                     <span className={`text-5xl md:text-6xl font-black tracking-tight ${
-                                        plan.popular ? 'text-white drop-shadow-[0_0_30px_rgba(239,68,68,0.5)]' : 
-                                        plan.bestValue ? 'text-white drop-shadow-[0_0_20px_rgba(234,179,8,0.3)]' :
+                                        plan.popular ? 'text-white drop-shadow-[0_0_20px_rgba(244,63,94,0.3)]' : 
+                                        plan.bestValue ? 'text-white drop-shadow-[0_0_15px_rgba(245,158,11,0.2)]' :
                                         'text-gray-200'
                                     }`}>
                                         {Math.floor(plan.price)}
                                     </span>
-                                    <span className={`text-xl font-bold ${plan.popular ? 'text-red-400' : plan.bestValue ? 'text-yellow-400' : 'text-gray-400'}`}>
+                                    <span className={`text-xl font-bold ${plan.popular ? 'text-rose-400' : plan.bestValue ? 'text-amber-400' : 'text-gray-400'}`}>
                                         ,{(plan.price % 1).toFixed(2).substring(2)}
                                     </span>
                                 </div>
                                 <p className="text-sm text-gray-500">
                                     {plan.id === 'monthly' && 'por mês • cancele quando quiser'}
-                                    {plan.id === 'quarterly' && <>apenas <span className="text-white font-bold">R$ {plan.monthlyPrice.toFixed(2).replace('.', ',')}</span>/mês</>}
-                                    {plan.id === 'yearly' && <>apenas <span className="text-yellow-400 font-bold">R$ {plan.monthlyPrice.toFixed(2).replace('.', ',')}</span>/mês</>}
+                                    {plan.id === 'quarterly' && <>3 meses de acesso • <span className="text-white font-medium">R$ {plan.monthlyPrice.toFixed(2).replace('.', ',')}</span>/mês</>}
+                                    {plan.id === 'yearly' && <>apenas <span className="text-amber-400 font-medium">R$ {plan.monthlyPrice.toFixed(2).replace('.', ',')}</span>/mês</>}
                                 </p>
                             </div>
 
@@ -415,10 +415,10 @@ export const UpgradePage: React.FC<UpgradePageProps> = ({ onBack, user }) => {
                                 {proFeatures.slice(0, plan.popular ? 6 : plan.bestValue ? 6 : 4).map((feature, i) => (
                                     <li key={i} className="flex items-center gap-3">
                                         <div className={`p-1 rounded-full ${
-                                            plan.popular ? 'bg-red-500/20' : plan.bestValue ? 'bg-yellow-500/20' : 'bg-green-500/20'
+                                            plan.popular ? 'bg-rose-500/15' : plan.bestValue ? 'bg-amber-500/15' : 'bg-emerald-500/15'
                                         }`}>
                                             <Check size={14} className={
-                                                plan.popular ? 'text-red-400' : plan.bestValue ? 'text-yellow-400' : 'text-green-500'
+                                                plan.popular ? 'text-rose-400' : plan.bestValue ? 'text-amber-400' : 'text-emerald-500'
                                             } />
                                         </div>
                                         <span className="text-sm text-gray-300">{feature.text}</span>
@@ -431,10 +431,10 @@ export const UpgradePage: React.FC<UpgradePageProps> = ({ onBack, user }) => {
                                 onClick={() => handleUpgrade(plan)}
                                 className={`w-full py-4 font-bold rounded-2xl transition-all transform hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2 text-lg ${
                                     plan.popular 
-                                        ? 'bg-gradient-to-r from-red-600 via-rose-600 to-red-600 hover:from-red-500 hover:via-rose-500 hover:to-red-500 text-white shadow-lg shadow-red-900/50 animate-shimmer bg-[length:200%_100%]' 
+                                        ? 'bg-gradient-to-r from-rose-600 via-rose-500 to-rose-600 hover:from-rose-500 hover:via-rose-400 hover:to-rose-500 text-white shadow-md shadow-rose-900/30 animate-shimmer bg-[length:200%_100%]' 
                                         : plan.bestValue
-                                        ? 'bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-black shadow-lg shadow-yellow-900/30'
-                                        : 'bg-white/10 hover:bg-white/20 text-white border border-white/10'
+                                        ? 'bg-gradient-to-r from-amber-500 to-orange-400 hover:from-amber-400 hover:to-orange-300 text-black shadow-md shadow-amber-900/20'
+                                        : 'bg-white/10 hover:bg-white/15 text-white border border-white/10'
                                 }`}
                             >
                                 <Zap size={20} className={plan.popular || plan.bestValue ? 'fill-current' : ''} />
@@ -465,19 +465,19 @@ export const UpgradePage: React.FC<UpgradePageProps> = ({ onBack, user }) => {
                 {/* Comparison Table */}
                 <div className="max-w-3xl mx-auto mb-16">
                     <h2 className="text-2xl md:text-3xl font-bold text-center mb-8">
-                        Por que o <span className="text-red-400">PRO</span> é melhor?
+                        Por que o <span className="text-rose-400">PRO</span> é melhor?
                     </h2>
                     <div className="bg-white/[0.02] border border-white/10 rounded-2xl overflow-hidden">
                         <div className="grid grid-cols-3 bg-white/5 p-4">
                             <div className="text-sm text-gray-400 font-medium">Recurso</div>
                             <div className="text-center text-sm text-gray-400 font-medium">Grátis</div>
-                            <div className="text-center text-sm text-red-400 font-bold">PRO</div>
+                            <div className="text-center text-sm text-rose-400 font-semibold">PRO</div>
                         </div>
                         {freeVsPro.map((row, i) => (
                             <div key={i} className={`grid grid-cols-3 p-4 ${i % 2 === 0 ? 'bg-white/[0.02]' : ''}`}>
                                 <div className="text-sm text-gray-300">{row.feature}</div>
                                 <div className="text-center text-sm text-gray-500">{row.free}</div>
-                                <div className="text-center text-sm text-green-400 font-bold">{row.pro}</div>
+                                <div className="text-center text-sm text-emerald-400 font-medium">{row.pro}</div>
                             </div>
                         ))}
                     </div>
@@ -485,15 +485,15 @@ export const UpgradePage: React.FC<UpgradePageProps> = ({ onBack, user }) => {
 
                 {/* Guarantee */}
                 <div className="max-w-2xl mx-auto mb-16">
-                    <div className="relative bg-gradient-to-r from-green-950/50 to-emerald-950/50 border-2 border-green-500/30 rounded-3xl p-8 text-center overflow-hidden">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/10 rounded-full blur-[60px]"></div>
-                        <Shield size={48} className="text-green-500 mx-auto mb-4" />
+                    <div className="relative bg-gradient-to-r from-emerald-950/40 to-emerald-950/30 border border-emerald-500/25 rounded-3xl p-8 text-center overflow-hidden">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-[60px]"></div>
+                        <Shield size={48} className="text-emerald-500 mx-auto mb-4" />
                         <h3 className="text-2xl font-bold text-white mb-3">Garantia Incondicional de 7 Dias</h3>
                         <p className="text-gray-400 leading-relaxed">
-                            Teste o PRO por 7 dias. Se não ficar <span className="text-white font-semibold">100% satisfeito</span>, 
-                            devolvo <span className="text-green-400 font-bold">todo seu dinheiro</span>. Sem perguntas, sem burocracia.
+                            Teste o PRO por 7 dias. Se não ficar <span className="text-white font-medium">100% satisfeito</span>, 
+                            devolvo <span className="text-emerald-400 font-semibold">todo seu dinheiro</span>. Sem perguntas, sem burocracia.
                         </p>
-                        <div className="mt-4 flex items-center justify-center gap-2 text-sm text-green-400">
+                        <div className="mt-4 flex items-center justify-center gap-2 text-sm text-emerald-400">
                             <CheckCircle2 size={16} />
                             <span>Reembolso em até 24h</span>
                         </div>

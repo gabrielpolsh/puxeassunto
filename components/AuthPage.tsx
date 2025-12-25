@@ -23,16 +23,22 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess, onBack }) =>
 
     try {
       if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
         if (error) throw error;
         
+        // Salvar dados do usuário para Meta CAPI (melhora qualidade de correspondência)
+        if (data.user) {
+          metaService.setUserData(data.user.email || email, data.user.id);
+        }
+        
         // Track Lead - Primeiro login bem sucedido
         metaService.trackEvent({
             eventName: 'Lead',
             emails: [email],
+            externalId: data.user?.id,
             contentName: 'Login Successful',
             contentType: 'user_login'
         });
@@ -46,16 +52,22 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess, onBack }) =>
         if (password.length < 6) {
           throw new Error('A senha deve ter no mínimo 6 caracteres.');
         }
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
         });
         if (error) throw error;
 
+        // Salvar dados do usuário para Meta CAPI (melhora qualidade de correspondência)
+        if (data.user) {
+          metaService.setUserData(data.user.email || email, data.user.id);
+        }
+
         // Track CompleteRegistration
         metaService.trackEvent({
             eventName: 'CompleteRegistration',
             emails: [email],
+            externalId: data.user?.id,
             contentName: 'Sign Up',
             contentType: 'product'
         });

@@ -93,8 +93,13 @@ const AppRouter: React.FC = () => {
         // Clear invalid session
         supabase.auth.signOut();
         setUser(null);
+        metaService.clearUserData();
       } else {
         setUser(session?.user ?? null);
+        // Persist user data for Meta CAPI (improves event matching quality)
+        if (session?.user) {
+          metaService.setUserData(session.user.email, session.user.id);
+        }
       }
       setLoadingSession(false);
     });
@@ -107,11 +112,20 @@ const AppRouter: React.FC = () => {
       
       if (event === 'TOKEN_REFRESHED') {
         setUser(session?.user ?? null);
+        // Update stored user data
+        if (session?.user) {
+          metaService.setUserData(session.user.email, session.user.id);
+        }
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
+        metaService.clearUserData();
         navigate('/');
       } else if (event === 'SIGNED_IN') {
         setUser(session?.user ?? null);
+        // Persist user data for Meta CAPI
+        if (session?.user) {
+          metaService.setUserData(session.user.email, session.user.id);
+        }
       } else {
         setUser(session?.user ?? null);
       }

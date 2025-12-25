@@ -25,6 +25,8 @@ interface MetaEventData {
 // Storage keys for Meta parameters
 const FBC_STORAGE_KEY = 'meta_fbc';
 const FBCLID_STORAGE_KEY = 'meta_fbclid';
+const USER_EMAIL_KEY = 'meta_user_email';
+const USER_ID_KEY = 'meta_user_id';
 
 export const metaService = {
   // Generate a unique Event ID
@@ -141,6 +143,54 @@ export const metaService = {
     }
   },
 
+  // Store user data for better event matching (call this after login/signup)
+  setUserData: (email?: string, userId?: string) => {
+    if (typeof window === 'undefined') return;
+    
+    try {
+      if (email) {
+        localStorage.setItem(USER_EMAIL_KEY, email.toLowerCase().trim());
+        console.log('[Meta] User email stored for event matching');
+      }
+      if (userId) {
+        localStorage.setItem(USER_ID_KEY, userId);
+        console.log('[Meta] User ID stored for event matching');
+      }
+    } catch (e) {
+      console.log('[Meta] Failed to store user data:', e);
+    }
+  },
+
+  // Get stored user email
+  getStoredEmail: (): string | null => {
+    if (typeof window === 'undefined') return null;
+    try {
+      return localStorage.getItem(USER_EMAIL_KEY);
+    } catch (e) {
+      return null;
+    }
+  },
+
+  // Get stored user ID
+  getStoredUserId: (): string | null => {
+    if (typeof window === 'undefined') return null;
+    try {
+      return localStorage.getItem(USER_ID_KEY);
+    } catch (e) {
+      return null;
+    }
+  },
+
+  // Clear user data (call this on logout)
+  clearUserData: () => {
+    if (typeof window === 'undefined') return;
+    try {
+      localStorage.removeItem(USER_EMAIL_KEY);
+      localStorage.removeItem(USER_ID_KEY);
+      console.log('[Meta] User data cleared');
+    } catch (e) {}
+  },
+
   // Cache for client IP (to avoid multiple API calls)
   _cachedClientIp: null as string | null,
   _ipFetchPromise: null as Promise<string | null> | null,
@@ -228,6 +278,7 @@ export const metaService = {
     let userEmails = emails;
     let userId = externalId;
     
+    // 1. Primeiro tenta pegar do usuário logado no Supabase
     if (!userEmails || userEmails.length === 0 || !userId) {
       try {
         const currentUser = await metaService.getCurrentUser();
@@ -238,9 +289,30 @@ export const metaService = {
           if (!userId) {
             userId = currentUser.id;
           }
+          // Salvar os dados para uso futuro
+          if (currentUser.email || currentUser.id) {
+            metaService.setUserData(currentUser.email, currentUser.id);
+          }
         }
       } catch (e) {
         // Ignorar erros ao pegar usuário
+      }
+    }
+    
+    // 2. Se ainda não tiver, tenta pegar do localStorage (persistido de login anterior)
+    if (!userEmails || userEmails.length === 0) {
+      const storedEmail = metaService.getStoredEmail();
+      if (storedEmail) {
+        userEmails = [storedEmail];
+        console.log('[Meta] Using stored email for event matching');
+      }
+    }
+    
+    if (!userId) {
+      const storedUserId = metaService.getStoredUserId();
+      if (storedUserId) {
+        userId = storedUserId;
+        console.log('[Meta] Using stored userId for event matching');
       }
     }
     
