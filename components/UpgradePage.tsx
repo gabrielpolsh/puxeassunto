@@ -193,7 +193,7 @@ export const UpgradePage: React.FC<UpgradePageProps> = ({ onBack, user }) => {
         return () => clearInterval(timer);
     }, []);
 
-    const handleUpgrade = (plan: Plan) => {
+    const handleUpgrade = async (plan: Plan) => {
         metaService.trackEvent({
             eventName: 'InitiateCheckout',
             contentName: `Plano PRO ${plan.name}`,
@@ -201,7 +201,10 @@ export const UpgradePage: React.FC<UpgradePageProps> = ({ onBack, user }) => {
             currency: 'BRL',
             contentType: 'product'
         });
-        window.open(plan.checkoutUrl, '_blank');
+        
+        // Build checkout URL with user email for better conversion + tracking
+        const checkoutUrl = await metaService.buildCheckoutUrl(plan.checkoutUrl);
+        window.open(checkoutUrl, '_blank');
     };
 
     const proFeatures = [

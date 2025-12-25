@@ -191,6 +191,64 @@ export const metaService = {
     } catch (e) {}
   },
 
+  // Build checkout URL with user data (email, fbc) for better tracking and UX
+  buildCheckoutUrl: async (baseUrl: string): Promise<string> => {
+    const url = new URL(baseUrl);
+    
+    // 1. Add email if available (improves checkout conversion + Meta tracking)
+    let email: string | null = null;
+    
+    // Try to get from logged in user
+    try {
+      const currentUser = await metaService.getCurrentUser();
+      if (currentUser?.email) {
+        email = currentUser.email;
+      }
+    } catch (e) {}
+    
+    // Fallback to stored email
+    if (!email) {
+      email = metaService.getStoredEmail();
+    }
+    
+    if (email) {
+      url.searchParams.set('email', email);
+      console.log('[Meta] Checkout URL with email:', email);
+    }
+    
+    // 2. Add fbc if available (for Meta conversion tracking on checkout platform)
+    const fbc = metaService.getFbc();
+    if (fbc) {
+      url.searchParams.set('fbc', fbc);
+      console.log('[Meta] Checkout URL with fbc:', fbc);
+    }
+    
+    // 3. Add fbp if available
+    const fbp = metaService.getCookie('_fbp');
+    if (fbp) {
+      url.searchParams.set('fbp', fbp);
+    }
+    
+    // 4. Add external_id (user id) if available
+    let userId: string | null = null;
+    try {
+      const currentUser = await metaService.getCurrentUser();
+      if (currentUser?.id) {
+        userId = currentUser.id;
+      }
+    } catch (e) {}
+    
+    if (!userId) {
+      userId = metaService.getStoredUserId();
+    }
+    
+    if (userId) {
+      url.searchParams.set('external_id', userId);
+    }
+    
+    return url.toString();
+  },
+
   // Cache for client IP (to avoid multiple API calls)
   _cachedClientIp: null as string | null,
   _ipFetchPromise: null as Promise<string | null> | null,

@@ -390,7 +390,7 @@ export const FacePage: React.FC = () => {
     }
   }, []);
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     metaService.trackEvent({
       eventName: 'InitiateCheckout',
       contentName: 'Plano PRO Ilimitado - Face',
@@ -399,8 +399,9 @@ export const FacePage: React.FC = () => {
       contentType: 'product'
     });
     
-    // Kirvano Checkout Link
-    const checkoutUrl = 'https://pay.kirvano.com/6ba6e6eb-5862-457f-8021-2c2e81ae75f6';
+    // Kirvano Checkout Link - with user email for better conversion + tracking
+    const baseCheckoutUrl = 'https://pay.kirvano.com/6ba6e6eb-5862-457f-8021-2c2e81ae75f6';
+    const checkoutUrl = await metaService.buildCheckoutUrl(baseCheckoutUrl);
     window.open(checkoutUrl, '_blank');
   };
 
