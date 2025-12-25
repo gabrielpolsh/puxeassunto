@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Check, ArrowLeft, Sparkles, MessageCircleHeart, CheckCircle2, Zap, Shield, Clock, Heart, Star, Users, TrendingUp, Lock } from 'lucide-react';
+import { Check, ArrowLeft, Sparkles, MessageCircleHeart, CheckCircle2, Zap, Shield, Clock, Heart, Star, Users, TrendingUp, Lock, Crown } from 'lucide-react';
 import { metaService } from '../services/metaService';
 
 interface UpgradePageProps {
@@ -7,9 +7,61 @@ interface UpgradePageProps {
     user: any;
 }
 
+type PlanType = 'monthly' | 'quarterly' | 'yearly';
+
+interface Plan {
+    id: PlanType;
+    name: string;
+    price: number;
+    originalPrice: number;
+    period: string;
+    monthlyPrice: number;
+    savings: string;
+    checkoutUrl: string;
+    badge?: string;
+    popular?: boolean;
+}
+
+const plans: Plan[] = [
+    {
+        id: 'monthly',
+        name: 'Mensal',
+        price: 15.00,
+        originalPrice: 29.90,
+        period: '/mês',
+        monthlyPrice: 15.00,
+        savings: '50% OFF',
+        checkoutUrl: 'https://pay.kirvano.com/1b352195-0b65-4afa-9a3e-bd58515446e9'
+    },
+    {
+        id: 'quarterly',
+        name: 'Trimestral',
+        price: 39.90,
+        originalPrice: 89.70,
+        period: '/3 meses',
+        monthlyPrice: 13.30,
+        savings: '55% OFF',
+        checkoutUrl: 'https://pay.kirvano.com/003f8e49-5c58-41f5-a122-8715abdf2c02',
+        badge: 'Mais Popular',
+        popular: true
+    },
+    {
+        id: 'yearly',
+        name: 'Anual',
+        price: 97.90,
+        originalPrice: 358.80,
+        period: '/ano',
+        monthlyPrice: 8.16,
+        savings: '73% OFF',
+        checkoutUrl: 'https://pay.kirvano.com/f4254764-ee73-4db6-80fe-4d0dc70233e2',
+        badge: 'Melhor Custo-Benefício'
+    }
+];
+
 export const UpgradePage: React.FC<UpgradePageProps> = ({ onBack, user }) => {
     // Urgency countdown
     const [timeLeft, setTimeLeft] = useState({ hours: 2, minutes: 47, seconds: 33 });
+    const [selectedPlan, setSelectedPlan] = useState<PlanType>('quarterly');
 
     useEffect(() => {
         const timer = setInterval(() => {
@@ -25,21 +77,20 @@ export const UpgradePage: React.FC<UpgradePageProps> = ({ onBack, user }) => {
         return () => clearInterval(timer);
     }, []);
 
-    const handleUpgrade = () => {
+    const handleUpgrade = (plan: Plan) => {
         // Track InitiateCheckout
         metaService.trackEvent({
             eventName: 'InitiateCheckout',
-            contentName: 'Plano PRO Ilimitado',
-            value: 15.00,
+            contentName: `Plano PRO ${plan.name}`,
+            value: plan.price,
             currency: 'BRL',
             contentType: 'product'
         });
         
-        // Kirvano Checkout Link
-        const checkoutUrl = 'https://pay.kirvano.com/1b352195-0b65-4afa-9a3e-bd58515446e9';
-        
-        window.open(checkoutUrl, '_blank');
+        window.open(plan.checkoutUrl, '_blank');
     };
+    
+    const currentPlan = plans.find(p => p.id === selectedPlan)!;
 
     return (
         <div className="min-h-screen bg-[#050505] text-white font-sans selection:bg-rose-500/30 relative overflow-x-hidden">
@@ -107,132 +158,166 @@ export const UpgradePage: React.FC<UpgradePageProps> = ({ onBack, user }) => {
                 </div>
 
                 {/* Pricing Cards Container */}
-                <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto items-start mb-16">
-
-                    {/* Free Plan */}
-                    <div className="order-2 md:order-1 bg-white/[0.02] border border-white/5 rounded-2xl p-6 flex flex-col hover:bg-white/[0.04] transition-all duration-300 md:mt-8 opacity-75">
-                        <div className="mb-6">
-                            <h3 className="text-lg font-bold text-gray-400 mb-2">Plano Grátis</h3>
-                            <div className="flex items-baseline gap-1">
-                                <span className="text-3xl font-bold text-gray-400">R$ 0</span>
-                            </div>
-                            <p className="text-xs text-gray-600 mt-1">Limitado. Para quem só quer testar.</p>
-                        </div>
-
-                        <ul className="space-y-3 mb-6 flex-1">
-                            <li className="flex items-start gap-3 text-gray-500">
-                                <Check size={16} className="text-gray-700 mt-0.5 shrink-0" />
-                                <span className="text-xs">Apenas 5 análises por dia</span>
-                            </li>
-                            <li className="flex items-start gap-3 text-gray-500">
-                                <Check size={16} className="text-gray-700 mt-0.5 shrink-0" />
-                                <span className="text-xs">Respostas básicas</span>
-                            </li>
-                            <li className="flex items-start gap-3 text-gray-500">
-                                <Lock size={16} className="text-gray-700 mt-0.5 shrink-0" />
-                                <span className="text-xs line-through">Tons exclusivos bloqueados</span>
-                            </li>
-                            <li className="flex items-start gap-3 text-gray-500">
-                                <Lock size={16} className="text-gray-700 mt-0.5 shrink-0" />
-                                <span className="text-xs line-through">Sem histórico</span>
-                            </li>
-                        </ul>
-
-                        <button
-                            onClick={onBack}
-                            className="w-full py-3 bg-white/5 hover:bg-white/10 text-gray-500 font-bold rounded-xl transition-all text-xs"
-                        >
-                            Continuar Limitado
-                        </button>
+                <div className="max-w-5xl mx-auto mb-12">
+                    {/* Plan Selector Tabs */}
+                    <div className="flex justify-center gap-2 mb-8">
+                        {plans.map((plan) => (
+                            <button
+                                key={plan.id}
+                                onClick={() => setSelectedPlan(plan.id)}
+                                className={`relative px-4 py-2 rounded-xl font-semibold text-sm transition-all ${
+                                    selectedPlan === plan.id
+                                        ? 'bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-lg shadow-red-900/30'
+                                        : 'bg-white/5 text-gray-400 hover:bg-white/10'
+                                }`}
+                            >
+                                {plan.name}
+                                {plan.popular && (
+                                    <span className="absolute -top-2 -right-2 bg-yellow-500 text-black text-[10px] font-bold px-1.5 py-0.5 rounded">
+                                        ⭐
+                                    </span>
+                                )}
+                            </button>
+                        ))}
                     </div>
 
-                    {/* PRO Plan - Highlighted */}
-                    <div className="order-1 md:order-2 relative bg-gradient-to-b from-[#0f0f0f] to-[#0a0a0a] border-2 border-red-500/50 rounded-3xl p-8 flex flex-col shadow-2xl shadow-red-900/30 transform md:-translate-y-4 z-10 overflow-hidden group">
-                        {/* Gradient Glow */}
-                        <div className="absolute -top-[100px] -right-[100px] w-[200px] h-[200px] bg-red-600/30 blur-[80px] group-hover:bg-red-600/40 transition-all"></div>
-                        
-                        {/* Best Value Badge */}
-                        <div className="absolute -top-px left-1/2 -translate-x-1/2 bg-gradient-to-r from-red-600 to-rose-600 px-6 py-1.5 rounded-b-xl">
-                            <span className="text-xs font-bold text-white uppercase tracking-wider">Mais Popular</span>
-                        </div>
-
-                        <div className="mb-4 relative mt-4">
-                            <div className="flex items-center gap-2 mb-4">
-                                <h3 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-red-400 to-rose-400 bg-clip-text text-transparent shrink-0">
-                                    PRO ILIMITADO
-                                </h3>
-                            </div>
-                            
-                            <div className="flex flex-col mb-2">
-                                <div className="flex items-center gap-3 mb-1">
-                                    <span className="text-lg text-gray-500 line-through">R$ 29,90</span>
-                                    <span className="bg-green-500/20 text-green-400 text-xs font-bold px-2 py-0.5 rounded">-50%</span>
-                                </div>
+                    <div className="grid md:grid-cols-2 gap-6 items-start">
+                        {/* Free Plan */}
+                        <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-6 flex flex-col hover:bg-white/[0.04] transition-all duration-300 md:mt-8 opacity-75">
+                            <div className="mb-6">
+                                <h3 className="text-lg font-bold text-gray-400 mb-2">Plano Grátis</h3>
                                 <div className="flex items-baseline gap-1">
-                                    <span className="text-6xl font-extrabold text-white tracking-tighter drop-shadow-[0_0_20px_rgba(239,68,68,0.4)]">
-                                        R$ 15
-                                    </span>
-                                    <span className="text-xl font-bold text-red-400">,00</span>
+                                    <span className="text-3xl font-bold text-gray-400">R$ 0</span>
                                 </div>
-                                <span className="text-sm text-gray-500 mt-1">por mês • cancele quando quiser</span>
+                                <p className="text-xs text-gray-600 mt-1">Limitado. Para quem só quer testar.</p>
                             </div>
+
+                            <ul className="space-y-3 mb-6 flex-1">
+                                <li className="flex items-start gap-3 text-gray-500">
+                                    <Check size={16} className="text-gray-700 mt-0.5 shrink-0" />
+                                    <span className="text-xs">Apenas 5 análises por dia</span>
+                                </li>
+                                <li className="flex items-start gap-3 text-gray-500">
+                                    <Check size={16} className="text-gray-700 mt-0.5 shrink-0" />
+                                    <span className="text-xs">Respostas básicas</span>
+                                </li>
+                                <li className="flex items-start gap-3 text-gray-500">
+                                    <Lock size={16} className="text-gray-700 mt-0.5 shrink-0" />
+                                    <span className="text-xs line-through">Tons exclusivos bloqueados</span>
+                                </li>
+                                <li className="flex items-start gap-3 text-gray-500">
+                                    <Lock size={16} className="text-gray-700 mt-0.5 shrink-0" />
+                                    <span className="text-xs line-through">Sem histórico</span>
+                                </li>
+                            </ul>
+
+                            <button
+                                onClick={onBack}
+                                className="w-full py-3 bg-white/5 hover:bg-white/10 text-gray-500 font-bold rounded-xl transition-all text-xs"
+                            >
+                                Continuar Limitado
+                            </button>
                         </div>
 
-                        <ul className="space-y-3 mb-8 flex-1 relative">
-                            <li className="flex items-start gap-3 text-gray-200">
-                                <div className="p-0.5 bg-red-500/20 rounded-full">
-                                    <Check size={16} className="text-red-400" />
+                        {/* Selected PRO Plan */}
+                        <div className="relative bg-gradient-to-b from-[#0f0f0f] to-[#0a0a0a] border-2 border-red-500/50 rounded-3xl p-8 flex flex-col shadow-2xl shadow-red-900/30 transform md:-translate-y-4 z-10 overflow-hidden group">
+                            {/* Gradient Glow */}
+                            <div className="absolute -top-[100px] -right-[100px] w-[200px] h-[200px] bg-red-600/30 blur-[80px] group-hover:bg-red-600/40 transition-all"></div>
+                            
+                            {/* Badge */}
+                            {currentPlan.badge && (
+                                <div className="absolute -top-px left-1/2 -translate-x-1/2 bg-gradient-to-r from-red-600 to-rose-600 px-6 py-1.5 rounded-b-xl">
+                                    <span className="text-xs font-bold text-white uppercase tracking-wider">{currentPlan.badge}</span>
                                 </div>
-                                <span className="text-sm"><span className="text-white font-semibold">Análises ILIMITADAS</span> - sem restrições</span>
-                            </li>
-                            <li className="flex items-start gap-3 text-gray-200">
-                                <div className="p-0.5 bg-red-500/20 rounded-full">
-                                    <Check size={16} className="text-red-400" />
+                            )}
+                            {!currentPlan.badge && (
+                                <div className="absolute -top-px left-1/2 -translate-x-1/2 bg-gradient-to-r from-red-600 to-rose-600 px-6 py-1.5 rounded-b-xl">
+                                    <span className="text-xs font-bold text-white uppercase tracking-wider">PRO</span>
                                 </div>
-                                <span className="text-sm"><span className="text-white font-semibold">Cantadas ILIMITADAS</span> - seja criativo</span>
-                            </li>
-                            <li className="flex items-start gap-3 text-gray-200">
-                                <div className="p-0.5 bg-red-500/20 rounded-full">
-                                    <Check size={16} className="text-red-400" />
-                                </div>
-                                <span className="text-sm"><span className="text-white font-semibold">Tons Exclusivos</span> - Sedutor, Ousado, Misterioso...</span>
-                            </li>
-                            <li className="flex items-start gap-3 text-gray-200">
-                                <div className="p-0.5 bg-red-500/20 rounded-full">
-                                    <Check size={16} className="text-red-400" />
-                                </div>
-                                <span className="text-sm"><span className="text-white font-semibold">IA mais inteligente</span> - respostas melhores</span>
-                            </li>
-                            <li className="flex items-start gap-3 text-gray-200">
-                                <div className="p-0.5 bg-red-500/20 rounded-full">
-                                    <Check size={16} className="text-red-400" />
-                                </div>
-                                <span className="text-sm"><span className="text-white font-semibold">Histórico completo</span> - reveja conversas</span>
-                            </li>
-                            <li className="flex items-start gap-3 text-gray-200">
-                                <div className="p-0.5 bg-red-500/20 rounded-full">
-                                    <Check size={16} className="text-red-400" />
-                                </div>
-                                <span className="text-sm"><span className="text-white font-semibold">Suporte VIP</span> - resposta em até 24h</span>
-                            </li>
-                        </ul>
+                            )}
 
-                        <button
-                            onClick={handleUpgrade}
-                            className="relative w-full py-4 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-bold rounded-xl shadow-lg shadow-red-900/50 transition-all transform hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2 text-lg"
-                        >
-                            <Zap size={20} className="fill-white/30" />
-                            Quero Ser PRO Agora
-                        </button>
-                        
-                        <div className="flex items-center justify-center gap-4 mt-4">
-                            <div className="flex items-center gap-1 text-xs text-gray-500">
-                                <Shield size={12} className="text-green-500" />
-                                <span>Compra segura</span>
+                            <div className="mb-4 relative mt-4">
+                                <div className="flex items-center gap-2 mb-4">
+                                    <h3 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-red-400 to-rose-400 bg-clip-text text-transparent shrink-0">
+                                        PRO {currentPlan.name.toUpperCase()}
+                                    </h3>
+                                </div>
+                                
+                                <div className="flex flex-col mb-2">
+                                    <div className="flex items-center gap-3 mb-1">
+                                        <span className="text-lg text-gray-500 line-through">R$ {currentPlan.originalPrice.toFixed(2).replace('.', ',')}</span>
+                                        <span className="bg-green-500/20 text-green-400 text-xs font-bold px-2 py-0.5 rounded">{currentPlan.savings}</span>
+                                    </div>
+                                    <div className="flex items-baseline gap-1">
+                                        <span className="text-6xl font-extrabold text-white tracking-tighter drop-shadow-[0_0_20px_rgba(239,68,68,0.4)]">
+                                            R$ {Math.floor(currentPlan.price)}
+                                        </span>
+                                        <span className="text-xl font-bold text-red-400">,{(currentPlan.price % 1).toFixed(2).substring(2)}</span>
+                                    </div>
+                                    <span className="text-sm text-gray-500 mt-1">
+                                        {currentPlan.id === 'monthly' && 'por mês • cancele quando quiser'}
+                                        {currentPlan.id === 'quarterly' && `apenas R$ ${currentPlan.monthlyPrice.toFixed(2).replace('.', ',')}/mês • cancele quando quiser`}
+                                        {currentPlan.id === 'yearly' && `apenas R$ ${currentPlan.monthlyPrice.toFixed(2).replace('.', ',')}/mês • melhor economia`}
+                                    </span>
+                                </div>
                             </div>
-                            <div className="flex items-center gap-1 text-xs text-gray-500">
-                                <CheckCircle2 size={12} className="text-green-500" />
-                                <span>Acesso imediato</span>
+
+                            <ul className="space-y-3 mb-8 flex-1 relative">
+                                <li className="flex items-start gap-3 text-gray-200">
+                                    <div className="p-0.5 bg-red-500/20 rounded-full">
+                                        <Check size={16} className="text-red-400" />
+                                    </div>
+                                    <span className="text-sm"><span className="text-white font-semibold">Análises ILIMITADAS</span> - sem restrições</span>
+                                </li>
+                                <li className="flex items-start gap-3 text-gray-200">
+                                    <div className="p-0.5 bg-red-500/20 rounded-full">
+                                        <Check size={16} className="text-red-400" />
+                                    </div>
+                                    <span className="text-sm"><span className="text-white font-semibold">Cantadas ILIMITADAS</span> - seja criativo</span>
+                                </li>
+                                <li className="flex items-start gap-3 text-gray-200">
+                                    <div className="p-0.5 bg-red-500/20 rounded-full">
+                                        <Check size={16} className="text-red-400" />
+                                    </div>
+                                    <span className="text-sm"><span className="text-white font-semibold">Tons Exclusivos</span> - Sedutor, Ousado, Misterioso...</span>
+                                </li>
+                                <li className="flex items-start gap-3 text-gray-200">
+                                    <div className="p-0.5 bg-red-500/20 rounded-full">
+                                        <Check size={16} className="text-red-400" />
+                                    </div>
+                                    <span className="text-sm"><span className="text-white font-semibold">IA mais inteligente</span> - respostas melhores</span>
+                                </li>
+                                <li className="flex items-start gap-3 text-gray-200">
+                                    <div className="p-0.5 bg-red-500/20 rounded-full">
+                                        <Check size={16} className="text-red-400" />
+                                    </div>
+                                    <span className="text-sm"><span className="text-white font-semibold">Histórico completo</span> - reveja conversas</span>
+                                </li>
+                                <li className="flex items-start gap-3 text-gray-200">
+                                    <div className="p-0.5 bg-red-500/20 rounded-full">
+                                        <Check size={16} className="text-red-400" />
+                                    </div>
+                                    <span className="text-sm"><span className="text-white font-semibold">Suporte VIP</span> - resposta em até 24h</span>
+                                </li>
+                            </ul>
+
+                            <button
+                                onClick={() => handleUpgrade(currentPlan)}
+                                className="relative w-full py-4 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-bold rounded-xl shadow-lg shadow-red-900/50 transition-all transform hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2 text-lg"
+                            >
+                                <Zap size={20} className="fill-white/30" />
+                                Quero Ser PRO Agora
+                            </button>
+                            
+                            <div className="flex items-center justify-center gap-4 mt-4">
+                                <div className="flex items-center gap-1 text-xs text-gray-500">
+                                    <Shield size={12} className="text-green-500" />
+                                    <span>Compra segura</span>
+                                </div>
+                                <div className="flex items-center gap-1 text-xs text-gray-500">
+                                    <CheckCircle2 size={12} className="text-green-500" />
+                                    <span>Acesso imediato</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -296,14 +381,14 @@ export const UpgradePage: React.FC<UpgradePageProps> = ({ onBack, user }) => {
                 {/* Final CTA */}
                 <div className="max-w-md mx-auto text-center mb-12">
                     <button
-                        onClick={handleUpgrade}
+                        onClick={() => handleUpgrade(currentPlan)}
                         className="w-full py-4 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-bold rounded-xl shadow-lg shadow-red-900/50 transition-all transform hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2 text-lg mb-4"
                     >
                         <Heart size={20} className="fill-white/30" />
-                        Desbloquear PRO por R$ 15,00
+                        Desbloquear PRO {currentPlan.name} por R$ {currentPlan.price.toFixed(2).replace('.', ',')}
                     </button>
                     <p className="text-xs text-red-500 font-bold mb-4 animate-pulse">
-                        ⚠️ Restam apenas 12 vagas com 50% de desconto
+                        ⚠️ Restam apenas 12 vagas com desconto especial
                     </p>
                     <p className="text-xs text-gray-600">
                         Junte-se a 2.847+ pessoas que nunca mais ficaram no vácuo
