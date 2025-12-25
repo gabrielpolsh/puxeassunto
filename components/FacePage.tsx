@@ -391,12 +391,6 @@ export const FacePage: React.FC = () => {
   }, []);
 
   const handleCheckout = () => {
-    // Build checkout URL with user email FIRST (sync) - before any async operation
-    // This prevents popup blockers from blocking the window.open
-    const baseCheckoutUrl = 'https://pay.kirvano.com/6ba6e6eb-5862-457f-8021-2c2e81ae75f6';
-    const checkoutUrl = metaService.buildCheckoutUrl(baseCheckoutUrl);
-    
-    // Track event (async, but we don't wait for it)
     metaService.trackEvent({
       eventName: 'InitiateCheckout',
       contentName: 'Plano PRO Ilimitado - Face',
@@ -405,7 +399,8 @@ export const FacePage: React.FC = () => {
       contentType: 'product'
     });
     
-    // Open checkout immediately (sync) to avoid popup blocker
+    // Kirvano Checkout Link
+    const checkoutUrl = 'https://pay.kirvano.com/6ba6e6eb-5862-457f-8021-2c2e81ae75f6';
     window.open(checkoutUrl, '_blank');
   };
 
