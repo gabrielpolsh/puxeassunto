@@ -23,11 +23,56 @@ serve(async (req) => {
   try {
     const { event_name, event_time, user_data, custom_data, event_source_url, action_source, event_id } = await req.json()
     
-    // Capturar IP real do cliente (atraves de headers do Cloudflare/proxy)
-    const clientIp = req.headers.get('cf-connecting-ip') || 
-                     req.headers.get('x-forwarded-for')?.split(',')[0] || 
-                     req.headers.get('x-real-ip') ||
-                     'unknown';
+    // Capturar IP real do cliente - Priorizar IPv6
+    // Ordem de prioridade para obter o melhor IP disponível
+    const getClientIp = (): string => {
+      // 1. IP enviado pelo cliente (pode ser IPv6 detectado no frontend)
+      if (user_data?.client_ip_address) {
+        return user_data.client_ip_address;
+      }
+      
+      // 2. Header CF-Connecting-IPv6 (Cloudflare IPv6 específico)
+      const cfIpv6 = req.headers.get('cf-connecting-ipv6');
+      if (cfIpv6) return cfIpv6;
+      
+      // 3. CF-Connecting-IP (Cloudflare - pode ser IPv4 ou IPv6)
+      const cfIp = req.headers.get('cf-connecting-ip');
+      if (cfIp) return cfIp;
+      
+      // 4. X-Forwarded-For (pode conter múltiplos IPs, pegar o primeiro)
+      const xForwardedFor = req.headers.get('x-forwarded-for');
+      if (xForwardedFor) {
+        const ips = xForwardedFor.split(',').map(ip => ip.trim());
+        // Priorizar IPv6 se houver
+        const ipv6 = ips.find(ip => ip.includes(':'));
+        if (ipv6) return ipv6;
+        return ips[0];
+      }
+      
+      // 5. X-Real-IP
+      const xRealIp = req.headers.get('x-real-ip');
+      if (xRealIp) return xRealIp;
+      
+      // 6. True-Client-IP (Akamai, Cloudflare Enterprise)
+      const trueClientIp = req.headers.get('true-client-ip');
+      if (trueClientIp) return trueClientIp;
+      
+      return 'unknown';
+    };
+    
+    const clientIp = getClientIp();
+    
+    // Log para debug do IP capturado
+    console.log('[Meta CAPI] IP Headers:', {
+      'cf-connecting-ip': req.headers.get('cf-connecting-ip'),
+      'cf-connecting-ipv6': req.headers.get('cf-connecting-ipv6'),
+      'x-forwarded-for': req.headers.get('x-forwarded-for'),
+      'x-real-ip': req.headers.get('x-real-ip'),
+      'true-client-ip': req.headers.get('true-client-ip'),
+      'client_provided': user_data?.client_ip_address,
+      'final_ip': clientIp,
+      'is_ipv6': clientIp.includes(':')
+    });
 
     const PIXEL_ID = '1770822433821202';
     const ACCESS_TOKEN = 'EAAOMFb4hzEIBQLuZBhM25lOZAm81eK5rkRuodxyVbuZCiwSwZBOZBFnTdqiJlVZBZBruPU0fuoVfHpxtqZANq55jBfmD1zqRTRcsbHv8UkII6tbL8Sp1pPhS59UzUZAEblLHDBsvSh2zRaIgU9AxdXxPffAdy6W5zmNuTqBJ2COjBAlNu8YyMHKt3ykwLpNYwewZDZD';

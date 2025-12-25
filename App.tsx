@@ -83,6 +83,9 @@ const AppRouter: React.FC = () => {
     // Initialize Meta fbc parameter capture (captures fbclid from URL)
     metaService.initializeFbc();
     
+    // Pre-fetch client IP for Meta CAPI (preferably IPv6)
+    metaService.getClientIp();
+    
     // Check active session
     supabase.auth.getSession().then(({ data: { session }, error }) => {
       if (error) {

@@ -141,6 +141,71 @@ export const metaService = {
     }
   },
 
+  // Cache for client IP (to avoid multiple API calls)
+  _cachedClientIp: null as string | null,
+  _ipFetchPromise: null as Promise<string | null> | null,
+
+  // Get client IP address (preferably IPv6)
+  // Uses external API to detect the user's real IP
+  getClientIp: async (): Promise<string | null> => {
+    // Return cached IP if available
+    if (metaService._cachedClientIp) {
+      return metaService._cachedClientIp;
+    }
+
+    // If already fetching, wait for that promise
+    if (metaService._ipFetchPromise) {
+      return metaService._ipFetchPromise;
+    }
+
+    // Start fetching IP
+    metaService._ipFetchPromise = (async () => {
+      try {
+        // Try multiple services to get IPv6
+        // 1. Try ipify (supports IPv6)
+        const response = await fetch('https://api64.ipify.org?format=json', {
+          signal: AbortSignal.timeout(3000) // 3 second timeout
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.ip) {
+            metaService._cachedClientIp = data.ip;
+            console.log('[Meta] Client IP detected:', data.ip, 'IPv6:', data.ip.includes(':'));
+            return data.ip;
+          }
+        }
+      } catch (e) {
+        console.log('[Meta] Failed to get client IP from ipify:', e);
+      }
+
+      try {
+        // 2. Fallback to cloudflare trace
+        const cfResponse = await fetch('https://www.cloudflare.com/cdn-cgi/trace', {
+          signal: AbortSignal.timeout(3000)
+        });
+        
+        if (cfResponse.ok) {
+          const text = await cfResponse.text();
+          const ipMatch = text.match(/ip=([^\n]+)/);
+          if (ipMatch && ipMatch[1]) {
+            metaService._cachedClientIp = ipMatch[1];
+            console.log('[Meta] Client IP detected (CF):', ipMatch[1], 'IPv6:', ipMatch[1].includes(':'));
+            return ipMatch[1];
+          }
+        }
+      } catch (e) {
+        console.log('[Meta] Failed to get client IP from Cloudflare:', e);
+      }
+
+      return null;
+    })();
+
+    const result = await metaService._ipFetchPromise;
+    metaService._ipFetchPromise = null;
+    return result;
+  },
+
   // Track event
   trackEvent: async ({
     eventName,
@@ -221,6 +286,17 @@ export const metaService = {
       const userData: any = {
         client_user_agent: navigator.userAgent,
       };
+
+      // Try to get client IP (preferably IPv6) for better matching
+      try {
+        const clientIp = await metaService.getClientIp();
+        if (clientIp) {
+          userData.client_ip_address = clientIp;
+          console.log(`[Meta CAPI] Sending IP for ${eventName}:`, clientIp, 'IPv6:', clientIp.includes(':'));
+        }
+      } catch (e) {
+        console.log('[Meta CAPI] Could not get client IP:', e);
+      }
       
       // Só adicionar fbp/fbc se existirem
       if (fbp) userData.fbp = fbp;
