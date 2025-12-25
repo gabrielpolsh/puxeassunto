@@ -13,7 +13,7 @@ import { ThankYouPage } from './components/ThankYouPage';
 import { ThankYouPage2 } from './components/ThankYouPage2';
 import { LegalPage } from './components/LegalPage';
 import { FacePage } from './components/FacePage';
-import { PuxarAssuntoPage, FlertePage, ConversasPage } from './components/seo';
+import { PuxarAssuntoPage, FlertePage, ConversasPage, BlogIndexPage, CantadasPage, TinderDicasPage, RespostasWhatsAppPage } from './components/seo';
 import { WhatsAppButton } from './components/WhatsAppButton';
 import { supabase } from './lib/supabase';
 import { metaService } from './services/metaService';
@@ -212,16 +212,32 @@ const AppRouter: React.FC = () => {
 
         {/* SEO Blog Pages */}
         <Route
+          path="/blog"
+          element={<BlogIndexPage onBack={() => navigate('/')} onAction={handleMainAction} />}
+        />
+        <Route
           path="/blog/puxar-assunto"
-          element={<PuxarAssuntoPage onBack={() => navigate('/')} onAction={handleMainAction} />}
+          element={<PuxarAssuntoPage onBack={() => navigate('/blog')} onAction={handleMainAction} />}
         />
         <Route
           path="/blog/flerte"
-          element={<FlertePage onBack={() => navigate('/')} onAction={handleMainAction} />}
+          element={<FlertePage onBack={() => navigate('/blog')} onAction={handleMainAction} />}
         />
         <Route
           path="/blog/conversas"
-          element={<ConversasPage onBack={() => navigate('/')} onAction={handleMainAction} />}
+          element={<ConversasPage onBack={() => navigate('/blog')} onAction={handleMainAction} />}
+        />
+        <Route
+          path="/blog/cantadas"
+          element={<CantadasPage onBack={() => navigate('/blog')} onAction={handleMainAction} />}
+        />
+        <Route
+          path="/blog/tinder-dicas"
+          element={<TinderDicasPage onBack={() => navigate('/blog')} onAction={handleMainAction} />}
+        />
+        <Route
+          path="/blog/respostas-whatsapp"
+          element={<RespostasWhatsAppPage onBack={() => navigate('/blog')} onAction={handleMainAction} />}
         />
 
         {/* Redirect any unknown routes to landing */}

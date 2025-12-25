@@ -20,7 +20,12 @@ export const Footer: React.FC = () => {
 
         {/* SEO Blog Links */}
         <div className="pt-6 border-t border-white/5">
-          <p className="text-gray-600 text-xs mb-3">Aprenda mais:</p>
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-gray-600 text-xs">Aprenda mais:</p>
+            <Link to="/blog" className="text-xs text-rose-400 hover:text-rose-300 transition-colors">
+              Ver todos os artigos →
+            </Link>
+          </div>
           <div className="flex flex-wrap gap-4 text-xs">
             <Link to="/blog/puxar-assunto" className="hover:text-rose-400 transition-colors">
               Como Puxar Assunto
@@ -30,6 +35,15 @@ export const Footer: React.FC = () => {
             </Link>
             <Link to="/blog/conversas" className="hover:text-rose-400 transition-colors">
               Conversas Interessantes
+            </Link>
+            <Link to="/blog/cantadas" className="hover:text-rose-400 transition-colors">
+              Cantadas Criativas
+            </Link>
+            <Link to="/blog/tinder-dicas" className="hover:text-rose-400 transition-colors">
+              Dicas de Tinder
+            </Link>
+            <Link to="/blog/respostas-whatsapp" className="hover:text-rose-400 transition-colors">
+              Respostas WhatsApp
             </Link>
           </div>
         </div>

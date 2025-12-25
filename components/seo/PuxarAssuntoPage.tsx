@@ -2,6 +2,7 @@ import React from 'react';
 import { ArrowLeft, MessageCircle, Lightbulb, Sparkles, Heart, Zap, CheckCircle, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Footer } from '../Footer';
+import { SEOHead } from './SEOHead';
 
 interface PuxarAssuntoPageProps {
   onBack: () => void;
@@ -61,6 +62,16 @@ export const PuxarAssuntoPage: React.FC<PuxarAssuntoPageProps> = ({ onBack, onAc
 
   return (
     <div className="min-h-screen bg-[#050505] text-white font-sans selection:bg-rose-500/30 relative overflow-hidden">
+      <SEOHead
+        title="Como Puxar Assunto: 10 Dicas para Nunca Mais Travar na Conversa | Puxe Assunto"
+        description="Aprenda como puxar assunto no WhatsApp, Tinder e Instagram. Técnicas comprovadas para iniciar conversas interessantes, evitar o 'oi, tudo bem?' e criar conexões genuínas."
+        keywords="como puxar assunto, puxar assunto com crush, como iniciar conversa, o que falar no whatsapp, como puxar papo, assunto para conversar, como começar uma conversa, dicas para puxar assunto"
+        canonicalUrl="https://puxeassunto.com/blog/puxar-assunto"
+        ogType="article"
+        articlePublishedTime="2025-01-01T00:00:00Z"
+        articleModifiedTime="2025-12-23T00:00:00Z"
+      />
+      
       {/* Background Effects */}
       <div className="fixed top-[-10%] left-[-10%] w-[50%] h-[50%] bg-rose-600/10 rounded-full blur-[150px] pointer-events-none z-0" />
       <div className="fixed bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-red-600/10 rounded-full blur-[150px] pointer-events-none z-0" />

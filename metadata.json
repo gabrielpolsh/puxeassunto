@@ -1,5 +1,9 @@
 {
   "name": "Puxe Assunto",
-  "description": "Never run out of things to say. AI-powered chat assistant.",
+  "description": "IA que analisa prints de conversas e gera respostas inteligentes. Nunca mais fique sem assunto!",
+  "url": "https://puxeassunto.com",
+  "author": "Puxe Assunto",
+  "language": "pt-BR",
+  "keywords": ["puxar assunto", "conversas", "ia", "respostas", "chat"],
   "requestFramePermissions": []
 }

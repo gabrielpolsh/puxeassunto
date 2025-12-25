@@ -28,6 +28,15 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess, onBack }) =>
           password,
         });
         if (error) throw error;
+        
+        // Track Lead - Primeiro login bem sucedido
+        metaService.trackEvent({
+            eventName: 'Lead',
+            emails: [email],
+            contentName: 'Login Successful',
+            contentType: 'user_login'
+        });
+        
         onLoginSuccess();
       } else {
         // Validação de confirmação de senha no cadastro

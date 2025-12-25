@@ -4,6 +4,7 @@ import { crypto } from "https://deno.land/std@0.168.0/crypto/mod.ts";
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
 async function sha256(message: string) {
@@ -16,11 +17,17 @@ async function sha256(message: string) {
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response('ok', { headers: corsHeaders, status: 200 })
   }
 
   try {
     const { event_name, event_time, user_data, custom_data, event_source_url, action_source, event_id } = await req.json()
+    
+    // Capturar IP real do cliente (atraves de headers do Cloudflare/proxy)
+    const clientIp = req.headers.get('cf-connecting-ip') || 
+                     req.headers.get('x-forwarded-for')?.split(',')[0] || 
+                     req.headers.get('x-real-ip') ||
+                     'unknown';
 
     const PIXEL_ID = '1770822433821202';
     const ACCESS_TOKEN = 'EAAOMFb4hzEIBQLuZBhM25lOZAm81eK5rkRuodxyVbuZCiwSwZBOZBFnTdqiJlVZBZBruPU0fuoVfHpxtqZANq55jBfmD1zqRTRcsbHv8UkII6tbL8Sp1pPhS59UzUZAEblLHDBsvSh2zRaIgU9AxdXxPffAdy6W5zmNuTqBJ2COjBAlNu8YyMHKt3ykwLpNYwewZDZD';
@@ -53,11 +60,43 @@ serve(async (req) => {
         
         // Copy other fields
         if (user_data.client_user_agent) hashedUserData.client_user_agent = user_data.client_user_agent;
-        if (user_data.client_ip_address) hashedUserData.client_ip_address = user_data.client_ip_address;
         if (user_data.fbc) hashedUserData.fbc = user_data.fbc;
         if (user_data.fbp) hashedUserData.fbp = user_data.fbp;
-        if (user_data.fn) hashedUserData.fn = user_data.fn; // First name (should be hashed if sent, but keeping simple for now)
-        if (user_data.ln) hashedUserData.ln = user_data.ln; // Last name
+        if (user_data.fn) hashedUserData.fn = user_data.fn;
+        if (user_data.ln) hashedUserData.ln = user_data.ln;
+        
+        // External ID deve ser hasheado
+        if (user_data.external_id) {
+          if (user_data.external_id.match(/^[a-f0-9]{64}$/)) {
+            hashedUserData.external_id = user_data.external_id;
+          } else {
+            hashedUserData.external_id = await sha256(user_data.external_id.toLowerCase().trim());
+          }
+        }
+    }
+    
+    // SEMPRE adicionar IP do cliente (obrigatorio pelo Facebook)
+    if (clientIp && clientIp !== 'unknown') {
+      hashedUserData.client_ip_address = clientIp;
+    }
+    
+    // Validar se temos dados minimos para identificacao
+    const hasMinimumIdentification = 
+      hashedUserData.fbp || 
+      hashedUserData.fbc || 
+      hashedUserData.em?.length > 0 || 
+      hashedUserData.ph?.length > 0 ||
+      hashedUserData.external_id;
+    
+    if (!hasMinimumIdentification) {
+      console.warn('Evento ignorado: dados insuficientes para identificacao do usuario');
+      return new Response(JSON.stringify({ 
+        warning: 'Event skipped - insufficient user identification data',
+        events_received: 0 
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      });
     }
 
     const payload = {

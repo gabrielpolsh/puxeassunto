@@ -2,6 +2,7 @@ import React from 'react';
 import { ArrowLeft, MessageSquare, Users, Sparkles, Brain, Lightbulb, Target, ArrowRight, CheckCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Footer } from '../Footer';
+import { SEOHead } from './SEOHead';
 
 interface ConversasPageProps {
   onBack: () => void;
@@ -110,6 +111,16 @@ export const ConversasPage: React.FC<ConversasPageProps> = ({ onBack, onAction }
 
   return (
     <div className="min-h-screen bg-[#050505] text-white font-sans selection:bg-rose-500/30 relative overflow-hidden">
+      <SEOHead
+        title="Como Ter Conversas Interessantes: Guia Definitivo | Puxe Assunto"
+        description="Domine a arte de manter conversas que fluem naturalmente. Aprenda os 4 pilares, técnicas de fluxo, 50+ perguntas para conversar e nunca mais deixe a conversa morrer."
+        keywords="como ter conversas interessantes, assuntos para conversar, manter conversa, conversa fluir, perguntas para conhecer alguém, técnicas de conversa, como não deixar conversa morrer"
+        canonicalUrl="https://puxeassunto.com/blog/conversas"
+        ogType="article"
+        articlePublishedTime="2025-01-01T00:00:00Z"
+        articleModifiedTime="2025-12-23T00:00:00Z"
+      />
+      
       {/* Background Effects */}
       <div className="fixed top-[-10%] left-[20%] w-[40%] h-[40%] bg-blue-600/10 rounded-full blur-[150px] pointer-events-none z-0" />
       <div className="fixed bottom-[-10%] right-[10%] w-[50%] h-[50%] bg-purple-600/10 rounded-full blur-[150px] pointer-events-none z-0" />

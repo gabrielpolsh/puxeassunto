@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Check, ArrowLeft, Sparkles, MessageCircleHeart, CheckCircle2, Zap, Shield, Clock, Heart, Star, Users, TrendingUp, Lock, Crown } from 'lucide-react';
+import { 
+    Check, ArrowLeft, Zap, Shield, Clock, Heart, Star, Users, Lock, 
+    CheckCircle2, Crown, Sparkles, TrendingUp, MessageCircle, X,
+    ChevronRight, Gift, Flame, BadgeCheck, Timer, CreditCard
+} from 'lucide-react';
 import { metaService } from '../services/metaService';
+import { ExitIntentPopup } from './ExitIntentPopup';
 
 interface UpgradePageProps {
     onBack: () => void;
@@ -17,9 +22,11 @@ interface Plan {
     period: string;
     monthlyPrice: number;
     savings: string;
+    savingsPercent: number;
     checkoutUrl: string;
     badge?: string;
     popular?: boolean;
+    bestValue?: boolean;
 }
 
 const plans: Plan[] = [
@@ -31,6 +38,7 @@ const plans: Plan[] = [
         period: '/mês',
         monthlyPrice: 15.00,
         savings: '50% OFF',
+        savingsPercent: 50,
         checkoutUrl: 'https://pay.kirvano.com/1b352195-0b65-4afa-9a3e-bd58515446e9'
     },
     {
@@ -41,8 +49,9 @@ const plans: Plan[] = [
         period: '/3 meses',
         monthlyPrice: 13.30,
         savings: '55% OFF',
+        savingsPercent: 55,
         checkoutUrl: 'https://pay.kirvano.com/003f8e49-5c58-41f5-a122-8715abdf2c02',
-        badge: 'Mais Popular',
+        badge: '🔥 Mais Popular',
         popular: true
     },
     {
@@ -53,15 +62,121 @@ const plans: Plan[] = [
         period: '/ano',
         monthlyPrice: 8.16,
         savings: '73% OFF',
+        savingsPercent: 73,
         checkoutUrl: 'https://pay.kirvano.com/f4254764-ee73-4db6-80fe-4d0dc70233e2',
-        badge: 'Melhor Custo-Benefício'
+        badge: '💎 Melhor Economia',
+        bestValue: true
     }
 ];
 
+const testimonials = [
+    {
+        name: 'Lucas M.',
+        avatar: 'L',
+        text: 'Consegui 3 dates em uma semana. O investimento se paga em um café que você toma com o match.',
+        rating: 5,
+        time: 'Usuário PRO há 2 meses'
+    },
+    {
+        name: 'Gabriel S.',
+        avatar: 'G', 
+        text: 'Antes eu travava nas conversas, agora as meninas que pedem meu número. Mudou minha vida!',
+        rating: 5,
+        time: 'Usuário PRO há 1 mês'
+    },
+    {
+        name: 'Pedro H.',
+        avatar: 'P',
+        text: 'A IA entende exatamente o contexto da conversa. As respostas são muito naturais.',
+        rating: 5,
+        time: 'Usuário PRO há 3 meses'
+    }
+];
+
+const stats = [
+    { value: '2.847+', label: 'Usuários ativos' },
+    { value: '50mil+', label: 'Conversas salvas' },
+    { value: '4.9★', label: 'Avaliação média' },
+];
+
 export const UpgradePage: React.FC<UpgradePageProps> = ({ onBack, user }) => {
-    // Urgency countdown
     const [timeLeft, setTimeLeft] = useState({ hours: 2, minutes: 47, seconds: 33 });
-    const [selectedPlan, setSelectedPlan] = useState<PlanType>('quarterly');
+    const [showExitPopup, setShowExitPopup] = useState(false);
+    const [exitPopupShown, setExitPopupShown] = useState(false);
+    const [activeTestimonial, setActiveTestimonial] = useState(0);
+    const [showFloatingCTA, setShowFloatingCTA] = useState(false);
+
+    useEffect(() => {
+        metaService.trackEvent({
+            eventName: 'AddToCart',
+            contentName: 'Plano PRO Ilimitado',
+            value: 15.00,
+            currency: 'BRL',
+            contentType: 'product'
+        });
+    }, []);
+
+    // Floating CTA on scroll
+    useEffect(() => {
+        const handleScroll = () => {
+            setShowFloatingCTA(window.scrollY > 600);
+        };
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
+    // Auto-rotate testimonials
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setActiveTestimonial(prev => (prev + 1) % testimonials.length);
+        }, 5000);
+        return () => clearInterval(interval);
+    }, []);
+
+    // Exit Intent Detection
+    useEffect(() => {
+        const handleMouseLeave = (e: MouseEvent) => {
+            if (e.clientY <= 0 && !exitPopupShown) {
+                setShowExitPopup(true);
+                setExitPopupShown(true);
+                metaService.trackEvent({
+                    eventName: 'ExitIntentShown',
+                    contentName: 'Upgrade Page',
+                    customData: { action: 'exit_intent_triggered' }
+                });
+            }
+        };
+
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if ((e.key === 'Escape' || (e.altKey && e.key === 'F4')) && !exitPopupShown) {
+                e.preventDefault();
+                setShowExitPopup(true);
+                setExitPopupShown(true);
+            }
+        };
+
+        document.addEventListener('mouseleave', handleMouseLeave);
+        document.addEventListener('keydown', handleKeyDown);
+
+        return () => {
+            document.removeEventListener('mouseleave', handleMouseLeave);
+            document.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [exitPopupShown]);
+
+    const handleBackClick = () => {
+        if (!exitPopupShown) {
+            setShowExitPopup(true);
+            setExitPopupShown(true);
+            metaService.trackEvent({
+                eventName: 'ExitIntentShown',
+                contentName: 'Upgrade Page',
+                customData: { action: 'back_button_clicked' }
+            });
+        } else {
+            onBack();
+        }
+    };
 
     useEffect(() => {
         const timer = setInterval(() => {
@@ -78,7 +193,6 @@ export const UpgradePage: React.FC<UpgradePageProps> = ({ onBack, user }) => {
     }, []);
 
     const handleUpgrade = (plan: Plan) => {
-        // Track InitiateCheckout
         metaService.trackEvent({
             eventName: 'InitiateCheckout',
             contentName: `Plano PRO ${plan.name}`,
@@ -86,331 +200,414 @@ export const UpgradePage: React.FC<UpgradePageProps> = ({ onBack, user }) => {
             currency: 'BRL',
             contentType: 'product'
         });
-        
         window.open(plan.checkoutUrl, '_blank');
     };
-    
-    const currentPlan = plans.find(p => p.id === selectedPlan)!;
+
+    const proFeatures = [
+        { icon: Zap, text: 'Análises ILIMITADAS', desc: 'Sem limite de uso' },
+        { icon: Heart, text: 'Cantadas ILIMITADAS', desc: 'Seja criativo sempre' },
+        { icon: Sparkles, text: 'Tons Exclusivos PRO', desc: 'Sedutor, Ousado, Misterioso...' },
+        { icon: Crown, text: 'IA Premium', desc: 'Respostas 3x melhores' },
+        { icon: MessageCircle, text: 'Histórico Completo', desc: 'Reveja suas conversas' },
+        { icon: BadgeCheck, text: 'Suporte VIP', desc: 'Resposta em até 24h' },
+    ];
+
+    const freeVsPro = [
+        { feature: 'Análises por dia', free: '5', pro: 'Ilimitado ∞' },
+        { feature: 'Cantadas por dia', free: '3', pro: 'Ilimitado ∞' },
+        { feature: 'Tons de resposta', free: '3 básicos', pro: '10+ exclusivos' },
+        { feature: 'Qualidade da IA', free: 'Básica', pro: 'Premium' },
+        { feature: 'Histórico', free: '❌', pro: '✅' },
+        { feature: 'Suporte', free: 'Comunidade', pro: 'VIP 24h' },
+    ];
 
     return (
-        <div className="min-h-screen bg-[#050505] text-white font-sans selection:bg-rose-500/30 relative overflow-x-hidden">
-            {/* Background Effects - Red Theme */}
-            <div className="fixed top-0 left-1/2 -translate-x-1/2 w-full h-[500px] bg-gradient-to-b from-red-900/20 to-transparent pointer-events-none z-0" />
-            <div className="fixed bottom-0 left-0 w-[500px] h-[500px] bg-rose-600/10 rounded-full blur-[120px] pointer-events-none z-0" />
-            <div className="fixed top-1/4 right-[-10%] w-[400px] h-[400px] bg-red-600/10 rounded-full blur-[100px] pointer-events-none z-0" />
+        <div className="min-h-screen bg-[#030303] text-white font-sans selection:bg-rose-500/30 relative overflow-x-hidden">
+            {/* Exit Intent Popup */}
+            {showExitPopup && (
+                <ExitIntentPopup 
+                    onClose={() => setShowExitPopup(false)}
+                    onAccept={() => {
+                        setShowExitPopup(false);
+                        handleUpgrade(plans[1]);
+                    }}
+                />
+            )}
 
-            <div className="relative z-10 max-w-5xl mx-auto px-4 py-6 md:py-8">
-                {/* Header */}
-                <header className="flex items-center justify-between mb-8 md:mb-12">
+            {/* Floating CTA */}
+            {showFloatingCTA && (
+                <div className="fixed bottom-0 left-0 right-0 z-50 bg-gradient-to-t from-black via-black/95 to-transparent p-4 pb-6 md:hidden">
                     <button
-                        onClick={onBack}
-                        className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors group px-4 py-2 rounded-full hover:bg-white/5"
+                        onClick={() => handleUpgrade(plans[1])}
+                        className="w-full py-4 bg-gradient-to-r from-red-600 to-rose-600 text-white font-bold rounded-2xl shadow-lg shadow-red-900/50 flex items-center justify-center gap-2 text-lg animate-pulse"
                     >
-                        <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
-                        <span className="font-medium">Voltar</span>
+                        <Zap size={20} className="fill-white/30" />
+                        QUERO SER PRO AGORA
+                    </button>
+                </div>
+            )}
+            
+            {/* Background Effects */}
+            <div className="fixed inset-0 pointer-events-none">
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[600px] bg-gradient-to-b from-red-950/30 via-red-900/10 to-transparent" />
+                <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-rose-600/10 rounded-full blur-[150px]" />
+                <div className="absolute top-1/3 right-[-15%] w-[500px] h-[500px] bg-red-600/10 rounded-full blur-[120px]" />
+                <div className="absolute top-2/3 left-[-10%] w-[400px] h-[400px] bg-orange-600/5 rounded-full blur-[100px]" />
+            </div>
+
+            <div className="relative z-10 max-w-6xl mx-auto px-4 py-4 md:py-8">
+                {/* Header */}
+                <header className="flex items-center justify-between mb-6">
+                    <button
+                        onClick={handleBackClick}
+                        className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors group p-2 rounded-full hover:bg-white/5"
+                    >
+                        <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
                     </button>
                     
-                    {/* Users Online Badge */}
-                    <div className="hidden md:flex items-center gap-4">
+                    <div className="flex items-center gap-2">
                         <div className="flex items-center gap-2 px-3 py-1.5 bg-green-500/10 border border-green-500/20 rounded-full">
                             <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                            <span className="text-xs text-green-400 font-medium">23 pessoas online agora</span>
+                            <span className="text-xs text-green-400 font-medium hidden sm:inline">23 online</span>
                         </div>
-                        <div className="flex items-center gap-2 px-3 py-1.5 bg-red-500/10 border border-red-500/20 rounded-full">
-                            <Users size={14} className="text-red-400" />
-                            <span className="text-xs text-red-400 font-bold">12 vagas restantes</span>
+                        <div className="flex items-center gap-2 px-3 py-1.5 bg-red-500/10 border border-red-500/20 rounded-full animate-pulse">
+                            <Flame size={14} className="text-red-400" />
+                            <span className="text-xs text-red-400 font-bold">Últimas 12 vagas!</span>
                         </div>
                     </div>
                 </header>
 
-                {/* Urgency Banner */}
-                <div className="bg-gradient-to-r from-red-600/20 to-rose-600/20 border border-red-500/30 rounded-2xl p-4 mb-8 text-center">
-                    <div className="flex items-center justify-center gap-3 flex-wrap">
-                        <Clock size={18} className="text-red-400" />
-                        <span className="text-sm text-gray-300">Oferta expira em:</span>
+                {/* MEGA Urgency Banner */}
+                <div className="relative bg-gradient-to-r from-red-600 via-rose-600 to-red-600 rounded-2xl p-4 mb-8 overflow-hidden">
+                    <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48Y2lyY2xlIGN4PSIyMCIgY3k9IjIwIiByPSIxIiBmaWxsPSJ3aGl0ZSIgZmlsbC1vcGFjaXR5PSIwLjEiLz48L3N2Zz4=')] opacity-30"></div>
+                    <div className="relative flex flex-col md:flex-row items-center justify-center gap-4 text-center">
                         <div className="flex items-center gap-2">
-                            <span className="bg-red-600 px-2 py-1 rounded font-mono font-bold text-lg">{String(timeLeft.hours).padStart(2, '0')}</span>
-                            <span className="text-red-400">:</span>
-                            <span className="bg-red-600 px-2 py-1 rounded font-mono font-bold text-lg">{String(timeLeft.minutes).padStart(2, '0')}</span>
-                            <span className="text-red-400">:</span>
-                            <span className="bg-red-600 px-2 py-1 rounded font-mono font-bold text-lg">{String(timeLeft.seconds).padStart(2, '0')}</span>
+                            <Timer size={20} className="text-white animate-bounce" />
+                            <span className="text-white font-bold">OFERTA TERMINA EM:</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <div className="bg-black/30 backdrop-blur px-3 py-2 rounded-lg">
+                                <span className="font-mono font-bold text-2xl text-white">{String(timeLeft.hours).padStart(2, '0')}</span>
+                                <span className="text-xs text-white/60 block">horas</span>
+                            </div>
+                            <span className="text-white text-2xl font-bold">:</span>
+                            <div className="bg-black/30 backdrop-blur px-3 py-2 rounded-lg">
+                                <span className="font-mono font-bold text-2xl text-white">{String(timeLeft.minutes).padStart(2, '0')}</span>
+                                <span className="text-xs text-white/60 block">min</span>
+                            </div>
+                            <span className="text-white text-2xl font-bold">:</span>
+                            <div className="bg-black/30 backdrop-blur px-3 py-2 rounded-lg">
+                                <span className="font-mono font-bold text-2xl text-white">{String(timeLeft.seconds).padStart(2, '0')}</span>
+                                <span className="text-xs text-white/60 block">seg</span>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Hero Copy */}
-                <div className="text-center max-w-3xl mx-auto mb-12">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/20 mb-6 animate-fade-in">
-                        <Zap size={12} className="text-red-400 fill-red-400" />
-                        <span className="text-xs font-bold text-red-300 uppercase tracking-wider">50% OFF - Só Hoje</span>
+                {/* Hero Section */}
+                <div className="text-center max-w-4xl mx-auto mb-10">
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-red-500/20 to-rose-500/20 border border-red-500/30 mb-6 animate-bounce">
+                        <Gift size={16} className="text-red-400" />
+                        <span className="text-sm font-bold text-red-300">ATÉ 73% OFF + BÔNUS EXCLUSIVO</span>
                     </div>
                     
-                    <h1 className="text-4xl md:text-6xl font-extrabold mb-6 tracking-tight leading-tight">
-                        Não deixe a conversa <br className="hidden md:block" />
-                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-rose-400">
-                            morrer no "oi tudo bem"
+                    <h1 className="text-4xl md:text-6xl font-black mb-4 tracking-tight leading-[1.1]">
+                        Pare de perder conversas<br />
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-400 via-rose-400 to-orange-400 animate-gradient">
+                            por respostas ruins
                         </span>
                     </h1>
-                    <p className="text-lg text-gray-400 leading-relaxed max-w-2xl mx-auto">
-                        Com o <span className="text-rose-400 font-semibold">PRO</span> você tem respostas ilimitadas, tons exclusivos e 
-                        <span className="text-white font-semibold"> nunca mais perde uma conversa</span>.
+                    
+                    <p className="text-lg md:text-xl text-gray-400 leading-relaxed max-w-2xl mx-auto mb-6">
+                        Desbloqueie o <span className="text-white font-bold">PRO</span> e tenha 
+                        <span className="text-red-400 font-bold"> respostas ilimitadas</span> que fazem 
+                        suas conversas <span className="text-white font-bold">nunca mais travarem</span>
                     </p>
-                </div>
 
-                {/* Pricing Cards Container */}
-                <div className="max-w-5xl mx-auto mb-12">
-                    {/* Plan Selector Tabs */}
-                    <div className="flex justify-center gap-2 mb-8">
-                        {plans.map((plan) => (
-                            <button
-                                key={plan.id}
-                                onClick={() => setSelectedPlan(plan.id)}
-                                className={`relative px-4 py-2 rounded-xl font-semibold text-sm transition-all ${
-                                    selectedPlan === plan.id
-                                        ? 'bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-lg shadow-red-900/30'
-                                        : 'bg-white/5 text-gray-400 hover:bg-white/10'
-                                }`}
-                            >
-                                {plan.name}
-                                {plan.popular && (
-                                    <span className="absolute -top-2 -right-2 bg-yellow-500 text-black text-[10px] font-bold px-1.5 py-0.5 rounded">
-                                        ⭐
-                                    </span>
-                                )}
-                            </button>
+                    {/* Social Proof Stats */}
+                    <div className="flex items-center justify-center gap-6 md:gap-10 flex-wrap">
+                        {stats.map((stat, i) => (
+                            <div key={i} className="text-center">
+                                <div className="text-2xl md:text-3xl font-black text-white">{stat.value}</div>
+                                <div className="text-xs text-gray-500">{stat.label}</div>
+                            </div>
                         ))}
                     </div>
+                </div>
 
-                    <div className="grid md:grid-cols-2 gap-6 items-start">
-                        {/* Free Plan */}
-                        <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-6 flex flex-col hover:bg-white/[0.04] transition-all duration-300 md:mt-8 opacity-75">
-                            <div className="mb-6">
-                                <h3 className="text-lg font-bold text-gray-400 mb-2">Plano Grátis</h3>
-                                <div className="flex items-baseline gap-1">
-                                    <span className="text-3xl font-bold text-gray-400">R$ 0</span>
-                                </div>
-                                <p className="text-xs text-gray-600 mt-1">Limitado. Para quem só quer testar.</p>
-                            </div>
-
-                            <ul className="space-y-3 mb-6 flex-1">
-                                <li className="flex items-start gap-3 text-gray-500">
-                                    <Check size={16} className="text-gray-700 mt-0.5 shrink-0" />
-                                    <span className="text-xs">Apenas 5 análises por dia</span>
-                                </li>
-                                <li className="flex items-start gap-3 text-gray-500">
-                                    <Check size={16} className="text-gray-700 mt-0.5 shrink-0" />
-                                    <span className="text-xs">Respostas básicas</span>
-                                </li>
-                                <li className="flex items-start gap-3 text-gray-500">
-                                    <Lock size={16} className="text-gray-700 mt-0.5 shrink-0" />
-                                    <span className="text-xs line-through">Tons exclusivos bloqueados</span>
-                                </li>
-                                <li className="flex items-start gap-3 text-gray-500">
-                                    <Lock size={16} className="text-gray-700 mt-0.5 shrink-0" />
-                                    <span className="text-xs line-through">Sem histórico</span>
-                                </li>
-                            </ul>
-
-                            <button
-                                onClick={onBack}
-                                className="w-full py-3 bg-white/5 hover:bg-white/10 text-gray-500 font-bold rounded-xl transition-all text-xs"
-                            >
-                                Continuar Limitado
-                            </button>
-                        </div>
-
-                        {/* Selected PRO Plan */}
-                        <div className="relative bg-gradient-to-b from-[#0f0f0f] to-[#0a0a0a] border-2 border-red-500/50 rounded-3xl p-8 flex flex-col shadow-2xl shadow-red-900/30 transform md:-translate-y-4 z-10 overflow-hidden group">
-                            {/* Gradient Glow */}
-                            <div className="absolute -top-[100px] -right-[100px] w-[200px] h-[200px] bg-red-600/30 blur-[80px] group-hover:bg-red-600/40 transition-all"></div>
-                            
-                            {/* Badge */}
-                            {currentPlan.badge && (
-                                <div className="absolute -top-px left-1/2 -translate-x-1/2 bg-gradient-to-r from-red-600 to-rose-600 px-6 py-1.5 rounded-b-xl">
-                                    <span className="text-xs font-bold text-white uppercase tracking-wider">{currentPlan.badge}</span>
-                                </div>
-                            )}
-                            {!currentPlan.badge && (
-                                <div className="absolute -top-px left-1/2 -translate-x-1/2 bg-gradient-to-r from-red-600 to-rose-600 px-6 py-1.5 rounded-b-xl">
-                                    <span className="text-xs font-bold text-white uppercase tracking-wider">PRO</span>
+                {/* Pricing Cards */}
+                <div className="grid md:grid-cols-3 gap-4 md:gap-6 mb-12">
+                    {plans.map((plan, index) => (
+                        <div 
+                            key={plan.id}
+                            className={`relative rounded-3xl p-6 flex flex-col transition-all duration-500 ${
+                                plan.popular 
+                                    ? 'bg-gradient-to-b from-red-950/80 via-[#0a0a0a] to-[#050505] border-2 border-red-500 shadow-[0_0_60px_-15px_rgba(239,68,68,0.5)] md:scale-[1.05] z-20' 
+                                    : plan.bestValue
+                                    ? 'bg-gradient-to-b from-yellow-950/30 to-[#0a0a0a] border-2 border-yellow-500/50 shadow-[0_0_40px_-15px_rgba(234,179,8,0.3)]'
+                                    : 'bg-white/[0.02] border border-white/10 hover:border-white/30 hover:bg-white/[0.04]'
+                            }`}
+                        >
+                            {/* Ribbon/Badge */}
+                            {plan.badge && (
+                                <div className={`absolute -top-4 left-1/2 -translate-x-1/2 px-5 py-2 rounded-full text-sm font-bold whitespace-nowrap shadow-lg ${
+                                    plan.popular 
+                                        ? 'bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-red-900/50' 
+                                        : 'bg-gradient-to-r from-yellow-500 to-orange-500 text-black shadow-yellow-900/30'
+                                }`}>
+                                    {plan.badge}
                                 </div>
                             )}
 
-                            <div className="mb-4 relative mt-4">
-                                <div className="flex items-center gap-2 mb-4">
-                                    <h3 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-red-400 to-rose-400 bg-clip-text text-transparent shrink-0">
-                                        PRO {currentPlan.name.toUpperCase()}
-                                    </h3>
-                                </div>
+                            {/* Plan Header */}
+                            <div className="mt-4 mb-6">
+                                <h3 className={`text-2xl font-bold mb-2 ${
+                                    plan.popular ? 'text-red-400' : plan.bestValue ? 'text-yellow-400' : 'text-gray-300'
+                                }`}>
+                                    {plan.name}
+                                </h3>
                                 
-                                <div className="flex flex-col mb-2">
-                                    <div className="flex items-center gap-3 mb-1">
-                                        <span className="text-lg text-gray-500 line-through">R$ {currentPlan.originalPrice.toFixed(2).replace('.', ',')}</span>
-                                        <span className="bg-green-500/20 text-green-400 text-xs font-bold px-2 py-0.5 rounded">{currentPlan.savings}</span>
+                                {/* Savings Bar */}
+                                <div className="flex items-center gap-2 mb-4">
+                                    <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
+                                        <div 
+                                            className={`h-full rounded-full transition-all duration-1000 ${
+                                                plan.popular ? 'bg-gradient-to-r from-red-500 to-rose-500' :
+                                                plan.bestValue ? 'bg-gradient-to-r from-yellow-500 to-orange-500' :
+                                                'bg-green-500'
+                                            }`}
+                                            style={{ width: `${plan.savingsPercent}%` }}
+                                        />
                                     </div>
-                                    <div className="flex items-baseline gap-1">
-                                        <span className="text-6xl font-extrabold text-white tracking-tighter drop-shadow-[0_0_20px_rgba(239,68,68,0.4)]">
-                                            R$ {Math.floor(currentPlan.price)}
-                                        </span>
-                                        <span className="text-xl font-bold text-red-400">,{(currentPlan.price % 1).toFixed(2).substring(2)}</span>
-                                    </div>
-                                    <span className="text-sm text-gray-500 mt-1">
-                                        {currentPlan.id === 'monthly' && 'por mês • cancele quando quiser'}
-                                        {currentPlan.id === 'quarterly' && `apenas R$ ${currentPlan.monthlyPrice.toFixed(2).replace('.', ',')}/mês • cancele quando quiser`}
-                                        {currentPlan.id === 'yearly' && `apenas R$ ${currentPlan.monthlyPrice.toFixed(2).replace('.', ',')}/mês • melhor economia`}
+                                    <span className={`text-xs font-bold ${
+                                        plan.popular ? 'text-red-400' : plan.bestValue ? 'text-yellow-400' : 'text-green-400'
+                                    }`}>
+                                        {plan.savings}
                                     </span>
                                 </div>
+
+                                {/* Price */}
+                                <div className="flex items-center gap-3 mb-1">
+                                    <span className="text-lg text-gray-500 line-through">R$ {plan.originalPrice.toFixed(2).replace('.', ',')}</span>
+                                </div>
+                                <div className="flex items-baseline gap-1 mb-1">
+                                    <span className="text-sm text-gray-400">R$</span>
+                                    <span className={`text-5xl md:text-6xl font-black tracking-tight ${
+                                        plan.popular ? 'text-white drop-shadow-[0_0_30px_rgba(239,68,68,0.5)]' : 
+                                        plan.bestValue ? 'text-white drop-shadow-[0_0_20px_rgba(234,179,8,0.3)]' :
+                                        'text-gray-200'
+                                    }`}>
+                                        {Math.floor(plan.price)}
+                                    </span>
+                                    <span className={`text-xl font-bold ${plan.popular ? 'text-red-400' : plan.bestValue ? 'text-yellow-400' : 'text-gray-400'}`}>
+                                        ,{(plan.price % 1).toFixed(2).substring(2)}
+                                    </span>
+                                </div>
+                                <p className="text-sm text-gray-500">
+                                    {plan.id === 'monthly' && 'por mês • cancele quando quiser'}
+                                    {plan.id === 'quarterly' && <>apenas <span className="text-white font-bold">R$ {plan.monthlyPrice.toFixed(2).replace('.', ',')}</span>/mês</>}
+                                    {plan.id === 'yearly' && <>apenas <span className="text-yellow-400 font-bold">R$ {plan.monthlyPrice.toFixed(2).replace('.', ',')}</span>/mês</>}
+                                </p>
                             </div>
 
-                            <ul className="space-y-3 mb-8 flex-1 relative">
-                                <li className="flex items-start gap-3 text-gray-200">
-                                    <div className="p-0.5 bg-red-500/20 rounded-full">
-                                        <Check size={16} className="text-red-400" />
-                                    </div>
-                                    <span className="text-sm"><span className="text-white font-semibold">Análises ILIMITADAS</span> - sem restrições</span>
-                                </li>
-                                <li className="flex items-start gap-3 text-gray-200">
-                                    <div className="p-0.5 bg-red-500/20 rounded-full">
-                                        <Check size={16} className="text-red-400" />
-                                    </div>
-                                    <span className="text-sm"><span className="text-white font-semibold">Cantadas ILIMITADAS</span> - seja criativo</span>
-                                </li>
-                                <li className="flex items-start gap-3 text-gray-200">
-                                    <div className="p-0.5 bg-red-500/20 rounded-full">
-                                        <Check size={16} className="text-red-400" />
-                                    </div>
-                                    <span className="text-sm"><span className="text-white font-semibold">Tons Exclusivos</span> - Sedutor, Ousado, Misterioso...</span>
-                                </li>
-                                <li className="flex items-start gap-3 text-gray-200">
-                                    <div className="p-0.5 bg-red-500/20 rounded-full">
-                                        <Check size={16} className="text-red-400" />
-                                    </div>
-                                    <span className="text-sm"><span className="text-white font-semibold">IA mais inteligente</span> - respostas melhores</span>
-                                </li>
-                                <li className="flex items-start gap-3 text-gray-200">
-                                    <div className="p-0.5 bg-red-500/20 rounded-full">
-                                        <Check size={16} className="text-red-400" />
-                                    </div>
-                                    <span className="text-sm"><span className="text-white font-semibold">Histórico completo</span> - reveja conversas</span>
-                                </li>
-                                <li className="flex items-start gap-3 text-gray-200">
-                                    <div className="p-0.5 bg-red-500/20 rounded-full">
-                                        <Check size={16} className="text-red-400" />
-                                    </div>
-                                    <span className="text-sm"><span className="text-white font-semibold">Suporte VIP</span> - resposta em até 24h</span>
-                                </li>
+                            {/* Features */}
+                            <ul className="space-y-3 mb-6 flex-1">
+                                {proFeatures.slice(0, plan.popular ? 6 : plan.bestValue ? 6 : 4).map((feature, i) => (
+                                    <li key={i} className="flex items-center gap-3">
+                                        <div className={`p-1 rounded-full ${
+                                            plan.popular ? 'bg-red-500/20' : plan.bestValue ? 'bg-yellow-500/20' : 'bg-green-500/20'
+                                        }`}>
+                                            <Check size={14} className={
+                                                plan.popular ? 'text-red-400' : plan.bestValue ? 'text-yellow-400' : 'text-green-500'
+                                            } />
+                                        </div>
+                                        <span className="text-sm text-gray-300">{feature.text}</span>
+                                    </li>
+                                ))}
                             </ul>
 
+                            {/* CTA */}
                             <button
-                                onClick={() => handleUpgrade(currentPlan)}
-                                className="relative w-full py-4 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-bold rounded-xl shadow-lg shadow-red-900/50 transition-all transform hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2 text-lg"
+                                onClick={() => handleUpgrade(plan)}
+                                className={`w-full py-4 font-bold rounded-2xl transition-all transform hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2 text-lg ${
+                                    plan.popular 
+                                        ? 'bg-gradient-to-r from-red-600 via-rose-600 to-red-600 hover:from-red-500 hover:via-rose-500 hover:to-red-500 text-white shadow-lg shadow-red-900/50 animate-shimmer bg-[length:200%_100%]' 
+                                        : plan.bestValue
+                                        ? 'bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-black shadow-lg shadow-yellow-900/30'
+                                        : 'bg-white/10 hover:bg-white/20 text-white border border-white/10'
+                                }`}
                             >
-                                <Zap size={20} className="fill-white/30" />
-                                Quero Ser PRO Agora
+                                <Zap size={20} className={plan.popular || plan.bestValue ? 'fill-current' : ''} />
+                                {plan.popular ? 'QUERO ESTE!' : plan.bestValue ? 'MELHOR CUSTO' : 'Selecionar'}
                             </button>
-                            
-                            <div className="flex items-center justify-center gap-4 mt-4">
-                                <div className="flex items-center gap-1 text-xs text-gray-500">
-                                    <Shield size={12} className="text-green-500" />
-                                    <span>Compra segura</span>
+
+                            {/* Trust badges for popular */}
+                            {plan.popular && (
+                                <div className="flex items-center justify-center gap-4 mt-4 flex-wrap">
+                                    <div className="flex items-center gap-1 text-xs text-gray-400">
+                                        <Shield size={12} className="text-green-500" />
+                                        <span>Seguro</span>
+                                    </div>
+                                    <div className="flex items-center gap-1 text-xs text-gray-400">
+                                        <CheckCircle2 size={12} className="text-green-500" />
+                                        <span>Acesso imediato</span>
+                                    </div>
+                                    <div className="flex items-center gap-1 text-xs text-gray-400">
+                                        <CreditCard size={12} className="text-green-500" />
+                                        <span>Pix ou Cartão</span>
+                                    </div>
                                 </div>
-                                <div className="flex items-center gap-1 text-xs text-gray-500">
-                                    <CheckCircle2 size={12} className="text-green-500" />
-                                    <span>Acesso imediato</span>
-                                </div>
+                            )}
+                        </div>
+                    ))}
+                </div>
+
+                {/* Comparison Table */}
+                <div className="max-w-3xl mx-auto mb-16">
+                    <h2 className="text-2xl md:text-3xl font-bold text-center mb-8">
+                        Por que o <span className="text-red-400">PRO</span> é melhor?
+                    </h2>
+                    <div className="bg-white/[0.02] border border-white/10 rounded-2xl overflow-hidden">
+                        <div className="grid grid-cols-3 bg-white/5 p-4">
+                            <div className="text-sm text-gray-400 font-medium">Recurso</div>
+                            <div className="text-center text-sm text-gray-400 font-medium">Grátis</div>
+                            <div className="text-center text-sm text-red-400 font-bold">PRO</div>
+                        </div>
+                        {freeVsPro.map((row, i) => (
+                            <div key={i} className={`grid grid-cols-3 p-4 ${i % 2 === 0 ? 'bg-white/[0.02]' : ''}`}>
+                                <div className="text-sm text-gray-300">{row.feature}</div>
+                                <div className="text-center text-sm text-gray-500">{row.free}</div>
+                                <div className="text-center text-sm text-green-400 font-bold">{row.pro}</div>
                             </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Guarantee */}
+                <div className="max-w-2xl mx-auto mb-16">
+                    <div className="relative bg-gradient-to-r from-green-950/50 to-emerald-950/50 border-2 border-green-500/30 rounded-3xl p-8 text-center overflow-hidden">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/10 rounded-full blur-[60px]"></div>
+                        <Shield size={48} className="text-green-500 mx-auto mb-4" />
+                        <h3 className="text-2xl font-bold text-white mb-3">Garantia Incondicional de 7 Dias</h3>
+                        <p className="text-gray-400 leading-relaxed">
+                            Teste o PRO por 7 dias. Se não ficar <span className="text-white font-semibold">100% satisfeito</span>, 
+                            devolvo <span className="text-green-400 font-bold">todo seu dinheiro</span>. Sem perguntas, sem burocracia.
+                        </p>
+                        <div className="mt-4 flex items-center justify-center gap-2 text-sm text-green-400">
+                            <CheckCircle2 size={16} />
+                            <span>Reembolso em até 24h</span>
                         </div>
                     </div>
                 </div>
 
-                {/* Guarantee Section */}
-                <div className="max-w-2xl mx-auto text-center mb-16">
-                    <div className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-500/20 rounded-2xl p-6">
-                        <Shield size={32} className="text-green-500 mx-auto mb-3" />
-                        <h3 className="text-xl font-bold text-white mb-2">Garantia de 7 Dias</h3>
-                        <p className="text-sm text-gray-400">
-                            Se você não ficar satisfeito por qualquer motivo, devolvemos 100% do seu dinheiro. 
-                            Sem perguntas, sem burocracia.
-                        </p>
-                    </div>
-                </div>
-
-                {/* Testimonial */}
-                <div className="max-w-2xl mx-auto mb-16">
-                    <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-6">
-                        <div className="flex items-center gap-1 mb-3">
-                            {[...Array(5)].map((_, i) => (
-                                <Star key={i} size={16} className="text-yellow-400 fill-yellow-400" />
+                {/* Testimonials Carousel */}
+                <div className="max-w-3xl mx-auto mb-16">
+                    <h2 className="text-2xl md:text-3xl font-bold text-center mb-8">
+                        O que nossos usuários dizem
+                    </h2>
+                    <div className="relative">
+                        <div className="bg-gradient-to-br from-white/[0.05] to-white/[0.02] border border-white/10 rounded-3xl p-6 md:p-8">
+                            <div className="flex items-center gap-1 mb-4">
+                                {[...Array(5)].map((_, i) => (
+                                    <Star key={i} size={20} className="text-yellow-400 fill-yellow-400" />
+                                ))}
+                            </div>
+                            <p className="text-lg md:text-xl text-gray-200 italic mb-6 leading-relaxed">
+                                "{testimonials[activeTestimonial].text}"
+                            </p>
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-rose-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                                    {testimonials[activeTestimonial].avatar}
+                                </div>
+                                <div>
+                                    <p className="text-white font-semibold">{testimonials[activeTestimonial].name}</p>
+                                    <p className="text-gray-500 text-sm">{testimonials[activeTestimonial].time}</p>
+                                </div>
+                            </div>
+                        </div>
+                        {/* Dots */}
+                        <div className="flex items-center justify-center gap-2 mt-4">
+                            {testimonials.map((_, i) => (
+                                <button
+                                    key={i}
+                                    onClick={() => setActiveTestimonial(i)}
+                                    className={`w-2 h-2 rounded-full transition-all ${
+                                        i === activeTestimonial ? 'bg-red-500 w-6' : 'bg-white/20 hover:bg-white/40'
+                                    }`}
+                                />
                             ))}
                         </div>
-                        <p className="text-gray-300 italic mb-4">
-                            "Cara, eu era péssimo de conversa. Depois que assinei o PRO, consegui 3 dates em uma semana. 
-                            O investimento se paga em um café que você toma com o match."
-                        </p>
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-rose-500 rounded-full flex items-center justify-center text-white font-bold">
-                                L
-                            </div>
-                            <div>
-                                <p className="text-white font-semibold text-sm">Lucas M.</p>
-                                <p className="text-gray-500 text-xs">Usuário PRO há 2 meses</p>
-                            </div>
-                        </div>
                     </div>
                 </div>
 
-                {/* FAQ Section */}
+                {/* FAQ */}
                 <div className="max-w-2xl mx-auto mb-16">
-                    <h3 className="text-xl font-bold text-white mb-8 text-center">Perguntas Frequentes</h3>
-                    <div className="grid gap-4">
-                        <div className="bg-white/5 rounded-xl p-6 border border-white/5 hover:border-red-500/20 transition-colors">
-                            <h4 className="font-bold text-gray-200 mb-2 text-sm">O pagamento é seguro?</h4>
-                            <p className="text-sm text-gray-400 leading-relaxed">Sim! Usamos a Kirvano, plataforma 100% segura. Aceitamos Pix (liberação imediata) e cartão de crédito.</p>
-                        </div>
-                        <div className="bg-white/5 rounded-xl p-6 border border-white/5 hover:border-red-500/20 transition-colors">
-                            <h4 className="font-bold text-gray-200 mb-2 text-sm">Posso cancelar quando quiser?</h4>
-                            <p className="text-sm text-gray-400 leading-relaxed">Sim! Sem fidelidade. Cancele a qualquer momento pelo seu painel ou fale com nosso suporte.</p>
-                        </div>
-                        <div className="bg-white/5 rounded-xl p-6 border border-white/5 hover:border-red-500/20 transition-colors">
-                            <h4 className="font-bold text-gray-200 mb-2 text-sm">E se eu não gostar?</h4>
-                            <p className="text-sm text-gray-400 leading-relaxed">Você tem 7 dias de garantia. Se não ficar satisfeito, devolvo seu dinheiro sem perguntas.</p>
-                        </div>
+                    <h2 className="text-2xl md:text-3xl font-bold text-center mb-8">Perguntas Frequentes</h2>
+                    <div className="space-y-3">
+                        {[
+                            { q: 'O pagamento é seguro?', a: 'Sim! Usamos a Kirvano, plataforma 100% segura. Aceitamos Pix (liberação imediata) e cartão.' },
+                            { q: 'Posso cancelar quando quiser?', a: 'Sim! Sem fidelidade. Cancele a qualquer momento pelo seu painel ou fale com nosso suporte.' },
+                            { q: 'O acesso é imediato?', a: 'Sim! Após a confirmação do pagamento, seu acesso PRO é liberado automaticamente em segundos.' },
+                            { q: 'E se eu não gostar?', a: 'Você tem 7 dias de garantia incondicional. Devolvo 100% do seu dinheiro sem perguntas.' }
+                        ].map((faq, i) => (
+                            <details key={i} className="bg-white/[0.03] border border-white/10 rounded-xl group">
+                                <summary className="p-4 cursor-pointer flex items-center justify-between font-semibold text-gray-200 hover:text-white">
+                                    {faq.q}
+                                    <ChevronRight size={18} className="text-gray-500 group-open:rotate-90 transition-transform" />
+                                </summary>
+                                <div className="px-4 pb-4 text-sm text-gray-400">{faq.a}</div>
+                            </details>
+                        ))}
                     </div>
                 </div>
 
                 {/* Final CTA */}
-                <div className="max-w-md mx-auto text-center mb-12">
-                    <button
-                        onClick={() => handleUpgrade(currentPlan)}
-                        className="w-full py-4 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-bold rounded-xl shadow-lg shadow-red-900/50 transition-all transform hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2 text-lg mb-4"
-                    >
-                        <Heart size={20} className="fill-white/30" />
-                        Desbloquear PRO {currentPlan.name} por R$ {currentPlan.price.toFixed(2).replace('.', ',')}
-                    </button>
-                    <p className="text-xs text-red-500 font-bold mb-4 animate-pulse">
-                        ⚠️ Restam apenas 12 vagas com desconto especial
+                <div className="max-w-xl mx-auto text-center mb-16">
+                    <h2 className="text-2xl md:text-3xl font-bold mb-4">
+                        Ainda com dúvidas?
+                    </h2>
+                    <p className="text-gray-400 mb-6">
+                        Escolha o plano mais popular e teste por 7 dias. Se não gostar, devolvo seu dinheiro.
                     </p>
+                    <button
+                        onClick={() => handleUpgrade(plans[1])}
+                        className="w-full py-5 bg-gradient-to-r from-red-600 via-rose-600 to-red-600 hover:from-red-500 hover:via-rose-500 hover:to-red-500 text-white font-bold rounded-2xl shadow-2xl shadow-red-900/50 transition-all transform hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-3 text-xl mb-4"
+                    >
+                        <Crown size={24} />
+                        QUERO SER PRO AGORA
+                        <ChevronRight size={24} />
+                    </button>
                     <p className="text-xs text-gray-600">
-                        Junte-se a 2.847+ pessoas que nunca mais ficaram no vácuo
+                        🔒 Pagamento 100% seguro • Acesso imediato • Garantia de 7 dias
                     </p>
                 </div>
 
                 {/* Footer */}
-                <div className="text-center border-t border-white/5 pt-8">
-                    <p className="text-gray-600 text-sm">
+                <div className="text-center border-t border-white/5 pt-8 pb-20 md:pb-8">
+                    <p className="text-xs text-gray-600 mb-2">
+                        Junte-se a 2.847+ pessoas que nunca mais ficaram no vácuo
+                    </p>
+                    <p className="text-gray-700 text-xs">
                         © 2025 PuxeAssunto. Todos os direitos reservados.
                     </p>
                 </div>
-
             </div>
 
             <style>{`
-                @keyframes fadeIn {
-                    from { opacity: 0; transform: translateY(10px); }
-                    to { opacity: 1; transform: translateY(0); }
+                @keyframes shimmer {
+                    0% { background-position: 200% 0; }
+                    100% { background-position: -200% 0; }
                 }
-                .animate-fade-in {
-                    animation: fadeIn 0.8s ease-out forwards;
+                .animate-shimmer {
+                    animation: shimmer 3s ease-in-out infinite;
+                }
+                @keyframes gradient {
+                    0%, 100% { background-position: 0% 50%; }
+                    50% { background-position: 100% 50%; }
+                }
+                .animate-gradient {
+                    background-size: 200% 200%;
+                    animation: gradient 3s ease infinite;
                 }
             `}</style>
         </div>

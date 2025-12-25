@@ -110,10 +110,36 @@ serve(async (req) => {
         const event = payload.event || payload.type;
         const data = payload.data || payload; // Sometimes data is nested
 
+        // IGNORAR eventos que NÃO devem afetar a assinatura
+        // PIX_EXPIRED: Cliente gerou vários PIX e pagou só um, os outros expiram
+        // PIX_GENERATED: PIX foi gerado mas ainda não foi pago
+        // BOLETO_EXPIRED/BOLETO_GENERATED: Mesmo caso do PIX
+        // CARD_DECLINED: Tentativa de pagamento falhou, mas pode tentar de novo
+        // ABANDONED_CART: Carrinho abandonado não deve afetar usuário
+        const ignoredEvents = [
+            'PIX_EXPIRED', 
+            'PIX_GENERATED',
+            'BOLETO_EXPIRED', 
+            'BOLETO_GENERATED',
+            'CARD_DECLINED', 
+            'SALE_REFUSED',
+            'ABANDONED_CART'
+        ];
+        if (ignoredEvents.includes(event)) {
+            console.log(`IGNORADO: Evento ${event} não afeta status de assinatura`);
+            return new Response(JSON.stringify({ message: `${event} ignored - does not affect subscription` }), {
+                headers: { 'Content-Type': 'application/json' },
+                status: 200
+            });
+        }
+
         // Extract Email
+        // Kirvano usa "cliente" (português) em vez de "customer"
         const customerEmail = 
+            data.cliente?.email ||
             data.customer?.email || 
             data.email || 
+            payload.cliente?.email ||
             payload.customer?.email || 
             payload.email;
 
@@ -169,12 +195,26 @@ serve(async (req) => {
                 // 2. User is NOT PRO (free tier), OR
                 // 3. It's a LEGITIMATE cancellation/refund (canceled, refunded, chargeback)
                 
+                // Lista de eventos que realmente cancelam a assinatura
+                const cancellationEvents = [
+                    'SUBSCRIPTION_CANCELED',
+                    'SUBSCRIPTION_EXPIRED',
+                    'SUBSCRIPTION_OVERDUE',
+                    'SALE_REFUNDED',
+                    'CHARGEBACK',
+                    'CHARGEBACK_DISPUTE'
+                ];
+                
+                // Lista de status que indicam cancelamento real
+                const cancellationStatuses = [
+                    'canceled', 'cancelado',
+                    'refunded', 'reembolsado',
+                    'chargeback'
+                ];
+                
                 const isCancellation = 
-                    status === 'canceled' || 
-                    status === 'refunded' || 
-                    status === 'chargeback' ||
-                    event === 'SUBSCRIPTION_CANCELED' ||
-                    event === 'SALE_REFUNDED';
+                    cancellationStatuses.includes(status) ||
+                    cancellationEvents.includes(event);
 
                 const shouldUpdate = isPro || !user.is_pro || isCancellation;
 
