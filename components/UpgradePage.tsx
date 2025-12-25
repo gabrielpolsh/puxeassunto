@@ -33,23 +33,24 @@ const plans: Plan[] = [
     {
         id: 'monthly',
         name: 'Mensal',
-        price: 15.00,
-        originalPrice: 29.90,
+        price: 15.90,
+        originalPrice: 15.90,
         period: '/mês',
-        monthlyPrice: 15.00,
-        savings: '50% OFF',
-        savingsPercent: 50,
-        checkoutUrl: 'https://pay.kirvano.com/1b352195-0b65-4afa-9a3e-bd58515446e9'
+        monthlyPrice: 15.90,
+        savings: '',
+        savingsPercent: 0,
+        checkoutUrl: 'https://pay.kirvano.com/1b352195-0b65-4afa-9a3e-bd58515446e9',
+        badge: '✅ Acesso Completo'
     },
     {
         id: 'quarterly',
         name: 'Trimestral',
         price: 39.90,
-        originalPrice: 89.70,
+        originalPrice: 47.70, // 3 x R$ 15,90 = R$ 47,70
         period: '/3 meses',
         monthlyPrice: 13.30,
-        savings: '55% OFF',
-        savingsPercent: 55,
+        savings: '16% OFF',
+        savingsPercent: 16,
         checkoutUrl: 'https://pay.kirvano.com/003f8e49-5c58-41f5-a122-8715abdf2c02',
         badge: '🔥 Mais Popular',
         popular: true
@@ -57,12 +58,12 @@ const plans: Plan[] = [
     {
         id: 'yearly',
         name: 'Anual',
-        price: 97.00,
-        originalPrice: 358.80,
+        price: 97.90,
+        originalPrice: 190.80, // 12 x R$ 15,90 = R$ 190,80
         period: '/ano',
         monthlyPrice: 8.08,
-        savings: '73% OFF',
-        savingsPercent: 73,
+        savings: '49% OFF',
+        savingsPercent: 49,
         checkoutUrl: 'https://pay.kirvano.com/f4254764-ee73-4db6-80fe-4d0dc70233e2',
         badge: '💎 Melhor Economia',
         bestValue: true
@@ -332,7 +333,7 @@ export const UpgradePage: React.FC<UpgradePageProps> = ({ onBack, user }) => {
                                     ? 'bg-gradient-to-b from-rose-950/50 via-[#0a0a0a] to-[#050505] border border-rose-500/60 shadow-[0_0_40px_-15px_rgba(244,63,94,0.3)] md:scale-[1.03] z-20' 
                                     : plan.bestValue
                                     ? 'bg-gradient-to-b from-violet-950/30 to-[#0a0a0a] border border-violet-500/40 shadow-[0_0_30px_-15px_rgba(139,92,246,0.2)]'
-                                    : 'bg-white/[0.02] border border-white/10 hover:border-white/20 hover:bg-white/[0.03]'
+                                    : 'bg-gradient-to-b from-emerald-950/30 to-[#0a0a0a] border border-emerald-500/40 hover:border-emerald-500/60 shadow-[0_0_30px_-15px_rgba(16,185,129,0.2)]'
                             }`}
                         >
                             {/* Ribbon/Badge */}
@@ -340,7 +341,9 @@ export const UpgradePage: React.FC<UpgradePageProps> = ({ onBack, user }) => {
                                 <div className={`absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap shadow-md ${
                                     plan.popular 
                                         ? 'bg-gradient-to-r from-rose-600 to-rose-500 text-white shadow-rose-900/30' 
-                                        : 'bg-gradient-to-r from-violet-500 to-purple-400 text-white shadow-violet-900/20'
+                                        : plan.bestValue
+                                        ? 'bg-gradient-to-r from-violet-500 to-purple-400 text-white shadow-violet-900/20'
+                                        : 'bg-gradient-to-r from-emerald-600 to-emerald-500 text-white shadow-emerald-900/30'
                                 }`}>
                                     {plan.badge}
                                 </div>
@@ -349,34 +352,38 @@ export const UpgradePage: React.FC<UpgradePageProps> = ({ onBack, user }) => {
                             {/* Plan Header */}
                             <div className="mt-4 mb-6">
                                 <h3 className={`text-2xl font-bold mb-2 ${
-                                    plan.popular ? 'text-rose-400' : plan.bestValue ? 'text-violet-400' : 'text-gray-300'
+                                    plan.popular ? 'text-rose-400' : plan.bestValue ? 'text-violet-400' : 'text-emerald-400'
                                 }`}>
                                     {plan.name}
                                 </h3>
                                 
-                                {/* Savings Bar */}
-                                <div className="flex items-center gap-2 mb-4">
-                                    <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
-                                        <div 
-                                            className={`h-full rounded-full transition-all duration-1000 ${
-                                                plan.popular ? 'bg-gradient-to-r from-rose-500 to-rose-400' :
-                                                plan.bestValue ? 'bg-gradient-to-r from-violet-500 to-purple-400' :
-                                                'bg-emerald-500'
-                                            }`}
-                                            style={{ width: `${plan.savingsPercent}%` }}
-                                        />
+                                {/* Savings Bar - apenas se houver desconto */}
+                                {plan.savingsPercent > 0 && (
+                                    <div className="flex items-center gap-2 mb-4">
+                                        <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
+                                            <div 
+                                                className={`h-full rounded-full transition-all duration-1000 ${
+                                                    plan.popular ? 'bg-gradient-to-r from-rose-500 to-rose-400' :
+                                                    plan.bestValue ? 'bg-gradient-to-r from-violet-500 to-purple-400' :
+                                                    'bg-emerald-500'
+                                                }`}
+                                                style={{ width: `${plan.savingsPercent}%` }}
+                                            />
+                                        </div>
+                                        <span className={`text-xs font-semibold ${
+                                            plan.popular ? 'text-rose-400' : plan.bestValue ? 'text-violet-400' : 'text-emerald-400'
+                                        }`}>
+                                            {plan.savings}
+                                        </span>
                                     </div>
-                                    <span className={`text-xs font-semibold ${
-                                        plan.popular ? 'text-rose-400' : plan.bestValue ? 'text-violet-400' : 'text-emerald-400'
-                                    }`}>
-                                        {plan.savings}
-                                    </span>
-                                </div>
+                                )}
 
                                 {/* Price */}
-                                <div className="flex items-center gap-3 mb-1">
-                                    <span className="text-lg text-gray-500 line-through">R$ {plan.originalPrice.toFixed(2).replace('.', ',')}</span>
-                                </div>
+                                {plan.originalPrice > plan.price && (
+                                    <div className="flex items-center gap-3 mb-1">
+                                        <span className="text-lg text-gray-500 line-through">R$ {plan.originalPrice.toFixed(2).replace('.', ',')}</span>
+                                    </div>
+                                )}
                                 <div className="flex items-baseline gap-1 mb-1">
                                     <span className="text-sm text-gray-400">R$</span>
                                     <span className={`text-5xl md:text-6xl font-black tracking-tight ${
@@ -386,12 +393,12 @@ export const UpgradePage: React.FC<UpgradePageProps> = ({ onBack, user }) => {
                                     }`}>
                                         {Math.floor(plan.price)}
                                     </span>
-                                    <span className={`text-xl font-bold ${plan.popular ? 'text-rose-400' : plan.bestValue ? 'text-violet-400' : 'text-gray-400'}`}>
+                                    <span className={`text-xl font-bold ${plan.popular ? 'text-rose-400' : plan.bestValue ? 'text-violet-400' : 'text-emerald-400'}`}>
                                         ,{(plan.price % 1).toFixed(2).substring(2)}
                                     </span>
                                 </div>
                                 <p className="text-sm text-gray-500">
-                                    {plan.id === 'monthly' && 'por mês • cancele quando quiser'}
+                                    {plan.id === 'monthly' && 'acesso completo • cancele quando quiser'}
                                     {plan.id === 'quarterly' && <>3 meses de acesso • <span className="text-white font-medium">R$ {plan.monthlyPrice.toFixed(2).replace('.', ',')}</span>/mês</>}
                                     {plan.id === 'yearly' && <>apenas <span className="text-violet-400 font-medium">R$ {plan.monthlyPrice.toFixed(2).replace('.', ',')}</span>/mês</>}
                                 </p>
@@ -399,7 +406,7 @@ export const UpgradePage: React.FC<UpgradePageProps> = ({ onBack, user }) => {
 
                             {/* Features */}
                             <ul className="space-y-3 mb-6 flex-1">
-                                {proFeatures.slice(0, plan.popular ? 6 : plan.bestValue ? 6 : 4).map((feature, i) => (
+                                {proFeatures.map((feature, i) => (
                                     <li key={i} className="flex items-center gap-3">
                                         <div className={`p-1 rounded-full ${
                                             plan.popular ? 'bg-rose-500/15' : plan.bestValue ? 'bg-violet-500/15' : 'bg-emerald-500/15'
@@ -421,11 +428,11 @@ export const UpgradePage: React.FC<UpgradePageProps> = ({ onBack, user }) => {
                                         ? 'bg-gradient-to-r from-rose-600 via-rose-500 to-rose-600 hover:from-rose-500 hover:via-rose-400 hover:to-rose-500 text-white shadow-md shadow-rose-900/30 animate-shimmer bg-[length:200%_100%]' 
                                         : plan.bestValue
                                         ? 'bg-gradient-to-r from-violet-600 to-purple-500 hover:from-violet-500 hover:to-purple-400 text-white shadow-md shadow-violet-900/20'
-                                        : 'bg-white/10 hover:bg-white/15 text-white border border-white/10'
+                                        : 'bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white shadow-md shadow-emerald-900/30'
                                 }`}
                             >
-                                <Zap size={20} className={plan.popular || plan.bestValue ? 'fill-current' : ''} />
-                                {plan.popular ? 'QUERO ESTE!' : plan.bestValue ? 'MELHOR CUSTO' : 'Selecionar'}
+                                <Zap size={20} className="fill-current" />
+                                {plan.popular ? 'QUERO ESTE!' : plan.bestValue ? 'MELHOR CUSTO' : 'COMEÇAR AGORA'}
                             </button>
 
                             {/* Trust badges for popular */}
