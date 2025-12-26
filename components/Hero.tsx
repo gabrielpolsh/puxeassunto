@@ -13,7 +13,7 @@ interface HeroProps {
 const SCENARIOS = [
   {
     name: "Beatriz",
-    avatar: "https://images.unsplash.com/photo-1488716820095-cbe80883c496?w=150&h=150&fit=crop&crop=faces",
+    avatar: "https://images.unsplash.com/photo-1488716820095-cbe80883c496?w=40&h=40&fit=crop&crop=faces&auto=format&q=75",
     messages: [
       { text: "Tô muito puta com você.", isMe: false },
       { text: "Sério.", isMe: false }
@@ -24,7 +24,7 @@ const SCENARIOS = [
   },
   {
     name: "Crush❤️",
-    avatar: "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=150&h=150&fit=crop&crop=faces",
+    avatar: "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=40&h=40&fit=crop&crop=faces&auto=format&q=75",
     messages: [
       { text: "A gente precisa se ver qualquer dia.", isMe: false }
     ],
@@ -34,7 +34,7 @@ const SCENARIOS = [
   },
   {
     name: "Bianca",
-    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&crop=faces",
+    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=40&h=40&fit=crop&crop=faces&auto=format&q=75",
     messages: [
       { text: "Não começa.", isMe: false },
       { text: "Eu não tô no clima.", isMe: false }
@@ -45,7 +45,7 @@ const SCENARIOS = [
   },
   {
     name: "Namorada Fria 🧊",
-    avatar: "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=150&h=150&fit=crop&crop=faces",
+    avatar: "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=40&h=40&fit=crop&crop=faces&auto=format&q=75",
     messages: [
       { text: "aham", isMe: false }
     ],
@@ -55,7 +55,7 @@ const SCENARIOS = [
   },
   {
     name: "Luiza",
-    avatar: "https://images.unsplash.com/photo-1520813792240-56fc4a3765a7?w=150&h=150&fit=crop&crop=faces",
+    avatar: "https://images.unsplash.com/photo-1520813792240-56fc4a3765a7?w=40&h=40&fit=crop&crop=faces&auto=format&q=75",
     messages: [
       { text: "Hoje foi um dia péssimo.", isMe: false }
     ],
@@ -314,6 +314,8 @@ const TinderCarousel: React.FC<{ onAction?: () => void }> = ({ onAction }) => {
           <img
             src={TESTIMONIALS_DATA[underneathIndex].image}
             alt="Próximo depoimento"
+            loading="lazy"
+            decoding="async"
             className="w-full h-full object-cover object-[center_15%]"
           />
           <div className="absolute inset-0 bg-black/40"></div>
@@ -338,6 +340,8 @@ const TinderCarousel: React.FC<{ onAction?: () => void }> = ({ onAction }) => {
           <img
             src={TESTIMONIALS_DATA[currentIndex].image}
             alt={`Depoimento ${currentIndex + 1}`}
+            loading="lazy"
+            decoding="async"
             className="w-full h-full object-cover object-[center_15%] pointer-events-none"
           />
 
