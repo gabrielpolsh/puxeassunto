@@ -201,7 +201,15 @@ export const UpgradePage: React.FC<UpgradePageProps> = ({ onBack, user }) => {
             currency: 'BRL',
             contentType: 'product'
         });
-        window.open(plan.checkoutUrl, '_blank');
+        
+        // Build checkout URL with pre-filled email
+        let checkoutUrl = plan.checkoutUrl;
+        if (user?.email) {
+            const encodedEmail = encodeURIComponent(user.email);
+            checkoutUrl += `?customer.email=${encodedEmail}`;
+        }
+        
+        window.open(checkoutUrl, '_blank');
     };
 
     const proFeatures = [
