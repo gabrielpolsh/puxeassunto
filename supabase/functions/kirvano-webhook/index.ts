@@ -329,11 +329,24 @@ serve(async (req) => {
                 
                 // Send Purchase event to Meta CAPI when user becomes PRO
                 if (isPro) {
+                    // Try to get actual price from payload, fallback to plan config
+                    const payloadPrice = 
+                        payload.data?.sale?.amount ||
+                        payload.data?.amount ||
+                        payload.amount ||
+                        payload.value ||
+                        payload.products?.[0]?.price ||
+                        null;
+                    
                     const planConfig = PLAN_CONFIGS[detectPlanType(payload).planType === 'yearly' ? 'f4254764-ee73-4db6-80fe-4d0dc70233e2' : 
                                         detectPlanType(payload).planType === 'quarterly' ? '003f8e49-5c58-41f5-a122-8715abdf2c02' : 
                                         '1b352195-0b65-4afa-9a3e-bd58515446e9'];
-                    const price = planConfig?.price || 15.00;
                     
+                    // Use actual price from payload if valid, otherwise use plan config price
+                    const numericPayloadPrice = payloadPrice ? (typeof payloadPrice === 'string' ? parseFloat(payloadPrice) : payloadPrice) : null;
+                    const price = (numericPayloadPrice && numericPayloadPrice > 0) ? numericPayloadPrice : (planConfig?.price || 15.00);
+                    
+                    console.log(`[Meta CAPI] Sending Purchase - Email: ${customerEmail}, Price: ${price} BRL, Plan: ${planType}`);
                     await sendPurchaseToMeta(customerEmail, price, 'BRL', planType);
                 }
             } else {

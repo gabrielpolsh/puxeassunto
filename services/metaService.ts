@@ -448,6 +448,14 @@ export const metaService = {
     contentType,
     customData
   }: MetaEventData) => {
+    // IMPORTANTE: Eventos de Purchase são enviados APENAS pelo webhook da Kirvano (servidor)
+    // para evitar duplicidade e garantir consistência de valor/moeda.
+    // O Meta estava reclamando de incompatibilidade entre valores do servidor e navegador.
+    if (eventName === 'Purchase') {
+      console.log('[Meta] ⚠️ Purchase event blocked from browser - sent only via Kirvano webhook (server-side)');
+      return;
+    }
+    
     const finalEventId = eventId || metaService.generateEventId();
     
     // Tentar pegar dados do usuário logado automaticamente
