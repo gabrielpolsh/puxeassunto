@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Check, ArrowRight, MessageCircleHeart, Sparkles, Zap } from 'lucide-react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useSearchParams } from 'react-router-dom';
 import { metaService } from '../services/metaService';
 
 interface ThankYouPageProps {
@@ -10,15 +10,21 @@ interface ThankYouPageProps {
 export const ThankYouPage: React.FC<ThankYouPageProps> = ({ onGoToDashboard }) => {
     const [mounted, setMounted] = useState(false);
     const location = useLocation();
+    const [searchParams] = useSearchParams();
     const hasTracked = useRef(false);
 
     useEffect(() => {
         setMounted(true);
 
-        // Only track purchase if coming from a successful payment flow
-        // and ensure it only runs once per session/mount
-        if (location.state?.purchaseCompleted && !hasTracked.current) {
+        // Track purchase if:
+        // 1. Coming from a successful payment flow (state.purchaseCompleted)
+        // 2. OR has ?test=purchase param (for testing only)
+        const shouldTrack = location.state?.purchaseCompleted || searchParams.get('test') === 'purchase';
+        
+        if (shouldTrack && !hasTracked.current) {
             hasTracked.current = true;
+            
+            console.log('[Meta] Tracking Purchase event...');
             
             // Track Purchase
             metaService.trackEvent({
@@ -42,7 +48,7 @@ export const ThankYouPage: React.FC<ThankYouPageProps> = ({ onGoToDashboard }) =
             // Actually, replacing state here might be good practice
             window.history.replaceState({}, document.title);
         }
-    }, [location.state]);
+    }, [location.state, searchParams]);
 
     return (
         <div className="min-h-screen bg-[#050505] text-white font-sans selection:bg-purple-500/30 relative overflow-hidden flex items-center justify-center p-4">
