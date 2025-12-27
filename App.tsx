@@ -14,9 +14,7 @@ const AuthPage = lazy(() => import('./components/AuthPage').then(m => ({ default
 const Dashboard = lazy(() => import('./components/Dashboard').then(m => ({ default: m.Dashboard })));
 const UpgradePage = lazy(() => import('./components/UpgradePage').then(m => ({ default: m.UpgradePage })));
 const ThankYouPage = lazy(() => import('./components/ThankYouPage').then(m => ({ default: m.ThankYouPage })));
-const ThankYouPage2 = lazy(() => import('./components/ThankYouPage2').then(m => ({ default: m.ThankYouPage2 })));
 const LegalPage = lazy(() => import('./components/LegalPage').then(m => ({ default: m.LegalPage })));
-const FacePage = lazy(() => import('./components/FacePage').then(m => ({ default: m.FacePage })));
 const WhatsAppButton = lazy(() => import('./components/WhatsAppButton').then(m => ({ default: m.WhatsAppButton })));
 
 // Lazy load SEO pages
@@ -238,12 +236,6 @@ const AppRouter: React.FC = () => {
           element={<ThankYouPage onGoToDashboard={() => navigate('/dashboard')} />}
         />
 
-        {/* Thank You Page 2 - For Face page purchases */}
-        <Route
-          path="/thankyou2"
-          element={<ThankYouPage2 />}
-        />
-
         {/* Legal Pages */}
         <Route
           path="/privacy"
@@ -252,12 +244,6 @@ const AppRouter: React.FC = () => {
         <Route
           path="/terms"
           element={<LegalPage type="terms" onBack={() => navigate('/')} />}
-        />
-
-        {/* Face Page - Landing without login */}
-        <Route
-          path="/face"
-          element={<FacePage />}
         />
 
         {/* SEO Blog Pages */}
