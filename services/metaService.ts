@@ -321,7 +321,7 @@ export const metaService = {
     const normalizedCurrency = currency?.toUpperCase();
     
     // 1. Track via Browser Pixel (Client-side)
-    if (typeof window !== 'undefined' && window.fbq) {
+    if (typeof window !== 'undefined') {
       const pixelData: any = {
         ...customData,
         value: normalizedValue,
@@ -334,7 +334,26 @@ export const metaService = {
       // Clean undefined values
       Object.keys(pixelData).forEach(key => pixelData[key] === undefined && delete pixelData[key]);
 
-      window.fbq('track', eventName, pixelData, { eventID: finalEventId });
+      // Se o fbq ainda não carregou, usa a queue global ou tenta novamente
+      if (window.fbq) {
+        window.fbq('track', eventName, pixelData, { eventID: finalEventId });
+        console.log(`[Meta Pixel] Event ${eventName} sent directly`);
+      } else {
+        // O pixel pode não ter carregado ainda (está com delay de 2.5s)
+        // Vamos aguardar e tentar novamente
+        const waitForPixel = (attempts: number = 0) => {
+          if (window.fbq) {
+            window.fbq('track', eventName, pixelData, { eventID: finalEventId });
+            console.log(`[Meta Pixel] Event ${eventName} sent after waiting`);
+          } else if (attempts < 20) {
+            // Tenta por até 10 segundos (20 * 500ms)
+            setTimeout(() => waitForPixel(attempts + 1), 500);
+          } else {
+            console.warn(`[Meta Pixel] fbq not available after timeout for ${eventName}`);
+          }
+        };
+        waitForPixel();
+      }
     }
 
     // 2. Track via Conversions API (Server-side)
