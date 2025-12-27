@@ -27,6 +27,11 @@ const FBC_STORAGE_KEY = 'meta_fbc';
 const FBCLID_STORAGE_KEY = 'meta_fbclid';
 const USER_EMAIL_KEY = 'meta_user_email';
 const USER_ID_KEY = 'meta_user_id';
+const FBC_CREATION_TIME_KEY = 'meta_fbc_creation_time';
+const ANONYMOUS_ID_KEY = 'meta_anonymous_id';
+
+// Meta Parameter Config Tool - Version tracking
+const META_PARAM_CONFIG_VERSION = '1.1.0';
 
 export const metaService = {
   // Generate a unique Event ID
@@ -58,10 +63,32 @@ export const metaService = {
 
   // Generate FBC from fbclid in the correct Meta format
   // Format: fb.{subdomain_index}.{creation_time}.{fbclid}
-  generateFbc: (fbclid: string): string => {
-    const creationTime = Math.floor(Date.now() / 1000);
-    // subdomain_index is 1 for single domain, 2 for subdomain
+  // Following Meta's Parameter Config Tool specifications
+  generateFbc: (fbclid: string, existingCreationTime?: number): string => {
+    // Use existing creation time if provided (for consistency)
+    // Otherwise use current timestamp in milliseconds (Meta's preferred format)
+    const creationTime = existingCreationTime || Date.now();
+    
+    // Store creation time for future reference
+    try {
+      localStorage.setItem(FBC_CREATION_TIME_KEY, creationTime.toString());
+    } catch (e) {}
+    
+    // subdomain_index: 1 for main domain, 2 for subdomain
+    // Using 1 as default for single domain setup
     return `fb.1.${creationTime}.${fbclid}`;
+  },
+
+  // Parse existing fbc to extract components
+  parseFbc: (fbc: string): { subdomainIndex: number; creationTime: number; fbclid: string } | null => {
+    if (!fbc) return null;
+    const parts = fbc.split('.');
+    if (parts.length !== 4 || parts[0] !== 'fb') return null;
+    return {
+      subdomainIndex: parseInt(parts[1], 10),
+      creationTime: parseInt(parts[2], 10),
+      fbclid: parts[3]
+    };
   },
 
   // Extract fbclid from URL
@@ -95,52 +122,104 @@ export const metaService = {
     try {
       const storedFbclid = localStorage.getItem(FBCLID_STORAGE_KEY);
       if (storedFbclid) {
-        const generatedFbc = metaService.generateFbc(storedFbclid);
+        // Try to use stored creation time for consistency
+        const storedCreationTime = localStorage.getItem(FBC_CREATION_TIME_KEY);
+        const creationTime = storedCreationTime ? parseInt(storedCreationTime, 10) : undefined;
+        const generatedFbc = metaService.generateFbc(storedFbclid, creationTime);
         localStorage.setItem(FBC_STORAGE_KEY, generatedFbc);
+        // Also set cookie for cross-page persistence
+        metaService.setCookie('_fbc', generatedFbc, 90);
         return generatedFbc;
       }
     } catch (e) {}
+
+    // 4. Check URL for fbclid as last resort (might be a direct landing)
+    const urlFbclid = metaService.getFbclidFromUrl();
+    if (urlFbclid) {
+      const newFbc = metaService.generateFbc(urlFbclid);
+      try {
+        localStorage.setItem(FBCLID_STORAGE_KEY, urlFbclid);
+        localStorage.setItem(FBC_STORAGE_KEY, newFbc);
+      } catch (e) {}
+      metaService.setCookie('_fbc', newFbc, 90);
+      return newFbc;
+    }
 
     return null;
   },
 
   // Initialize: capture fbclid from URL and create fbc cookie/storage
+  // Implements Meta's Parameter Config Tool specifications
   // Call this on app initialization
   initializeFbc: () => {
     if (typeof window === 'undefined') return;
 
+    console.log('[Meta Parameter Config] Initializing fbc capture v' + META_PARAM_CONFIG_VERSION);
+
     const fbclid = metaService.getFbclidFromUrl();
+    const existingFbc = metaService.getCookie('_fbc');
+    const storedFbc = (() => {
+      try { return localStorage.getItem(FBC_STORAGE_KEY); } catch (e) { return null; }
+    })();
     
     if (fbclid) {
-      console.log('[Meta] fbclid detected in URL:', fbclid);
+      console.log('[Meta Parameter Config] fbclid detected in URL:', fbclid.substring(0, 20) + '...');
       
-      // Store fbclid for future use
-      try {
-        localStorage.setItem(FBCLID_STORAGE_KEY, fbclid);
-      } catch (e) {}
-
-      // Generate and store fbc
-      const fbc = metaService.generateFbc(fbclid);
-      console.log('[Meta] Generated fbc:', fbc);
-
-      // Set as cookie (Meta Pixel might overwrite this, which is fine)
-      metaService.setCookie('_fbc', fbc, 90);
-
-      // Also store in localStorage as backup
-      try {
-        localStorage.setItem(FBC_STORAGE_KEY, fbc);
-      } catch (e) {}
-    } else {
-      // Even without fbclid in URL, check if we have a stored value
-      const existingFbc = metaService.getFbc();
-      if (existingFbc) {
-        console.log('[Meta] Using stored fbc:', existingFbc);
+      // Check if we already have fbc with this fbclid
+      const parsedExisting = storedFbc ? metaService.parseFbc(storedFbc) : null;
+      
+      if (parsedExisting && parsedExisting.fbclid === fbclid) {
+        // Same fbclid, keep existing fbc with original timestamp
+        console.log('[Meta Parameter Config] Existing fbc matches current fbclid, keeping original');
         // Ensure cookie is set
-        if (!metaService.getCookie('_fbc')) {
-          metaService.setCookie('_fbc', existingFbc, 90);
+        if (!existingFbc) {
+          metaService.setCookie('_fbc', storedFbc!, 90);
         }
+      } else {
+        // New fbclid, generate new fbc
+        // Store fbclid for future use
+        try {
+          localStorage.setItem(FBCLID_STORAGE_KEY, fbclid);
+        } catch (e) {}
+
+        // Generate and store fbc with current timestamp
+        const fbc = metaService.generateFbc(fbclid);
+        console.log('[Meta Parameter Config] Generated new fbc:', fbc.substring(0, 30) + '...');
+
+        // Set as first-party cookie (important for cross-page persistence)
+        metaService.setCookie('_fbc', fbc, 90);
+
+        // Also store in localStorage as backup
+        try {
+          localStorage.setItem(FBC_STORAGE_KEY, fbc);
+        } catch (e) {}
+      }
+    } else {
+      // No fbclid in URL, check for stored values
+      const fbcToUse = existingFbc || storedFbc;
+      
+      if (fbcToUse) {
+        console.log('[Meta Parameter Config] Using stored fbc:', fbcToUse.substring(0, 30) + '...');
+        
+        // Ensure cookie is set for cross-page persistence
+        if (!existingFbc && storedFbc) {
+          metaService.setCookie('_fbc', storedFbc, 90);
+        }
+        
+        // Ensure localStorage is synced
+        if (existingFbc && !storedFbc) {
+          try {
+            localStorage.setItem(FBC_STORAGE_KEY, existingFbc);
+          } catch (e) {}
+        }
+      } else {
+        console.log('[Meta Parameter Config] No fbc available - user did not come from Facebook ad');
       }
     }
+    
+    // Log final fbc status for debugging
+    const finalFbc = metaService.getFbc();
+    console.log('[Meta Parameter Config] Final fbc status:', finalFbc ? 'AVAILABLE' : 'NOT AVAILABLE');
   },
 
   // Store user data for better event matching (call this after login/signup)
@@ -178,6 +257,35 @@ export const metaService = {
       return localStorage.getItem(USER_ID_KEY);
     } catch (e) {
       return null;
+    }
+  },
+
+  // Generate anonymous ID for visitors who are not logged in
+  // This ensures 100% coverage of external_id parameter
+  generateAnonymousId: (): string => {
+    const timestamp = Date.now().toString(36);
+    const randomPart = Math.random().toString(36).substring(2, 15);
+    const randomPart2 = Math.random().toString(36).substring(2, 15);
+    return `anon_${timestamp}_${randomPart}${randomPart2}`;
+  },
+
+  // Get or create anonymous ID (persists across sessions)
+  getAnonymousId: (): string => {
+    if (typeof window === 'undefined') return metaService.generateAnonymousId();
+    
+    try {
+      let anonymousId = localStorage.getItem(ANONYMOUS_ID_KEY);
+      
+      if (!anonymousId) {
+        anonymousId = metaService.generateAnonymousId();
+        localStorage.setItem(ANONYMOUS_ID_KEY, anonymousId);
+        console.log('[Meta] Created new anonymous ID for event matching');
+      }
+      
+      return anonymousId;
+    } catch (e) {
+      // If localStorage fails, generate a session-only ID
+      return metaService.generateAnonymousId();
     }
   },
 
@@ -316,6 +424,13 @@ export const metaService = {
       }
     }
     
+    // 3. Se ainda não tiver userId, usar ID anônimo para garantir 100% de cobertura
+    // Isso melhora significativamente a qualidade da correspondência de eventos
+    if (!userId) {
+      userId = metaService.getAnonymousId();
+      console.log('[Meta] Using anonymous ID for event matching (improves external_id coverage)');
+    }
+    
     // Normalizar value e currency para consistência entre Pixel e CAPI
     const normalizedValue = value !== undefined ? parseFloat(value.toFixed(2)) : undefined;
     const normalizedCurrency = currency?.toUpperCase();
@@ -362,11 +477,19 @@ export const metaService = {
       // Use getFbc() to get fbc from cookie, localStorage, or generated from fbclid
       const fbc = metaService.getFbc();
       
-      // Log fbc status for debugging
-      if (fbc) {
-        console.log(`[Meta CAPI] fbc found for ${eventName}:`, fbc);
-      } else {
-        console.log(`[Meta CAPI] No fbc available for ${eventName}`);
+      // Enhanced logging for Meta Parameter Config Tool debugging
+      console.log(`[Meta Parameter Config] Event: ${eventName}`);
+      console.log(`[Meta Parameter Config] fbp: ${fbp ? 'PRESENT' : 'NOT AVAILABLE'}`);
+      console.log(`[Meta Parameter Config] fbc: ${fbc ? 'PRESENT (' + fbc.substring(0, 30) + '...)' : 'NOT AVAILABLE'}`);
+      
+      if (!fbc) {
+        console.log('[Meta Parameter Config] fbc not available - user may not have come from Facebook ad');
+        console.log('[Meta Parameter Config] Checking sources: cookie _fbc:', metaService.getCookie('_fbc'));
+        try {
+          console.log('[Meta Parameter Config] localStorage fbc:', localStorage.getItem(FBC_STORAGE_KEY));
+          console.log('[Meta Parameter Config] localStorage fbclid:', localStorage.getItem(FBCLID_STORAGE_KEY));
+        } catch (e) {}
+        console.log('[Meta Parameter Config] URL fbclid:', metaService.getFbclidFromUrl());
       }
       
       // Verificar se temos dados mínimos para identificação
@@ -431,5 +554,125 @@ export const metaService = {
     } catch (error) {
       console.error('Error sending event to CAPI:', error);
     }
+  },
+
+  // Meta Parameter Config Tool - Diagnostic function
+  // Call this from browser console: metaService.diagnoseFbc()
+  diagnoseFbc: () => {
+    if (typeof window === 'undefined') {
+      console.log('[Meta Parameter Config Diagnostic] Not running in browser');
+      return null;
+    }
+
+    const diagnostic = {
+      version: META_PARAM_CONFIG_VERSION,
+      timestamp: new Date().toISOString(),
+      url: window.location.href,
+      
+      // URL Parameters
+      urlFbclid: metaService.getFbclidFromUrl(),
+      
+      // Cookie values
+      fbcCookie: metaService.getCookie('_fbc'),
+      fbpCookie: metaService.getCookie('_fbp'),
+      
+      // LocalStorage values
+      storedFbc: null as string | null,
+      storedFbclid: null as string | null,
+      storedCreationTime: null as string | null,
+      
+      // Final computed fbc
+      computedFbc: null as string | null,
+      
+      // External ID coverage
+      userId: null as string | null,
+      userEmail: null as string | null,
+      anonymousId: null as string | null,
+      externalIdSource: 'none' as 'user' | 'stored' | 'anonymous' | 'none',
+      
+      // Status
+      fbcAvailable: false,
+      fbcSource: 'none' as 'cookie' | 'localStorage' | 'generated' | 'url' | 'none',
+      externalIdAvailable: false
+    };
+
+    // Get localStorage values
+    try {
+      diagnostic.storedFbc = localStorage.getItem(FBC_STORAGE_KEY);
+      diagnostic.storedFbclid = localStorage.getItem(FBCLID_STORAGE_KEY);
+      diagnostic.storedCreationTime = localStorage.getItem(FBC_CREATION_TIME_KEY);
+      diagnostic.userId = localStorage.getItem(USER_ID_KEY);
+      diagnostic.userEmail = localStorage.getItem(USER_EMAIL_KEY);
+      diagnostic.anonymousId = localStorage.getItem(ANONYMOUS_ID_KEY);
+    } catch (e) {
+      console.log('[Meta Parameter Config Diagnostic] LocalStorage access failed');
+    }
+
+    // Determine fbc source
+    if (diagnostic.fbcCookie) {
+      diagnostic.fbcSource = 'cookie';
+      diagnostic.computedFbc = diagnostic.fbcCookie;
+    } else if (diagnostic.storedFbc) {
+      diagnostic.fbcSource = 'localStorage';
+      diagnostic.computedFbc = diagnostic.storedFbc;
+    } else if (diagnostic.storedFbclid) {
+      diagnostic.fbcSource = 'generated';
+      diagnostic.computedFbc = metaService.getFbc();
+    } else if (diagnostic.urlFbclid) {
+      diagnostic.fbcSource = 'url';
+      diagnostic.computedFbc = metaService.getFbc();
+    }
+
+    diagnostic.fbcAvailable = !!diagnostic.computedFbc;
+    
+    // Determine external_id source
+    if (diagnostic.userId) {
+      diagnostic.externalIdSource = 'user';
+      diagnostic.externalIdAvailable = true;
+    } else if (diagnostic.anonymousId) {
+      diagnostic.externalIdSource = 'anonymous';
+      diagnostic.externalIdAvailable = true;
+    } else {
+      // Generate anonymous ID on first diagnostic run
+      diagnostic.anonymousId = metaService.getAnonymousId();
+      diagnostic.externalIdSource = 'anonymous';
+      diagnostic.externalIdAvailable = true;
+    }
+
+    // Log formatted diagnostic
+    console.log('='.repeat(60));
+    console.log('[Meta Parameter Config Tool - Diagnostic Report]');
+    console.log('='.repeat(60));
+    console.log('Version:', diagnostic.version);
+    console.log('Timestamp:', diagnostic.timestamp);
+    console.log('URL:', diagnostic.url);
+    console.log('-'.repeat(60));
+    console.log('URL fbclid:', diagnostic.urlFbclid || '(not present)');
+    console.log('-'.repeat(60));
+    console.log('Cookie _fbc:', diagnostic.fbcCookie || '(not set)');
+    console.log('Cookie _fbp:', diagnostic.fbpCookie || '(not set)');
+    console.log('-'.repeat(60));
+    console.log('LocalStorage fbc:', diagnostic.storedFbc || '(not stored)');
+    console.log('LocalStorage fbclid:', diagnostic.storedFbclid || '(not stored)');
+    console.log('LocalStorage creation time:', diagnostic.storedCreationTime || '(not stored)');
+    console.log('-'.repeat(60));
+    console.log('EXTERNAL ID COVERAGE:');
+    console.log('  User ID (logged in):', diagnostic.userId || '(not logged in)');
+    console.log('  User Email:', diagnostic.userEmail || '(not available)');
+    console.log('  Anonymous ID:', diagnostic.anonymousId || '(will be created)');
+    console.log('  Source:', diagnostic.externalIdSource);
+    console.log('  Coverage:', diagnostic.externalIdAvailable ? '100% ✓' : 'MISSING ✗');
+    console.log('-'.repeat(60));
+    console.log('Final fbc:', diagnostic.computedFbc || '(NOT AVAILABLE)');
+    console.log('fbc Source:', diagnostic.fbcSource);
+    console.log('fbc Available:', diagnostic.fbcAvailable ? 'YES ✓' : 'NO ✗');
+    console.log('='.repeat(60));
+
+    if (!diagnostic.fbcAvailable) {
+      console.log('[Recommendation] User did not arrive from a Facebook ad click.');
+      console.log('[Recommendation] To test, add ?fbclid=test123 to your URL');
+    }
+
+    return diagnostic;
   }
 };

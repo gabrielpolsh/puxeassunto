@@ -5,6 +5,11 @@ import { Hero } from './components/Hero';
 import { supabase } from './lib/supabase';
 import { metaService } from './services/metaService';
 
+// Expose metaService globally for debugging (Meta Parameter Config Tool)
+if (typeof window !== 'undefined') {
+  (window as any).metaService = metaService;
+}
+
 // Lazy load below-the-fold and route components for better LCP
 const HowItWorks = lazy(() => import('./components/HowItWorks').then(m => ({ default: m.HowItWorks })));
 const Testimonials = lazy(() => import('./components/Testimonials').then(m => ({ default: m.Testimonials })));
