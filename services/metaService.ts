@@ -303,8 +303,14 @@ export const metaService = {
   _cachedClientIp: null as string | null,
   _ipFetchPromise: null as Promise<string | null> | null,
 
-  // Get client IP address (preferably IPv6)
-  // Uses external API to detect the user's real IP
+  // Check if an IP address is IPv6
+  isIPv6: (ip: string): boolean => {
+    return ip.includes(':');
+  },
+
+  // Get client IP address (PRIORITIZING IPv6 as recommended by Meta)
+  // IPv6 is the industry standard and provides better matching for Meta CAPI
+  // Uses multiple external APIs to detect the user's real IP with IPv6 preference
   getClientIp: async (): Promise<string | null> => {
     // Return cached IP if available
     if (metaService._cachedClientIp) {
@@ -316,46 +322,108 @@ export const metaService = {
       return metaService._ipFetchPromise;
     }
 
-    // Start fetching IP
+    // Start fetching IP with IPv6 priority
     metaService._ipFetchPromise = (async () => {
+      let ipv4Fallback: string | null = null;
+
+      // Strategy: Try IPv6-first endpoints, store IPv4 as fallback
+      
       try {
-        // Try multiple services to get IPv6
-        // 1. Try ipify (supports IPv6)
+        // 1. Try ipify IPv6-only endpoint first (most reliable for IPv6)
+        const ipv6Response = await fetch('https://api6.ipify.org?format=json', {
+          signal: AbortSignal.timeout(2000) // 2 second timeout for faster fallback
+        });
+        
+        if (ipv6Response.ok) {
+          const data = await ipv6Response.json();
+          if (data.ip && metaService.isIPv6(data.ip)) {
+            metaService._cachedClientIp = data.ip;
+            console.log('[Meta IPv6] ✓ IPv6 detected via ipify:', data.ip);
+            return data.ip;
+          }
+        }
+      } catch (e) {
+        console.log('[Meta IPv6] ipify IPv6-only endpoint not available');
+      }
+
+      try {
+        // 2. Try api64.ipify.org (dual-stack, prefers IPv6)
         const response = await fetch('https://api64.ipify.org?format=json', {
-          signal: AbortSignal.timeout(3000) // 3 second timeout
+          signal: AbortSignal.timeout(2000)
         });
         
         if (response.ok) {
           const data = await response.json();
           if (data.ip) {
-            metaService._cachedClientIp = data.ip;
-            console.log('[Meta] Client IP detected:', data.ip, 'IPv6:', data.ip.includes(':'));
-            return data.ip;
+            if (metaService.isIPv6(data.ip)) {
+              metaService._cachedClientIp = data.ip;
+              console.log('[Meta IPv6] ✓ IPv6 detected via api64:', data.ip);
+              return data.ip;
+            } else {
+              // Store IPv4 as fallback
+              ipv4Fallback = data.ip;
+              console.log('[Meta IPv6] IPv4 detected, continuing to search for IPv6...');
+            }
           }
         }
       } catch (e) {
-        console.log('[Meta] Failed to get client IP from ipify:', e);
+        console.log('[Meta IPv6] api64.ipify.org failed');
       }
 
       try {
-        // 2. Fallback to cloudflare trace
+        // 3. Try Cloudflare trace (often has IPv6)
         const cfResponse = await fetch('https://www.cloudflare.com/cdn-cgi/trace', {
-          signal: AbortSignal.timeout(3000)
+          signal: AbortSignal.timeout(2000)
         });
         
         if (cfResponse.ok) {
           const text = await cfResponse.text();
           const ipMatch = text.match(/ip=([^\n]+)/);
           if (ipMatch && ipMatch[1]) {
-            metaService._cachedClientIp = ipMatch[1];
-            console.log('[Meta] Client IP detected (CF):', ipMatch[1], 'IPv6:', ipMatch[1].includes(':'));
-            return ipMatch[1];
+            const cfIp = ipMatch[1];
+            if (metaService.isIPv6(cfIp)) {
+              metaService._cachedClientIp = cfIp;
+              console.log('[Meta IPv6] ✓ IPv6 detected via Cloudflare:', cfIp);
+              return cfIp;
+            } else if (!ipv4Fallback) {
+              ipv4Fallback = cfIp;
+            }
           }
         }
       } catch (e) {
-        console.log('[Meta] Failed to get client IP from Cloudflare:', e);
+        console.log('[Meta IPv6] Cloudflare trace failed');
       }
 
+      try {
+        // 4. Try icanhazip (simple, often returns IPv6)
+        const icanhazResponse = await fetch('https://icanhazip.com', {
+          signal: AbortSignal.timeout(2000)
+        });
+        
+        if (icanhazResponse.ok) {
+          const ip = (await icanhazResponse.text()).trim();
+          if (ip) {
+            if (metaService.isIPv6(ip)) {
+              metaService._cachedClientIp = ip;
+              console.log('[Meta IPv6] ✓ IPv6 detected via icanhazip:', ip);
+              return ip;
+            } else if (!ipv4Fallback) {
+              ipv4Fallback = ip;
+            }
+          }
+        }
+      } catch (e) {
+        console.log('[Meta IPv6] icanhazip failed');
+      }
+
+      // If no IPv6 found, use IPv4 fallback (still better than nothing)
+      if (ipv4Fallback) {
+        metaService._cachedClientIp = ipv4Fallback;
+        console.log('[Meta IPv6] ⚠ No IPv6 available, using IPv4 fallback:', ipv4Fallback);
+        return ipv4Fallback;
+      }
+
+      console.log('[Meta IPv6] ✗ Could not detect client IP');
       return null;
     })();
 
@@ -666,6 +734,16 @@ export const metaService = {
     console.log('Final fbc:', diagnostic.computedFbc || '(NOT AVAILABLE)');
     console.log('fbc Source:', diagnostic.fbcSource);
     console.log('fbc Available:', diagnostic.fbcAvailable ? 'YES ✓' : 'NO ✗');
+    console.log('-'.repeat(60));
+    console.log('IPv6 STATUS:');
+    const cachedIp = metaService._cachedClientIp;
+    if (cachedIp) {
+      const isIPv6 = metaService.isIPv6(cachedIp);
+      console.log('  Cached IP:', cachedIp);
+      console.log('  Type:', isIPv6 ? 'IPv6 ✓ (recommended)' : 'IPv4 ⚠ (IPv6 preferred)');
+    } else {
+      console.log('  Cached IP: (not yet fetched - will be fetched on next event)');
+    }
     console.log('='.repeat(60));
 
     if (!diagnostic.fbcAvailable) {
@@ -674,5 +752,40 @@ export const metaService = {
     }
 
     return diagnostic;
+  },
+
+  // Diagnose IPv6 status - fetch IP and show result
+  diagnoseIPv6: async () => {
+    console.log('='.repeat(60));
+    console.log('[Meta IPv6 Diagnostic] Fetching client IP...');
+    console.log('='.repeat(60));
+    
+    // Clear cache to force fresh fetch
+    metaService._cachedClientIp = null;
+    
+    const ip = await metaService.getClientIp();
+    
+    console.log('-'.repeat(60));
+    if (ip) {
+      const isIPv6 = metaService.isIPv6(ip);
+      console.log('Result:', ip);
+      console.log('Type:', isIPv6 ? 'IPv6 ✓' : 'IPv4');
+      console.log('Status:', isIPv6 ? 'OPTIMAL - Meta will receive IPv6' : 'FALLBACK - Your network may not support IPv6');
+      
+      if (!isIPv6) {
+        console.log('-'.repeat(60));
+        console.log('[Note] IPv4 was returned. This could mean:');
+        console.log('  1. Your ISP does not support IPv6');
+        console.log('  2. Your network/router has IPv6 disabled');
+        console.log('  3. The IP detection services only returned IPv4');
+        console.log('IPv4 still works, but IPv6 provides better matching.');
+      }
+    } else {
+      console.log('Result: Could not detect IP');
+      console.log('Status: ERROR - IP detection failed');
+    }
+    console.log('='.repeat(60));
+    
+    return { ip, isIPv6: ip ? metaService.isIPv6(ip) : false };
   }
 };
