@@ -108,27 +108,32 @@ const TypewriterTitle: React.FC = () => {
   const [phraseIndex, setPhraseIndex] = useState(0);
   const [displayText, setDisplayText] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
     const currentPhrase = TITLE_PHRASES[phraseIndex];
     const typeSpeed = isDeleting ? 40 : 80;
     const pauseTime = 2500;
 
-    const timeout = setTimeout(() => {
+    timeoutRef.current = setTimeout(() => {
       if (!isDeleting && displayText === currentPhrase) {
         // Pause before deleting
-        setTimeout(() => setIsDeleting(true), pauseTime);
+        timeoutRef.current = setTimeout(() => setIsDeleting(true), pauseTime);
       } else if (isDeleting && displayText === '') {
         // Move to next phrase
         setIsDeleting(false);
         setPhraseIndex((prev) => (prev + 1) % TITLE_PHRASES.length);
       } else {
-        // Type or delete character
-        setDisplayText(currentPhrase.substring(0, displayText.length + (isDeleting ? -1 : 1)));
+        // Type or delete character - batch update
+        requestAnimationFrame(() => {
+          setDisplayText(currentPhrase.substring(0, displayText.length + (isDeleting ? -1 : 1)));
+        });
       }
     }, typeSpeed);
 
-    return () => clearTimeout(timeout);
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
   }, [displayText, isDeleting, phraseIndex]);
 
   return (
@@ -316,6 +321,8 @@ const TinderCarousel: React.FC<{ onAction?: () => void }> = ({ onAction }) => {
             alt="Próximo depoimento"
             loading="lazy"
             decoding="async"
+            width="400"
+            height="400"
             className="w-full h-full object-cover object-[center_15%]"
           />
           <div className="absolute inset-0 bg-black/40"></div>
@@ -340,8 +347,11 @@ const TinderCarousel: React.FC<{ onAction?: () => void }> = ({ onAction }) => {
           <img
             src={TESTIMONIALS_DATA[currentIndex].image}
             alt={`Depoimento ${currentIndex + 1}`}
-            loading="lazy"
+            loading={currentIndex === 0 ? "eager" : "lazy"}
             decoding="async"
+            fetchPriority={currentIndex === 0 ? "high" : "auto"}
+            width="400"
+            height="400"
             className="w-full h-full object-cover object-[center_15%] pointer-events-none"
           />
 

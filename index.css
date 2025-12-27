@@ -1,4 +1,22 @@
-/* Custom Animations */
+/* Custom Animations - Performance Optimized */
+
+/* Use GPU acceleration for animations */
+.animate-fade-in,
+.animate-slide-up,
+.animate-float,
+.animate-scale-in,
+.animate-slide-down {
+  will-change: transform, opacity;
+}
+
+/* Layout containment for performance */
+.contain-layout {
+  contain: layout;
+}
+
+.contain-paint {
+  contain: paint;
+}
 
 @keyframes fade-in {
   from {

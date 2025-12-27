@@ -1,22 +1,39 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { Header } from './components/Header';
 import { Hero } from './components/Hero';
-import { HowItWorks } from './components/HowItWorks';
-import { Testimonials } from './components/Testimonials';
-import { FAQ } from './components/FAQ';
-import { Footer } from './components/Footer';
-import { AuthPage } from './components/AuthPage';
-import { Dashboard } from './components/Dashboard';
-import { UpgradePage } from './components/UpgradePage';
-import { ThankYouPage } from './components/ThankYouPage';
-import { ThankYouPage2 } from './components/ThankYouPage2';
-import { LegalPage } from './components/LegalPage';
-import { FacePage } from './components/FacePage';
-import { PuxarAssuntoPage, FlertePage, ConversasPage, BlogIndexPage, CantadasPage, TinderDicasPage, RespostasWhatsAppPage } from './components/seo';
-import { WhatsAppButton } from './components/WhatsAppButton';
 import { supabase } from './lib/supabase';
 import { metaService } from './services/metaService';
+
+// Lazy load below-the-fold and route components for better LCP
+const HowItWorks = lazy(() => import('./components/HowItWorks').then(m => ({ default: m.HowItWorks })));
+const Testimonials = lazy(() => import('./components/Testimonials').then(m => ({ default: m.Testimonials })));
+const FAQ = lazy(() => import('./components/FAQ').then(m => ({ default: m.FAQ })));
+const Footer = lazy(() => import('./components/Footer').then(m => ({ default: m.Footer })));
+const AuthPage = lazy(() => import('./components/AuthPage').then(m => ({ default: m.AuthPage })));
+const Dashboard = lazy(() => import('./components/Dashboard').then(m => ({ default: m.Dashboard })));
+const UpgradePage = lazy(() => import('./components/UpgradePage').then(m => ({ default: m.UpgradePage })));
+const ThankYouPage = lazy(() => import('./components/ThankYouPage').then(m => ({ default: m.ThankYouPage })));
+const ThankYouPage2 = lazy(() => import('./components/ThankYouPage2').then(m => ({ default: m.ThankYouPage2 })));
+const LegalPage = lazy(() => import('./components/LegalPage').then(m => ({ default: m.LegalPage })));
+const FacePage = lazy(() => import('./components/FacePage').then(m => ({ default: m.FacePage })));
+const WhatsAppButton = lazy(() => import('./components/WhatsAppButton').then(m => ({ default: m.WhatsAppButton })));
+
+// Lazy load SEO pages
+const PuxarAssuntoPage = lazy(() => import('./components/seo/PuxarAssuntoPage').then(m => ({ default: m.PuxarAssuntoPage })));
+const FlertePage = lazy(() => import('./components/seo/FlertePage').then(m => ({ default: m.FlertePage })));
+const ConversasPage = lazy(() => import('./components/seo/ConversasPage').then(m => ({ default: m.ConversasPage })));
+const BlogIndexPage = lazy(() => import('./components/seo/BlogIndexPage').then(m => ({ default: m.BlogIndexPage })));
+const CantadasPage = lazy(() => import('./components/seo/CantadasPage').then(m => ({ default: m.CantadasPage })));
+const TinderDicasPage = lazy(() => import('./components/seo/TinderDicasPage').then(m => ({ default: m.TinderDicasPage })));
+const RespostasWhatsAppPage = lazy(() => import('./components/seo/RespostasWhatsAppPage').then(m => ({ default: m.RespostasWhatsAppPage })));
+
+// Loading fallback component
+const LoadingFallback = () => (
+  <div className="min-h-[200px] flex items-center justify-center">
+    <div className="w-6 h-6 border-2 border-rose-500 border-t-transparent rounded-full animate-spin"></div>
+  </div>
+);
 
 // Scroll to Top Component
 const ScrollToTop: React.FC = () => {
@@ -62,12 +79,20 @@ const LandingPage: React.FC<{ onAction: () => void; user: any }> = ({ onAction, 
 
         <main className="container mx-auto px-4 md:px-8 max-w-7xl">
           <Hero onAction={onAction} user={user} />
-          <HowItWorks />
-          <Testimonials onAction={onAction} />
-          <FAQ />
+          <Suspense fallback={<LoadingFallback />}>
+            <HowItWorks />
+          </Suspense>
+          <Suspense fallback={<LoadingFallback />}>
+            <Testimonials onAction={onAction} />
+          </Suspense>
+          <Suspense fallback={<LoadingFallback />}>
+            <FAQ />
+          </Suspense>
         </main>
 
-        <Footer />
+        <Suspense fallback={null}>
+          <Footer />
+        </Suspense>
       </div>
     </div>
   );
@@ -167,31 +192,36 @@ const AppRouter: React.FC = () => {
   return (
     <>
       <ScrollToTop />
-      <Routes>
-        {/* Landing Page */}
-        <Route path="/" element={<LandingPage onAction={handleMainAction} user={user} />} />
+      <Suspense fallback={
+        <div className="min-h-screen bg-[#050505] flex items-center justify-center">
+          <div className="w-8 h-8 border-2 border-rose-500 border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      }>
+        <Routes>
+          {/* Landing Page */}
+          <Route path="/" element={<LandingPage onAction={handleMainAction} user={user} />} />
 
-        {/* Auth Page */}
-        <Route
-          path="/login"
-          element={
-            user ? (
-              <Navigate to="/dashboard" replace />
-            ) : (
-              <AuthPage onBack={() => navigate('/')} onLoginSuccess={handleLoginSuccess} />
-            )
-          }
-        />
+          {/* Auth Page */}
+          <Route
+            path="/login"
+            element={
+              user ? (
+                <Navigate to="/dashboard" replace />
+              ) : (
+                <AuthPage onBack={() => navigate('/')} onLoginSuccess={handleLoginSuccess} />
+              )
+            }
+          />
 
-        {/* Protected Routes */}
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute user={user}>
-              <Dashboard user={user} onUpgradeClick={() => navigate('/upgrade')} />
-            </ProtectedRoute>
-          }
-        />
+          {/* Protected Routes */}
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute user={user}>
+                <Dashboard user={user} onUpgradeClick={() => navigate('/upgrade')} />
+              </ProtectedRoute>
+            }
+          />
 
         <Route
           path="/upgrade"
@@ -262,7 +292,8 @@ const AppRouter: React.FC = () => {
 
         {/* Redirect any unknown routes to landing */}
         <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+        </Routes>
+      </Suspense>
     </>
   );
 };

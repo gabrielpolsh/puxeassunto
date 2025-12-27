@@ -19,6 +19,33 @@ export default defineConfig(({ mode }) => {
         alias: {
           '@': path.resolve(__dirname, '.'),
         }
-      }
+      },
+      build: {
+        // Use esbuild for minification (built-in, faster than terser)
+        minify: 'esbuild',
+        // Optimize chunk splitting for better caching and parallel loading
+        rollupOptions: {
+          output: {
+            manualChunks: {
+              // Vendor chunks for better caching
+              'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+              'vendor-supabase': ['@supabase/supabase-js'],
+              'vendor-icons': ['lucide-react'],
+            },
+          },
+        },
+        // Increase chunk size warning limit
+        chunkSizeWarningLimit: 500,
+        // Enable CSS code splitting
+        cssCodeSplit: true,
+        // Generate source maps for production debugging (optional)
+        sourcemap: false,
+        // Target modern browsers for smaller bundles
+        target: 'es2020',
+      },
+      // Optimize dependency pre-bundling
+      optimizeDeps: {
+        include: ['react', 'react-dom', 'react-router-dom', 'lucide-react'],
+      },
     };
 });

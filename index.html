@@ -42,10 +42,15 @@
     <meta name="format-detection" content="telephone=no" />
     <link rel="canonical" href="https://puxeassunto.com/" />
     
-    <!-- Preconnect para performance -->
+    <!-- Preconnect for performance - critical third-party origins -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="preconnect" href="https://images.unsplash.com" />
+    <link rel="dns-prefetch" href="https://connect.facebook.net" />
+    <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
+    
+    <!-- Preload critical LCP images for faster rendering -->
+    <link rel="preload" as="image" href="/depoimentos/depomento1.png" fetchpriority="high" />
     
     <!-- Favicon -->
     <link rel="icon" type="image/png" sizes="96x96" href="/favicon/favicon-96x96.png" />
@@ -247,12 +252,8 @@
     </script>
     <!-- End Meta Pixel Code -->
 
-    <!-- Tailwind CSS - carregado de forma otimizada -->
-    <script src="https://cdn.tailwindcss.com" defer></script>
-    
-    <!-- Google Fonts - carregado de forma não-bloqueante -->
-    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"></noscript>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
         theme: {
@@ -284,45 +285,21 @@
         }
       }
     </script>
+    
+    <!-- Google Fonts -->
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"></noscript>
     <style>
-      body {
-        background-color: #050505;
-        color: #ffffff;
-        scroll-behavior: smooth;
-      }
-      html {
-        scroll-behavior: smooth;
-      }
-      /* Custom scrollbar */
-      ::-webkit-scrollbar {
-        width: 8px;
-      }
-      ::-webkit-scrollbar-track {
-        background: #111; 
-      }
-      ::-webkit-scrollbar-thumb {
-        background: #333; 
-        border-radius: 4px;
-      }
-      ::-webkit-scrollbar-thumb:hover {
-        background: #555; 
-      }
-
-      /* Infinite Scroll Animation */
-      @keyframes scroll {
-        0% { transform: translateX(0); }
-        100% { transform: translateX(-50%); }
-      }
-      .animate-scroll {
-        animation: scroll 40s linear infinite;
-      }
-      .animate-scroll-reverse {
-        animation: scroll 40s linear infinite reverse;
-      }
-      .group:hover .animate-scroll,
-      .group:hover .animate-scroll-reverse {
-        animation-play-state: paused;
-      }
+      /* Smooth scrolling and custom scrollbar - deferred styles */
+      html{scroll-behavior:smooth}
+      ::-webkit-scrollbar{width:8px}
+      ::-webkit-scrollbar-track{background:#111}
+      ::-webkit-scrollbar-thumb{background:#333;border-radius:4px}
+      ::-webkit-scrollbar-thumb:hover{background:#555}
+      @keyframes scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+      .animate-scroll{animation:scroll 40s linear infinite}
+      .animate-scroll-reverse{animation:scroll 40s linear infinite reverse}
+      .group:hover .animate-scroll,.group:hover .animate-scroll-reverse{animation-play-state:paused}
     </style>
   <script type="importmap">
 {

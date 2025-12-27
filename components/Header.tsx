@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { MessageCircleHeart, LogIn, User } from 'lucide-react';
 
 interface HeaderProps {
@@ -8,12 +8,24 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ onAction, user }) => {
   const [scrolled, setScrolled] = useState(false);
+  const ticking = useRef(false);
+
+  // Optimized scroll handler using requestAnimationFrame to prevent forced reflows
+  const handleScroll = useCallback(() => {
+    if (!ticking.current) {
+      requestAnimationFrame(() => {
+        setScrolled(window.scrollY > 50);
+        ticking.current = false;
+      });
+      ticking.current = true;
+    }
+  }, []);
 
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 50);
-    window.addEventListener('scroll', handleScroll);
+    // Use passive listener for better scroll performance
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [handleScroll]);
 
   return (
     <header className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${scrolled ? 'bg-[#050505]/90 backdrop-blur-xl py-4 border-b border-white/5' : 'bg-transparent py-6'}`}>
