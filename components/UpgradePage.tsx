@@ -199,7 +199,10 @@ export const UpgradePage: React.FC<UpgradePageProps> = ({ onBack, user }) => {
             contentName: `Plano PRO ${plan.name}`,
             value: plan.price,
             currency: 'BRL',
-            contentType: 'product'
+            contentType: 'product',
+            // Passar email explicitamente para melhorar qualidade da correspondência
+            emails: user?.email ? [user.email] : undefined,
+            externalId: user?.id,
         });
         
         // Build checkout URL with pre-filled email

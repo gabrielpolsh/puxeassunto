@@ -499,6 +499,13 @@ export const metaService = {
       console.log('[Meta] Using anonymous ID for event matching (improves external_id coverage)');
     }
     
+    // Log warning for important events without email (impacts event matching quality)
+    const importantEvents = ['InitiateCheckout', 'Purchase', 'Lead', 'CompleteRegistration', 'Subscribe'];
+    if (importantEvents.includes(eventName) && (!userEmails || userEmails.length === 0)) {
+      console.warn(`[Meta Quality] ⚠️ ${eventName} event without email - this impacts event matching quality`);
+      console.warn('[Meta Quality] Consider capturing user email before this event');
+    }
+    
     // Normalizar value e currency para consistência entre Pixel e CAPI
     const normalizedValue = value !== undefined ? parseFloat(value.toFixed(2)) : undefined;
     const normalizedCurrency = currency?.toUpperCase();

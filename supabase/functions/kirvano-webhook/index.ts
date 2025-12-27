@@ -1,5 +1,70 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
+import { crypto } from "https://deno.land/std@0.168.0/crypto/mod.ts";
+
+// Meta CAPI Configuration
+const META_PIXEL_ID = '1770822433821202';
+const META_ACCESS_TOKEN = 'EAAOMFb4hzEIBQLuZBhM25lOZAm81eK5rkRuodxyVbuZCiwSwZBOZBFnTdqiJlVZBZBruPU0fuoVfHpxtqZANq55jBfmD1zqRTRcsbHv8UkII6tbL8Sp1pPhS59UzUZAEblLHDBsvSh2zRaIgU9AxdXxPffAdy6W5zmNuTqBJ2COjBAlNu8YyMHKt3ykwLpNYwewZDZD';
+
+// SHA256 hash function for Meta CAPI
+async function sha256(message: string): Promise<string> {
+  const msgBuffer = new TextEncoder().encode(message);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// Send Purchase event to Meta Conversions API
+async function sendPurchaseToMeta(email: string, value: number, currency: string, planType: string) {
+  try {
+    const eventTime = Math.floor(Date.now() / 1000);
+    const eventId = `purchase_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Hash email for Meta CAPI (required)
+    const hashedEmail = await sha256(email.toLowerCase().trim());
+    
+    const payload = {
+      data: [{
+        event_name: 'Purchase',
+        event_time: eventTime,
+        action_source: 'website',
+        event_id: eventId,
+        user_data: {
+          em: [hashedEmail],
+          // external_id will be added if we have the user ID
+        },
+        custom_data: {
+          value: parseFloat(value.toFixed(2)),
+          currency: currency.toUpperCase(),
+          content_name: `Plano PRO ${planType}`,
+          content_type: 'product',
+        },
+      }],
+    };
+    
+    console.log('[Meta CAPI] Sending Purchase event:', JSON.stringify(payload));
+    
+    const response = await fetch(
+      `https://graph.facebook.com/v19.0/${META_PIXEL_ID}/events?access_token=${META_ACCESS_TOKEN}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      }
+    );
+    
+    const result = await response.json();
+    
+    if (response.ok) {
+      console.log('[Meta CAPI] Purchase event sent successfully:', result);
+    } else {
+      console.error('[Meta CAPI] Error sending Purchase event:', result);
+    }
+  } catch (error) {
+    console.error('[Meta CAPI] Failed to send Purchase event:', error);
+    // Don't throw - we don't want to fail the webhook because of Meta
+  }
+}
 
 // Plan configuration - maps Kirvano product/checkout URLs to plan types
 const PLAN_CONFIGS: Record<string, { planType: string; durationMonths: number; price: number }> = {
@@ -261,6 +326,16 @@ serve(async (req) => {
                 }
                 
                 console.log(`User ${user.id} (${customerEmail}) updated. PRO: ${isPro}, Plan: ${planType}, Expires: ${subscriptionEndDate.toISOString()}`);
+                
+                // Send Purchase event to Meta CAPI when user becomes PRO
+                if (isPro) {
+                    const planConfig = PLAN_CONFIGS[detectPlanType(payload).planType === 'yearly' ? 'f4254764-ee73-4db6-80fe-4d0dc70233e2' : 
+                                        detectPlanType(payload).planType === 'quarterly' ? '003f8e49-5c58-41f5-a122-8715abdf2c02' : 
+                                        '1b352195-0b65-4afa-9a3e-bd58515446e9'];
+                    const price = planConfig?.price || 15.00;
+                    
+                    await sendPurchaseToMeta(customerEmail, price, 'BRL', planType);
+                }
             } else {
                 console.log(`User with email ${customerEmail} not found in profiles.`);
                 // Optionally we could create a profile or log this for manual review
