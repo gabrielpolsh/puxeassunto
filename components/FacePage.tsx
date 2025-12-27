@@ -394,7 +394,7 @@ export const FacePage: React.FC = () => {
     metaService.trackEvent({
       eventName: 'InitiateCheckout',
       contentName: 'Plano PRO Ilimitado - Face',
-      value: 15.00,
+      value: 15.90,
       currency: 'BRL',
       contentType: 'product'
     });

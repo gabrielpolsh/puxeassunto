@@ -10,10 +10,10 @@ export const ThankYouPage2: React.FC = () => {
     useEffect(() => {
         setMounted(true);
         
-        // Track Purchase
+        // Track Purchase - Valor correto: R$ 15,90
         metaService.trackEvent({
             eventName: 'Purchase',
-            value: 15.00,
+            value: 15.90,
             currency: 'BRL',
             contentName: 'Plano PRO Ilimitado - Face',
             contentType: 'product'

@@ -111,7 +111,7 @@ export const UpgradePage: React.FC<UpgradePageProps> = ({ onBack, user }) => {
         metaService.trackEvent({
             eventName: 'AddToCart',
             contentName: 'Plano PRO Ilimitado',
-            value: 15.00,
+            value: 15.90,
             currency: 'BRL',
             contentType: 'product'
         });
