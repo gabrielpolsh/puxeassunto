@@ -329,24 +329,34 @@ serve(async (req) => {
                 
                 // Send Purchase event to Meta CAPI when user becomes PRO
                 if (isPro) {
-                    // Try to get actual price from payload, fallback to plan config
-                    const payloadPrice = 
-                        payload.data?.sale?.amount ||
-                        payload.data?.amount ||
-                        payload.amount ||
-                        payload.value ||
-                        payload.products?.[0]?.price ||
-                        null;
+                    // Try to get actual price from Kirvano payload
+                    // Kirvano structure: payload.fiscal.total_value (number) or payload.products[0].price (string "R$ 15,90")
+                    let payloadPrice: number | null = null;
                     
+                    // Priority 1: fiscal.total_value (most reliable, already a number)
+                    if (payload.fiscal?.total_value && typeof payload.fiscal.total_value === 'number') {
+                        payloadPrice = payload.fiscal.total_value;
+                    }
+                    // Priority 2: fiscal.net_value
+                    else if (payload.fiscal?.net_value && typeof payload.fiscal.net_value === 'number') {
+                        payloadPrice = payload.fiscal.net_value;
+                    }
+                    // Priority 3: products[0].price (string like "R$ 15,90")
+                    else if (payload.products?.[0]?.price) {
+                        const priceStr = payload.products[0].price;
+                        // Parse "R$ 15,90" to 15.90
+                        const numMatch = priceStr.replace(/[^\d,\.]/g, '').replace(',', '.');
+                        payloadPrice = parseFloat(numMatch) || null;
+                    }
+                    
+                    // Fallback to plan config
                     const planConfig = PLAN_CONFIGS[detectPlanType(payload).planType === 'yearly' ? 'f4254764-ee73-4db6-80fe-4d0dc70233e2' : 
                                         detectPlanType(payload).planType === 'quarterly' ? '003f8e49-5c58-41f5-a122-8715abdf2c02' : 
                                         '1b352195-0b65-4afa-9a3e-bd58515446e9'];
                     
-                    // Use actual price from payload if valid, otherwise use plan config price
-                    const numericPayloadPrice = payloadPrice ? (typeof payloadPrice === 'string' ? parseFloat(payloadPrice) : payloadPrice) : null;
-                    const price = (numericPayloadPrice && numericPayloadPrice > 0) ? numericPayloadPrice : (planConfig?.price || 15.00);
+                    const price = (payloadPrice && payloadPrice > 0) ? payloadPrice : (planConfig?.price || 15.00);
                     
-                    console.log(`[Meta CAPI] Sending Purchase - Email: ${customerEmail}, Price: ${price} BRL, Plan: ${planType}`);
+                    console.log(`[Meta CAPI] Sending Purchase - Email: ${customerEmail}, Price: ${price} BRL, Plan: ${planType}, Source: ${payloadPrice ? 'payload' : 'config'}`);
                     await sendPurchaseToMeta(customerEmail, price, 'BRL', planType);
                 }
             } else {
