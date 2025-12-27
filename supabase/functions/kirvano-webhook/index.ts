@@ -68,8 +68,8 @@ async function sendPurchaseToMeta(email: string, value: number, currency: string
 
 // Plan configuration - maps Kirvano product/checkout URLs to plan types
 const PLAN_CONFIGS: Record<string, { planType: string; durationMonths: number; price: number }> = {
-    // Monthly plan - R$ 15,00
-    '1b352195-0b65-4afa-9a3e-bd58515446e9': { planType: 'monthly', durationMonths: 1, price: 15.00 },
+    // Monthly plan - R$ 15,90
+    '1b352195-0b65-4afa-9a3e-bd58515446e9': { planType: 'monthly', durationMonths: 1, price: 15.90 },
     // Quarterly plan - R$ 39,90
     '003f8e49-5c58-41f5-a122-8715abdf2c02': { planType: 'quarterly', durationMonths: 3, price: 39.90 },
     // Yearly plan - R$ 97,90
