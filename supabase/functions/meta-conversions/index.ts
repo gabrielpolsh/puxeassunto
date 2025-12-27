@@ -175,6 +175,7 @@ serve(async (req) => {
         },
       ],
     };
+    
 
     console.log('Sending payload to Meta:', JSON.stringify(payload));
 
