@@ -517,17 +517,38 @@ export const metaService = {
       // Clean undefined values
       Object.keys(pixelData).forEach(key => pixelData[key] === undefined && delete pixelData[key]);
 
+      // Prepare user data for Pixel (external_id for deduplication)
+      // This ensures browser events have the same external_id as server events
+      const pixelUserData: any = {};
+      if (userId) {
+        pixelUserData.external_id = userId;
+      }
+      if (userEmails && userEmails.length > 0) {
+        pixelUserData.em = userEmails[0]; // Pixel only accepts single email
+      }
+
+      // Helper function to send pixel event with user data
+      const sendPixelEvent = () => {
+        // Set user data for better matching (includes external_id)
+        if (Object.keys(pixelUserData).length > 0) {
+          window.fbq('init', '1770822433821202', pixelUserData);
+          console.log(`[Meta Pixel] User data set for deduplication:`, Object.keys(pixelUserData));
+        }
+        
+        // Send the event
+        window.fbq('track', eventName, pixelData, { eventID: finalEventId });
+        console.log(`[Meta Pixel] Event ${eventName} sent with eventID: ${finalEventId}`);
+      };
+
       // Se o fbq ainda não carregou, usa a queue global ou tenta novamente
       if (window.fbq) {
-        window.fbq('track', eventName, pixelData, { eventID: finalEventId });
-        console.log(`[Meta Pixel] Event ${eventName} sent directly`);
+        sendPixelEvent();
       } else {
         // O pixel pode não ter carregado ainda (está com delay de 2.5s)
         // Vamos aguardar e tentar novamente
         const waitForPixel = (attempts: number = 0) => {
           if (window.fbq) {
-            window.fbq('track', eventName, pixelData, { eventID: finalEventId });
-            console.log(`[Meta Pixel] Event ${eventName} sent after waiting`);
+            sendPixelEvent();
           } else if (attempts < 20) {
             // Tenta por até 10 segundos (20 * 500ms)
             setTimeout(() => waitForPixel(attempts + 1), 500);
