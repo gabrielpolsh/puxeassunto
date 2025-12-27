@@ -316,12 +316,16 @@ export const metaService = {
       }
     }
     
+    // Normalizar value e currency para consistência entre Pixel e CAPI
+    const normalizedValue = value !== undefined ? parseFloat(value.toFixed(2)) : undefined;
+    const normalizedCurrency = currency?.toUpperCase();
+    
     // 1. Track via Browser Pixel (Client-side)
     if (typeof window !== 'undefined' && window.fbq) {
       const pixelData: any = {
         ...customData,
-        value,
-        currency,
+        value: normalizedValue,
+        currency: normalizedCurrency,
         content_name: contentName,
         content_ids: contentIds,
         content_type: contentType,
@@ -384,8 +388,8 @@ export const metaService = {
       
       const serverCustomData: any = {
         ...customData,
-        value,
-        currency,
+        value: normalizedValue,
+        currency: normalizedCurrency,
         content_name: contentName,
         content_ids: contentIds,
         content_type: contentType,

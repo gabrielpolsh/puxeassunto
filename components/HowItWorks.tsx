@@ -82,7 +82,7 @@ export const HowItWorks: React.FC = () => {
         <div className="flex flex-col lg:flex-row items-center justify-between gap-12 lg:gap-20 group">
           {/* Text */}
           <div className="flex-1 relative lg:text-right">
-            <div className="absolute -top-16 -left-10 lg:left-auto lg:-right-10 text-9xl font-black text-white/5 select-none -z-10 transition-colors group-hover:text-white/[0.07]">01</div>
+            <div className="absolute -top-16 -left-10 lg:left-auto lg:-right-10 text-9xl font-black text-white/[0.08] select-none -z-10 transition-colors group-hover:text-white/[0.12]" aria-hidden="true">01</div>
             <h3 className="text-3xl font-bold text-white mb-4 group-hover:text-red-400 transition-colors">Mande o Print</h3>
             <p className="text-gray-400 leading-relaxed text-lg lg:pl-12">
               Tire um print daquela conversa onde você travou. Pode ser do WhatsApp, Tinder, Instagram ou qualquer outro app. Basta fazer o upload.
@@ -225,7 +225,7 @@ export const HowItWorks: React.FC = () => {
 
           {/* Text */}
           <div className="flex-1 relative order-1 lg:order-2 text-left">
-            <div className="absolute -top-16 -left-10 text-9xl font-black text-white/5 select-none -z-10 transition-colors group-hover:text-white/[0.07]">02</div>
+            <div className="absolute -top-16 -left-10 text-9xl font-black text-white/[0.08] select-none -z-10 transition-colors group-hover:text-white/[0.12]" aria-hidden="true">02</div>
             <h3 className="text-3xl font-bold text-white mb-4 group-hover:text-blue-400 transition-colors">IA Analisa</h3>
             <p className="text-gray-400 leading-relaxed text-lg lg:pr-12">
               O Puxe Assunto lê o contexto, entende a dinâmica da conversa, seja desinteresse, ironia, joguinho ou timidez, e responde da forma certa.             </p>
@@ -236,7 +236,7 @@ export const HowItWorks: React.FC = () => {
         <div className="flex flex-col lg:flex-row items-center justify-between gap-12 lg:gap-20 group">
           {/* Text */}
           <div className="flex-1 relative lg:text-right">
-            <div className="absolute -top-16 -left-10 lg:left-auto lg:-right-10 text-9xl font-black text-white/5 select-none -z-10 transition-colors group-hover:text-white/[0.07]">03</div>
+            <div className="absolute -top-16 -left-10 lg:left-auto lg:-right-10 text-9xl font-black text-white/[0.08] select-none -z-10 transition-colors group-hover:text-white/[0.12]" aria-hidden="true">03</div>
             <h3 className="text-3xl font-bold text-white mb-4 group-hover:text-rose-400 transition-colors">Receba a Resposta</h3>
             <p className="text-gray-400 leading-relaxed text-lg lg:pl-12">
               Receba 5 opções de resposta com tons diferentes (engraçado, direto, misterioso). Escolha a perfeita, copie e envie.
@@ -256,7 +256,7 @@ export const HowItWorks: React.FC = () => {
                     <div className="flex items-center justify-between mb-4 border-b border-white/5 pb-3">
                       <div className="flex items-center gap-2">
                         <span className={`w-2 h-2 rounded-full ${SUGGESTIONS_DEMO[suggestionIndex].color.replace('text-', 'bg-').replace('-400', '-500')}`}></span>
-                        <span className="text-xs font-semibold text-gray-300 uppercase">Sugestão do Puxe Assunto</span>
+                        <span className="text-xs font-semibold text-gray-200 uppercase">Sugestão do Puxe Assunto</span>
                       </div>
                       <Check size={14} className="text-green-500 opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
@@ -266,9 +266,9 @@ export const HowItWorks: React.FC = () => {
 
                     {/* Copy Button Fake */}
                     <div className="mt-4 flex justify-end">
-                      <div className="px-3 py-1.5 rounded-lg bg-white/5 text-[10px] text-gray-400 font-medium hover:bg-rose-600 hover:text-white transition-colors cursor-default">
+                      <button className="px-3 py-1.5 rounded-lg bg-white/10 text-[11px] text-gray-300 font-medium hover:bg-rose-600 hover:text-white transition-colors cursor-pointer" aria-label="Copiar resposta sugerida">
                         Copiar Resposta
-                      </div>
+                      </button>
                     </div>
                   </div>
 

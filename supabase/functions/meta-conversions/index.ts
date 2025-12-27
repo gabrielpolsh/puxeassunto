@@ -144,6 +144,24 @@ serve(async (req) => {
       });
     }
 
+    // Normalizar custom_data para garantir consistência com o Pixel do navegador
+    const normalizedCustomData = custom_data ? {
+      ...custom_data,
+      // Garantir que value seja número com 2 casas decimais
+      value: custom_data.value !== undefined ? parseFloat(Number(custom_data.value).toFixed(2)) : undefined,
+      // Garantir que currency seja uppercase
+      currency: custom_data.currency?.toUpperCase(),
+    } : undefined;
+    
+    // Remover campos undefined do custom_data
+    if (normalizedCustomData) {
+      Object.keys(normalizedCustomData).forEach(key => {
+        if (normalizedCustomData[key] === undefined) {
+          delete normalizedCustomData[key];
+        }
+      });
+    }
+
     const payload = {
       data: [
         {
@@ -153,7 +171,7 @@ serve(async (req) => {
           event_source_url,
           event_id,
           user_data: hashedUserData,
-          custom_data,
+          custom_data: normalizedCustomData,
         },
       ],
     };

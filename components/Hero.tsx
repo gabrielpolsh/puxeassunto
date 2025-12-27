@@ -386,12 +386,28 @@ const TinderCarousel: React.FC<{ onAction?: () => void }> = ({ onAction }) => {
       </div>
 
       {/* Dots Indicator */}
-      <div className="flex justify-center gap-2 mt-8">
+      <div className="flex justify-center gap-2 mt-8" role="tablist" aria-label="Navegação de depoimentos">
         {TESTIMONIALS_DATA.map((_, idx) => (
           <button
             key={idx}
-            className={`h-1.5 rounded-full transition-all duration-300 ${idx === currentIndex ? 'bg-red-500 w-8' : 'bg-white/10 w-2'}`}
-          />
+            onClick={() => {
+              if (!isAnimating) {
+                setDirection(idx > currentIndex ? 'left' : 'right');
+                setIsAnimating(true);
+                setTimeout(() => {
+                  setCurrentIndex(idx);
+                  setIsAnimating(false);
+                  setDirection(null);
+                }, 400);
+              }
+            }}
+            aria-label={`Ver depoimento ${idx + 1} de ${TESTIMONIALS_DATA.length}`}
+            aria-selected={idx === currentIndex}
+            role="tab"
+            className={`min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-black`}
+          >
+            <span className={`h-2 rounded-full transition-all duration-300 ${idx === currentIndex ? 'bg-red-500 w-8' : 'bg-white/30 w-3'}`} />
+          </button>
         ))}
       </div>
 
