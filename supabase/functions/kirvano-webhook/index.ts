@@ -15,13 +15,19 @@ async function sha256(message: string): Promise<string> {
 }
 
 // Send Purchase event to Meta Conversions API
-async function sendPurchaseToMeta(email: string, value: number, currency: string, planType: string) {
+// saleId is used to generate deterministic event_id for deduplication
+async function sendPurchaseToMeta(email: string, value: number, currency: string, planType: string, saleId: string) {
   try {
     const eventTime = Math.floor(Date.now() / 1000);
-    const eventId = `purchase_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    // Use sale_id from Kirvano for deterministic event_id - enables Facebook deduplication
+    // If same sale_id is sent multiple times (webhook retry), Facebook will dedupe it
+    const eventId = `purchase_kirvano_${saleId}`;
     
     // Hash email for Meta CAPI (required)
     const hashedEmail = await sha256(email.toLowerCase().trim());
+    
+    // Hash sale_id for external_id (consistent identifier)
+    const hashedExternalId = await sha256(saleId);
     
     const payload = {
       data: [{
@@ -31,13 +37,15 @@ async function sendPurchaseToMeta(email: string, value: number, currency: string
         event_id: eventId,
         user_data: {
           em: [hashedEmail],
-          // external_id will be added if we have the user ID
+          external_id: [hashedExternalId], // Helps Facebook match events
         },
         custom_data: {
           value: parseFloat(value.toFixed(2)),
           currency: currency.toUpperCase(),
           content_name: `Plano PRO ${planType}`,
           content_type: 'product',
+          content_ids: [saleId], // Transaction ID for deduplication
+          num_items: 1,
         },
       }],
     };
@@ -206,6 +214,11 @@ serve(async (req) => {
             });
         }
 
+        // Extract Sale ID for deduplication
+        // Kirvano sends sale_id at root level
+        const saleId = payload.sale_id || payload.checkout_id || data.sale_id || data.checkout_id || `unknown_${Date.now()}`;
+        console.log(`Sale ID for deduplication: ${saleId}`);
+
         // Extract Email
         // Kirvano usa "cliente" (português) em vez de "customer"
         const customerEmail = 
@@ -356,12 +369,54 @@ serve(async (req) => {
                     
                     const price = (payloadPrice && payloadPrice > 0) ? payloadPrice : (planConfig?.price || 15.00);
                     
-                    console.log(`[Meta CAPI] Sending Purchase - Email: ${customerEmail}, Price: ${price} BRL, Plan: ${planType}, Source: ${payloadPrice ? 'payload' : 'config'}`);
-                    await sendPurchaseToMeta(customerEmail, price, 'BRL', planType);
+                    console.log(`[Meta CAPI] Sending Purchase - Email: ${customerEmail}, Price: ${price} BRL, Plan: ${planType}, SaleId: ${saleId}, Source: ${payloadPrice ? 'payload' : 'config'}`);
+                    await sendPurchaseToMeta(customerEmail, price, 'BRL', planType, saleId);
                 }
             } else {
-                console.log(`User with email ${customerEmail} not found in profiles.`);
-                // Optionally we could create a profile or log this for manual review
+                // Usuário não existe - salvar como compra pendente
+                // Quando ele criar conta com esse email, já vem PRO automaticamente
+                console.log(`User with email ${customerEmail} not found. Saving as pending purchase.`);
+                
+                if (isPro) {
+                    const { planType, durationMonths } = detectPlanType(payload);
+                    
+                    // Extrair preço do payload
+                    let price: number | null = null;
+                    if (payload.fiscal?.total_value && typeof payload.fiscal.total_value === 'number') {
+                        price = payload.fiscal.total_value;
+                    } else if (payload.products?.[0]?.price) {
+                        const priceStr = payload.products[0].price;
+                        const numMatch = priceStr.replace(/[^\d,\.]/g, '').replace(',', '.');
+                        price = parseFloat(numMatch) || null;
+                    }
+                    
+                    // Inserir na tabela pending_purchases
+                    const { error: pendingError } = await supabaseAdmin
+                        .from('pending_purchases')
+                        .upsert({
+                            email: customerEmail.toLowerCase().trim(),
+                            sale_id: saleId,
+                            plan_type: planType,
+                            duration_months: durationMonths,
+                            price: price,
+                            payload: payload
+                        }, { onConflict: 'sale_id' });
+                    
+                    if (pendingError) {
+                        console.error('Error saving pending purchase:', pendingError);
+                    } else {
+                        console.log(`Pending purchase saved for ${customerEmail}. When they create an account, they'll get PRO automatically.`);
+                    }
+                    
+                    // Ainda enviar evento para Meta CAPI
+                    const planConfig = PLAN_CONFIGS[detectPlanType(payload).planType === 'yearly' ? 'f4254764-ee73-4db6-80fe-4d0dc70233e2' : 
+                                        detectPlanType(payload).planType === 'quarterly' ? '003f8e49-5c58-41f5-a122-8715abdf2c02' : 
+                                        '1b352195-0b65-4afa-9a3e-bd58515446e9'];
+                    const metaPrice = (price && price > 0) ? price : (planConfig?.price || 15.00);
+                    
+                    console.log(`[Meta CAPI] Sending Purchase for pending user - Email: ${customerEmail}, Price: ${metaPrice} BRL`);
+                    await sendPurchaseToMeta(customerEmail, metaPrice, 'BRL', planType, saleId);
+                }
             }
 
             return new Response(JSON.stringify({ message: 'Webhook processed' }), {
