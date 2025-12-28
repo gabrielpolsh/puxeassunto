@@ -94,7 +94,7 @@ async function normalizeAndHashPhone(phone: string): Promise<string | null> {
 
 // Send Purchase event to Meta Conversions API
 // saleId is used to generate deterministic event_id for deduplication
-// Now accepts optional phone and IP for better matching
+// Now accepts optional phone, IP, fbp, and fbc for better matching
 async function sendPurchaseToMeta(
   email: string, 
   value: number, 
@@ -102,7 +102,10 @@ async function sendPurchaseToMeta(
   planType: string, 
   saleId: string,
   phone?: string | null,
-  clientIp?: string | null
+  clientIp?: string | null,
+  fbp?: string | null,
+  fbc?: string | null,
+  userId?: string | null
 ) {
   try {
     const eventTime = Math.floor(Date.now() / 1000);
@@ -119,10 +122,19 @@ async function sendPurchaseToMeta(
     // Hash email again for secondary external_id (helps with cross-device matching)
     const hashedEmailId = await sha256(email.toLowerCase().trim() + '_puxeassunto');
     
+    // Build external_ids array with all available identifiers
+    const externalIds = [hashedExternalId, hashedEmailId];
+    
+    // Add hashed user ID if available (Supabase user ID)
+    if (userId) {
+      const hashedUserId = await sha256(userId);
+      externalIds.push(hashedUserId);
+    }
+    
     // Build user_data object with all available parameters
     const userData: Record<string, any> = {
       em: [hashedEmail],
-      external_id: [hashedExternalId, hashedEmailId], // Multiple IDs improve matching
+      external_id: externalIds, // Multiple IDs improve matching
     };
     
     // Add hashed phone if available (improves match rate significantly)
@@ -137,7 +149,20 @@ async function sendPurchaseToMeta(
     // Add client IP if available (Meta prefers IPv6)
     if (clientIp) {
       userData.client_ip_address = clientIp;
-      console.log(`[Meta CAPI] IP added to Purchase event: ${clientIp}`);
+      const isIPv6 = clientIp.includes(':');
+      console.log(`[Meta CAPI] IP added to Purchase event: ${clientIp} (${isIPv6 ? 'IPv6 ✓' : 'IPv4'})`);
+    }
+    
+    // Add fbp (Facebook Browser ID) if available - CRITICAL for matching
+    if (fbp) {
+      userData.fbp = fbp;
+      console.log('[Meta CAPI] fbp added to Purchase event');
+    }
+    
+    // Add fbc (Facebook Click ID) if available - CRITICAL for ad attribution
+    if (fbc) {
+      userData.fbc = fbc;
+      console.log('[Meta CAPI] fbc added to Purchase event');
     }
     
     const payload = {
