@@ -68,9 +68,42 @@ async function sendPurchaseToGA4(email: string, value: number, currency: string,
   }
 }
 
+// Normalize and hash phone number for Meta CAPI
+// Meta requires: digits only, with country code, no leading zeros after country code
+async function normalizeAndHashPhone(phone: string): Promise<string | null> {
+  if (!phone) return null;
+  
+  // Remove all non-digit characters
+  let digits = phone.replace(/\D/g, '');
+  
+  // If starts with 0, remove it (local format)
+  if (digits.startsWith('0')) {
+    digits = digits.substring(1);
+  }
+  
+  // If doesn't start with country code, assume Brazil (+55)
+  if (!digits.startsWith('55') && digits.length <= 11) {
+    digits = '55' + digits;
+  }
+  
+  // Must have at least 10 digits (country + area + number)
+  if (digits.length < 12) return null;
+  
+  return await sha256(digits);
+}
+
 // Send Purchase event to Meta Conversions API
 // saleId is used to generate deterministic event_id for deduplication
-async function sendPurchaseToMeta(email: string, value: number, currency: string, planType: string, saleId: string) {
+// Now accepts optional phone and IP for better matching
+async function sendPurchaseToMeta(
+  email: string, 
+  value: number, 
+  currency: string, 
+  planType: string, 
+  saleId: string,
+  phone?: string | null,
+  clientIp?: string | null
+) {
   try {
     const eventTime = Math.floor(Date.now() / 1000);
     // Use sale_id from Kirvano for deterministic event_id - enables Facebook deduplication
@@ -83,16 +116,38 @@ async function sendPurchaseToMeta(email: string, value: number, currency: string
     // Hash sale_id for external_id (consistent identifier)
     const hashedExternalId = await sha256(saleId);
     
+    // Hash email again for secondary external_id (helps with cross-device matching)
+    const hashedEmailId = await sha256(email.toLowerCase().trim() + '_puxeassunto');
+    
+    // Build user_data object with all available parameters
+    const userData: Record<string, any> = {
+      em: [hashedEmail],
+      external_id: [hashedExternalId, hashedEmailId], // Multiple IDs improve matching
+    };
+    
+    // Add hashed phone if available (improves match rate significantly)
+    if (phone) {
+      const hashedPhone = await normalizeAndHashPhone(phone);
+      if (hashedPhone) {
+        userData.ph = [hashedPhone];
+        console.log('[Meta CAPI] Phone added to Purchase event');
+      }
+    }
+    
+    // Add client IP if available (Meta prefers IPv6)
+    if (clientIp) {
+      userData.client_ip_address = clientIp;
+      console.log(`[Meta CAPI] IP added to Purchase event: ${clientIp}`);
+    }
+    
     const payload = {
       data: [{
         event_name: 'Purchase',
         event_time: eventTime,
         action_source: 'website',
+        event_source_url: 'https://puxeassunto.com/upgrade', // Add source URL for better context
         event_id: eventId,
-        user_data: {
-          em: [hashedEmail],
-          external_id: [hashedExternalId], // Helps Facebook match events
-        },
+        user_data: userData,
         custom_data: {
           value: parseFloat(value.toFixed(2)),
           currency: currency.toUpperCase(),
@@ -283,6 +338,30 @@ serve(async (req) => {
             payload.customer?.email || 
             payload.email;
 
+        // Extract Phone (for Meta CAPI - improves match rate)
+        // Kirvano sends phone in cliente/customer object
+        const customerPhone = 
+            data.cliente?.phone ||
+            data.cliente?.telefone ||
+            data.cliente?.celular ||
+            data.customer?.phone ||
+            data.customer?.telefone ||
+            payload.cliente?.phone ||
+            payload.cliente?.telefone ||
+            payload.customer?.phone ||
+            payload.phone ||
+            payload.telefone ||
+            null;
+        
+        // Extract IP from request headers (Kirvano might forward client IP)
+        const clientIp = 
+            req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+            req.headers.get('x-real-ip') ||
+            req.headers.get('cf-connecting-ip') ||
+            null;
+        
+        console.log(`Customer data - Email: ${customerEmail}, Phone: ${customerPhone ? 'present' : 'not found'}, IP: ${clientIp || 'not found'}`);
+
         // Extract Status
         // Common statuses: 'paid', 'approved', 'completed'
         // Normalize to lowercase to avoid case sensitivity issues (Log shows "APPROVED")
@@ -423,11 +502,11 @@ serve(async (req) => {
                     
                     const price = (payloadPrice && payloadPrice > 0) ? payloadPrice : (planConfig?.price || 15.00);
                     
-                    console.log(`[Analytics] Sending Purchase - Email: ${customerEmail}, Price: ${price} BRL, Plan: ${planType}, SaleId: ${saleId}, Source: ${payloadPrice ? 'payload' : 'config'}`);
+                    console.log(`[Analytics] Sending Purchase - Email: ${customerEmail}, Phone: ${customerPhone ? 'yes' : 'no'}, IP: ${clientIp || 'no'}, Price: ${price} BRL, Plan: ${planType}, SaleId: ${saleId}, Source: ${payloadPrice ? 'payload' : 'config'}`);
                     
                     // Send to both Meta CAPI and GA4 (for Meta <-> GA4 mapping)
                     await Promise.all([
-                        sendPurchaseToMeta(customerEmail, price, 'BRL', planType, saleId),
+                        sendPurchaseToMeta(customerEmail, price, 'BRL', planType, saleId, customerPhone, clientIp),
                         sendPurchaseToGA4(customerEmail, price, 'BRL', planType, saleId),
                     ]);
                 }
@@ -473,11 +552,11 @@ serve(async (req) => {
                                         '1b352195-0b65-4afa-9a3e-bd58515446e9'];
                     const metaPrice = (price && price > 0) ? price : (planConfig?.price || 15.00);
                     
-                    console.log(`[Analytics] Sending Purchase for pending user - Email: ${customerEmail}, Price: ${metaPrice} BRL`);
+                    console.log(`[Analytics] Sending Purchase for pending user - Email: ${customerEmail}, Phone: ${customerPhone ? 'yes' : 'no'}, IP: ${clientIp || 'no'}, Price: ${metaPrice} BRL`);
                     
                     // Send to both Meta CAPI and GA4 (for Meta <-> GA4 mapping)
                     await Promise.all([
-                        sendPurchaseToMeta(customerEmail, metaPrice, 'BRL', planType, saleId),
+                        sendPurchaseToMeta(customerEmail, metaPrice, 'BRL', planType, saleId, customerPhone, clientIp),
                         sendPurchaseToGA4(customerEmail, metaPrice, 'BRL', planType, saleId),
                     ]);
                 }
