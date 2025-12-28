@@ -18,10 +18,10 @@ export const ThankYouPage: React.FC<ThankYouPageProps> = ({ onGoToDashboard }) =
         const hasPaymentParam = urlParams.get('payment') === 'success';
         const shouldTrack = location.state?.purchaseCompleted || hasPaymentParam;
 
-        // NOTE: Purchase event is sent by Kirvano webhook, not here
+        // NOTE: Purchase event is sent by Kirvano webhook (both Meta CAPI and GA4)
         // This prevents duplicate Purchase events
         if (shouldTrack) {
-            console.log('[Meta] ThankYou page loaded from payment flow (Purchase sent by Kirvano)');
+            console.log('[ThankYou] Payment confirmed (events sent by Kirvano webhook)');
             // Clear state and URL params
             window.history.replaceState({}, document.title, window.location.pathname);
         }

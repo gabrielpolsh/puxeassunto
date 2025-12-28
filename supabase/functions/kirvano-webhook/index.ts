@@ -6,12 +6,66 @@ import { crypto } from "https://deno.land/std@0.168.0/crypto/mod.ts";
 const META_PIXEL_ID = '1770822433821202';
 const META_ACCESS_TOKEN = 'EAAOMFb4hzEIBQLuZBhM25lOZAm81eK5rkRuodxyVbuZCiwSwZBOZBFnTdqiJlVZBZBruPU0fuoVfHpxtqZANq55jBfmD1zqRTRcsbHv8UkII6tbL8Sp1pPhS59UzUZAEblLHDBsvSh2zRaIgU9AxdXxPffAdy6W5zmNuTqBJ2COjBAlNu8YyMHKt3ykwLpNYwewZDZD';
 
+// Google Analytics 4 Measurement Protocol Configuration
+const GA4_MEASUREMENT_ID = 'G-0FH9JM0PWV';
+const GA4_API_SECRET = 'PAOylh2dSyOaB7VaGRfR4g';
+
 // SHA256 hash function for Meta CAPI
 async function sha256(message: string): Promise<string> {
   const msgBuffer = new TextEncoder().encode(message);
   const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// Send Purchase event to Google Analytics 4 via Measurement Protocol
+// https://developers.google.com/analytics/devguides/collection/protocol/ga4
+async function sendPurchaseToGA4(email: string, value: number, currency: string, planType: string, saleId: string) {
+  try {
+    // Generate a client_id from email (consistent for the same user)
+    const clientId = await sha256(email.toLowerCase().trim());
+    
+    const payload = {
+      client_id: clientId.substring(0, 36), // GA4 expects client_id format
+      events: [{
+        name: 'purchase',
+        params: {
+          transaction_id: saleId,
+          value: parseFloat(value.toFixed(2)),
+          currency: currency.toUpperCase(),
+          items: [{
+            item_id: `pro_${planType}`,
+            item_name: `Plano PRO ${planType}`,
+            item_category: 'subscription',
+            price: parseFloat(value.toFixed(2)),
+            quantity: 1,
+          }],
+        },
+      }],
+    };
+
+    console.log('[GA4] Sending Purchase event:', JSON.stringify(payload));
+
+    const response = await fetch(
+      `https://www.google-analytics.com/mp/collect?measurement_id=${GA4_MEASUREMENT_ID}&api_secret=${GA4_API_SECRET}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    // GA4 Measurement Protocol returns 204 No Content on success
+    if (response.status === 204 || response.ok) {
+      console.log('[GA4] Purchase event sent successfully');
+    } else {
+      const result = await response.text();
+      console.error('[GA4] Error sending Purchase event:', response.status, result);
+    }
+  } catch (error) {
+    console.error('[GA4] Failed to send Purchase event:', error);
+    // Don't throw - we don't want to fail the webhook because of GA4
+  }
 }
 
 // Send Purchase event to Meta Conversions API
@@ -369,8 +423,13 @@ serve(async (req) => {
                     
                     const price = (payloadPrice && payloadPrice > 0) ? payloadPrice : (planConfig?.price || 15.00);
                     
-                    console.log(`[Meta CAPI] Sending Purchase - Email: ${customerEmail}, Price: ${price} BRL, Plan: ${planType}, SaleId: ${saleId}, Source: ${payloadPrice ? 'payload' : 'config'}`);
-                    await sendPurchaseToMeta(customerEmail, price, 'BRL', planType, saleId);
+                    console.log(`[Analytics] Sending Purchase - Email: ${customerEmail}, Price: ${price} BRL, Plan: ${planType}, SaleId: ${saleId}, Source: ${payloadPrice ? 'payload' : 'config'}`);
+                    
+                    // Send to both Meta CAPI and GA4 (for Meta <-> GA4 mapping)
+                    await Promise.all([
+                        sendPurchaseToMeta(customerEmail, price, 'BRL', planType, saleId),
+                        sendPurchaseToGA4(customerEmail, price, 'BRL', planType, saleId),
+                    ]);
                 }
             } else {
                 // Usuário não existe - salvar como compra pendente
@@ -414,8 +473,13 @@ serve(async (req) => {
                                         '1b352195-0b65-4afa-9a3e-bd58515446e9'];
                     const metaPrice = (price && price > 0) ? price : (planConfig?.price || 15.00);
                     
-                    console.log(`[Meta CAPI] Sending Purchase for pending user - Email: ${customerEmail}, Price: ${metaPrice} BRL`);
-                    await sendPurchaseToMeta(customerEmail, metaPrice, 'BRL', planType, saleId);
+                    console.log(`[Analytics] Sending Purchase for pending user - Email: ${customerEmail}, Price: ${metaPrice} BRL`);
+                    
+                    // Send to both Meta CAPI and GA4 (for Meta <-> GA4 mapping)
+                    await Promise.all([
+                        sendPurchaseToMeta(customerEmail, metaPrice, 'BRL', planType, saleId),
+                        sendPurchaseToGA4(customerEmail, metaPrice, 'BRL', planType, saleId),
+                    ]);
                 }
             }
 
