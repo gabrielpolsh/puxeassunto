@@ -262,30 +262,47 @@ function detectPlanType(payload: any): { planType: string; durationMonths: numbe
     }
     
     // Try to detect from product name or description
+    // Kirvano sends product name in products[0].name
     const productName = (
+        payload.products?.[0]?.name ||
+        payload.data?.products?.[0]?.name ||
         payload.data?.product?.name ||
         payload.product_name ||
         payload.data?.product_name ||
         ''
     ).toLowerCase();
     
+    console.log(`Detecting plan - product name: ${productName}`);
+    
     const productDescription = (
+        payload.products?.[0]?.description ||
+        payload.data?.products?.[0]?.description ||
         payload.data?.product?.description ||
         payload.product_description ||
+        payload.offer_name ||
+        payload.products?.[0]?.offer_name ||
         ''
     ).toLowerCase();
     
     const searchText = `${productName} ${productDescription}`;
+    console.log(`Detecting plan - search text: ${searchText}`);
     
-    if (searchText.includes('anual') || searchText.includes('yearly') || searchText.includes('1 ano') || searchText.includes('12 meses')) {
+    // Yearly plan detection
+    if (searchText.includes('anual') || searchText.includes('yearly') || searchText.includes('1 ano') || searchText.includes('12 meses') || searchText.includes('ano')) {
+        console.log('Detected yearly plan from text');
         return { planType: 'yearly', durationMonths: 12 };
     }
-    if (searchText.includes('trimestral') || searchText.includes('quarterly') || searchText.includes('3 meses')) {
+    // Quarterly plan detection
+    if (searchText.includes('trimestral') || searchText.includes('trimestre') || searchText.includes('quarterly') || searchText.includes('3 meses') || searchText.includes('tri')) {
+        console.log('Detected quarterly plan from text');
         return { planType: 'quarterly', durationMonths: 3 };
     }
     
     // Try to detect from price
+    // Kirvano sends fiscal.total_value as a number
     const price = 
+        payload.fiscal?.total_value ||
+        payload.fiscal?.net_value ||
         payload.data?.sale?.amount ||
         payload.data?.amount ||
         payload.amount ||
@@ -293,13 +310,16 @@ function detectPlanType(payload: any): { planType: string; durationMonths: numbe
         0;
     
     const numericPrice = typeof price === 'string' ? parseFloat(price) : price;
+    console.log(`Detecting plan - price: ${numericPrice}`);
     
     if (numericPrice >= 90 && numericPrice <= 110) {
         // Yearly plan price range
+        console.log('Detected yearly plan from price');
         return { planType: 'yearly', durationMonths: 12 };
     }
-    if (numericPrice >= 35 && numericPrice <= 45) {
-        // Quarterly plan price range
+    if (numericPrice >= 35 && numericPrice <= 50) {
+        // Quarterly plan price range (R$ 39,90)
+        console.log('Detected quarterly plan from price');
         return { planType: 'quarterly', durationMonths: 3 };
     }
     

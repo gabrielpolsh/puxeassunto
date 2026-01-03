@@ -31,15 +31,16 @@ DECLARE
   pending_record RECORD;
   subscription_end timestamp with time zone;
 BEGIN
-  -- Verificar se existe compra pendente para este email
+  -- Verificar se existe compra pendente para este email (normalizado)
   SELECT * INTO pending_record
   FROM pending_purchases
-  WHERE email = NEW.email
+  WHERE email = LOWER(TRIM(NEW.email))
     AND claimed_at IS NULL
   ORDER BY created_at DESC
   LIMIT 1;
 
-  IF pending_record IS NOT NULL THEN
+  -- CORREÇÃO: Usar FOUND ao invés de IS NOT NULL (RECORD nunca é NULL em PL/pgSQL)
+  IF FOUND AND pending_record.id IS NOT NULL THEN
     -- Calcular data de expiração baseado no plano
     subscription_end := NOW() + (pending_record.duration_months || ' months')::interval;
     

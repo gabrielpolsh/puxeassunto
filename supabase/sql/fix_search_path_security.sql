@@ -37,12 +37,49 @@ BEGIN
 END;
 $$;
 
--- 3. Fix handle_new_user
+-- 3. Fix handle_new_user (with pending_purchases check)
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger AS $$
+DECLARE
+  pending_record RECORD;
+  subscription_end timestamp with time zone;
 BEGIN
-  INSERT INTO public.profiles (id, email, is_pro)
-  VALUES (new.id, new.email, false);
-  RETURN new;
+  -- Verificar se existe compra pendente para este email
+  SELECT * INTO pending_record
+  FROM public.pending_purchases
+  WHERE email = LOWER(TRIM(NEW.email))
+    AND claimed_at IS NULL
+  ORDER BY created_at DESC
+  LIMIT 1;
+
+  -- CORREÇÃO: Usar FOUND ao invés de IS NOT NULL (RECORD nunca é NULL em PL/pgSQL)
+  IF FOUND AND pending_record.id IS NOT NULL THEN
+    -- Calcular data de expiração baseado no plano
+    subscription_end := NOW() + (pending_record.duration_months || ' months')::interval;
+    
+    -- Criar profile já como PRO
+    INSERT INTO public.profiles (id, email, is_pro, plan_type, subscription_end_date, subscription_status)
+    VALUES (
+      NEW.id, 
+      NEW.email, 
+      true, 
+      pending_record.plan_type,
+      subscription_end,
+      'approved'
+    );
+    
+    -- Marcar compra como resgatada
+    UPDATE public.pending_purchases
+    SET claimed_at = NOW(), claimed_by = NEW.id
+    WHERE id = pending_record.id;
+    
+    RAISE NOTICE 'User % created with PRO from pending purchase %', NEW.email, pending_record.sale_id;
+  ELSE
+    -- Criar profile normal (free)
+    INSERT INTO public.profiles (id, email, is_pro)
+    VALUES (NEW.id, NEW.email, false);
+  END IF;
+  
+  RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
