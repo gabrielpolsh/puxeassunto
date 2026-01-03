@@ -31,7 +31,11 @@ const FBC_CREATION_TIME_KEY = 'meta_fbc_creation_time';
 const ANONYMOUS_ID_KEY = 'meta_anonymous_id';
 
 // Meta Parameter Config Tool - Version tracking
-const META_PARAM_CONFIG_VERSION = '1.1.0';
+const META_PARAM_CONFIG_VERSION = '1.2.0';
+
+// Intervalo mínimo entre atualizações do tracking no Supabase (5 minutos)
+const TRACKING_UPDATE_INTERVAL = 5 * 60 * 1000;
+const LAST_TRACKING_UPDATE_KEY = 'meta_last_tracking_update';
 
 export const metaService = {
   // Generate a unique Event ID
@@ -823,5 +827,97 @@ export const metaService = {
     console.log('='.repeat(60));
     
     return { ip, isIPv6: ip ? metaService.isIPv6(ip) : false };
+  },
+
+  // Salvar dados de tracking do Meta no perfil do usuário no Supabase
+  // Isso permite que o webhook da Kirvano use esses dados para enviar eventos com melhor matching
+  // Os parâmetros fbc, fbp, user_agent aumentam a taxa de correspondência em até 80%
+  saveTrackingToProfile: async (): Promise<boolean> => {
+    try {
+      // Verificar se usuário está logado
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        console.log('[Meta Tracking] User not logged in, skipping profile update');
+        return false;
+      }
+
+      // Rate limiting - não atualizar mais de uma vez a cada 5 minutos
+      try {
+        const lastUpdate = localStorage.getItem(LAST_TRACKING_UPDATE_KEY);
+        if (lastUpdate) {
+          const timeSinceLastUpdate = Date.now() - parseInt(lastUpdate, 10);
+          if (timeSinceLastUpdate < TRACKING_UPDATE_INTERVAL) {
+            console.log('[Meta Tracking] Skipping update - too recent');
+            return false;
+          }
+        }
+      } catch (e) {}
+
+      // Coletar dados de tracking
+      const fbp = metaService.getCookie('_fbp');
+      const fbc = metaService.getFbc();
+      const userAgent = typeof navigator !== 'undefined' ? navigator.userAgent : null;
+      
+      // Tentar obter IP do cliente (pode já estar em cache)
+      let clientIp: string | null = null;
+      try {
+        clientIp = await metaService.getClientIp();
+      } catch (e) {
+        console.log('[Meta Tracking] Could not get client IP');
+      }
+
+      // Verificar se há algo para atualizar
+      if (!fbp && !fbc && !userAgent && !clientIp) {
+        console.log('[Meta Tracking] No tracking data to save');
+        return false;
+      }
+
+      // Preparar dados para atualização (apenas campos com valor)
+      const updateData: Record<string, any> = {
+        meta_updated_at: new Date().toISOString()
+      };
+      
+      if (fbc) updateData.meta_fbc = fbc;
+      if (fbp) updateData.meta_fbp = fbp;
+      if (userAgent) updateData.meta_user_agent = userAgent;
+      if (clientIp) updateData.meta_client_ip = clientIp;
+
+      // Atualizar perfil no Supabase
+      const { error } = await supabase
+        .from('profiles')
+        .update(updateData)
+        .eq('id', user.id);
+
+      if (error) {
+        console.error('[Meta Tracking] Error saving to profile:', error);
+        return false;
+      }
+
+      // Salvar timestamp da última atualização
+      try {
+        localStorage.setItem(LAST_TRACKING_UPDATE_KEY, Date.now().toString());
+      } catch (e) {}
+
+      console.log('[Meta Tracking] ✓ Saved tracking data to profile:', {
+        fbc: fbc ? 'present' : 'not available',
+        fbp: fbp ? 'present' : 'not available',
+        userAgent: userAgent ? 'present' : 'not available',
+        clientIp: clientIp ? (metaService.isIPv6(clientIp) ? 'IPv6' : 'IPv4') : 'not available'
+      });
+
+      return true;
+    } catch (error) {
+      console.error('[Meta Tracking] Failed to save tracking data:', error);
+      return false;
+    }
+  },
+
+  // Inicializar tracking completo (chamar no login/signup e periodicamente)
+  initializeTracking: async () => {
+    // Primeiro inicializar fbc (captura fbclid da URL)
+    metaService.initializeFbc();
+    
+    // Depois salvar no perfil (com rate limiting interno)
+    await metaService.saveTrackingToProfile();
   }
 };

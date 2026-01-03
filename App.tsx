@@ -127,6 +127,8 @@ const AppRouter: React.FC = () => {
         // Persist user data for Meta CAPI (improves event matching quality)
         if (session?.user) {
           metaService.setUserData(session.user.email, session.user.id);
+          // Salvar dados de tracking no perfil para uso pelo webhook
+          metaService.saveTrackingToProfile();
         }
       }
       setLoadingSession(false);
@@ -143,6 +145,8 @@ const AppRouter: React.FC = () => {
         // Update stored user data
         if (session?.user) {
           metaService.setUserData(session.user.email, session.user.id);
+          // Atualizar dados de tracking no perfil
+          metaService.saveTrackingToProfile();
         }
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
@@ -153,6 +157,8 @@ const AppRouter: React.FC = () => {
         // Persist user data for Meta CAPI
         if (session?.user) {
           metaService.setUserData(session.user.email, session.user.id);
+          // Salvar dados de tracking no perfil para uso pelo webhook
+          metaService.saveTrackingToProfile();
         }
       } else {
         setUser(session?.user ?? null);

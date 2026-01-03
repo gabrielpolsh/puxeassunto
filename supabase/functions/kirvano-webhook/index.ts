@@ -94,7 +94,7 @@ async function normalizeAndHashPhone(phone: string): Promise<string | null> {
 
 // Send Purchase event to Meta Conversions API
 // saleId is used to generate deterministic event_id for deduplication
-// Now accepts optional phone, IP, fbp, and fbc for better matching
+// Now accepts optional phone, IP, fbp, fbc, user_agent for better matching
 async function sendPurchaseToMeta(
   email: string, 
   value: number, 
@@ -105,7 +105,8 @@ async function sendPurchaseToMeta(
   clientIp?: string | null,
   fbp?: string | null,
   fbc?: string | null,
-  userId?: string | null
+  userId?: string | null,
+  userAgent?: string | null
 ) {
   try {
     const eventTime = Math.floor(Date.now() / 1000);
@@ -163,6 +164,12 @@ async function sendPurchaseToMeta(
     if (fbc) {
       userData.fbc = fbc;
       console.log('[Meta CAPI] fbc added to Purchase event');
+    }
+    
+    // Add user_agent if available - increases conversions by ~21%
+    if (userAgent) {
+      userData.client_user_agent = userAgent;
+      console.log('[Meta CAPI] user_agent added to Purchase event');
     }
     
     const payload = {
@@ -441,10 +448,10 @@ serve(async (req) => {
             // Try to find user by Email
             console.log(`Updating user by Email: ${customerEmail}`);
             
-            // First, check if user exists and get current status
+            // First, check if user exists and get current status + Meta tracking data
             const { data: user, error: fetchError } = await supabaseAdmin
                 .from('profiles')
-                .select('id, is_pro, subscription_status')
+                .select('id, is_pro, subscription_status, meta_fbc, meta_fbp, meta_user_agent, meta_client_ip')
                 .eq('email', customerEmail)
                 .single();
 
@@ -547,11 +554,18 @@ serve(async (req) => {
                     
                     const price = (payloadPrice && payloadPrice > 0) ? payloadPrice : (planConfig?.price || 15.00);
                     
-                    console.log(`[Analytics] Sending Purchase - Email: ${customerEmail}, Phone: ${customerPhone ? 'yes' : 'no'}, IP: ${clientIp || 'no'}, Price: ${price} BRL, Plan: ${planType}, SaleId: ${saleId}, Source: ${payloadPrice ? 'payload' : 'config'}`);
+                    // Usar dados de tracking do perfil do usuário (salvos pelo navegador)
+                    // Esses parâmetros aumentam significativamente a taxa de correspondência do Meta
+                    const metaFbc = user.meta_fbc || null;
+                    const metaFbp = user.meta_fbp || null;
+                    const metaUserAgent = user.meta_user_agent || null;
+                    const metaClientIp = user.meta_client_ip || clientIp; // Fallback para IP do header
+                    
+                    console.log(`[Analytics] Sending Purchase - Email: ${customerEmail}, Phone: ${customerPhone ? 'yes' : 'no'}, IP: ${metaClientIp || 'no'}, fbc: ${metaFbc ? 'yes' : 'no'}, fbp: ${metaFbp ? 'yes' : 'no'}, user_agent: ${metaUserAgent ? 'yes' : 'no'}, Price: ${price} BRL, Plan: ${planType}, SaleId: ${saleId}, Source: ${payloadPrice ? 'payload' : 'config'}`);
                     
                     // Send to both Meta CAPI and GA4 (for Meta <-> GA4 mapping)
                     await Promise.all([
-                        sendPurchaseToMeta(customerEmail, price, 'BRL', planType, saleId, customerPhone, clientIp),
+                        sendPurchaseToMeta(customerEmail, price, 'BRL', planType, saleId, customerPhone, metaClientIp, metaFbp, metaFbc, user.id, metaUserAgent),
                         sendPurchaseToGA4(customerEmail, price, 'BRL', planType, saleId),
                     ]);
                 }
@@ -592,16 +606,19 @@ serve(async (req) => {
                     }
                     
                     // Ainda enviar evento para Meta CAPI
+                    // Para pending purchases, não temos os dados de tracking (fbc, fbp, user_agent)
+                    // pois o usuário ainda não criou conta. O matching será baseado apenas em email/phone/IP.
                     const planConfig = PLAN_CONFIGS[detectPlanType(payload).planType === 'yearly' ? 'f4254764-ee73-4db6-80fe-4d0dc70233e2' : 
                                         detectPlanType(payload).planType === 'quarterly' ? '003f8e49-5c58-41f5-a122-8715abdf2c02' : 
                                         '1b352195-0b65-4afa-9a3e-bd58515446e9'];
                     const metaPrice = (price && price > 0) ? price : (planConfig?.price || 15.00);
                     
-                    console.log(`[Analytics] Sending Purchase for pending user - Email: ${customerEmail}, Phone: ${customerPhone ? 'yes' : 'no'}, IP: ${clientIp || 'no'}, Price: ${metaPrice} BRL`);
+                    console.log(`[Analytics] Sending Purchase for pending user - Email: ${customerEmail}, Phone: ${customerPhone ? 'yes' : 'no'}, IP: ${clientIp || 'no'}, fbc: no (pending), fbp: no (pending), user_agent: no (pending), Price: ${metaPrice} BRL`);
                     
                     // Send to both Meta CAPI and GA4 (for Meta <-> GA4 mapping)
+                    // Passing null for fbc, fbp, userId, userAgent since user hasn't created account yet
                     await Promise.all([
-                        sendPurchaseToMeta(customerEmail, metaPrice, 'BRL', planType, saleId, customerPhone, clientIp),
+                        sendPurchaseToMeta(customerEmail, metaPrice, 'BRL', planType, saleId, customerPhone, clientIp, null, null, null, null),
                         sendPurchaseToGA4(customerEmail, metaPrice, 'BRL', planType, saleId),
                     ]);
                 }
