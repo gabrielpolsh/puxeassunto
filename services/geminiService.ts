@@ -461,7 +461,7 @@ export const generatePickupLines = async (context?: string, base64Image?: string
     parts.push({ text: prompt });
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview',
+      model: 'gemini-3-flash-preview',
       contents: {
         parts
       }
